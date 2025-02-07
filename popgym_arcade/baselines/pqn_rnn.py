@@ -623,6 +623,115 @@ def evaluate(model, config):
     # imageio.mimsave('{}_{}_{}_Partial={}_SEED={}.gif'.format(config["TRAIN_TYPE"], config["MEMORY_TYPE"], config["ENV_NAME"], config["PARTIAL"], config["SEED"]), frames)
     wandb.log({"{}_{}_{}_model_Partial={}_SEED={}".format(config["TRAIN_TYPE"], config["MEMORY_TYPE"], config["ENV_NAME"], config["PARTIAL"], config["SEED"]): wandb.Video(frames, fps=4)})
 
+import matplotlib.pyplot as plt
+def visualize_grad(model, config):
+    seed = jax.random.PRNGKey(10)
+    seed, _rng = jax.random.split(seed)
+    env, env_params = popgym_arcade.make(config["ENV_NAME"], partial_obs=config["PARTIAL"])
+    env = LogWrapper(env)
+    vmap_reset = lambda n_envs: lambda rng: jax.vmap(env.reset, in_axes=(0, None))(
+        jax.random.split(rng, n_envs), env_params
+    )
+    vmap_step = lambda n_envs: lambda rng, env_state, action: jax.vmap(
+        env.step, in_axes=(0, 0, 0, None)
+    )(jax.random.split(rng, n_envs), env_state, action, env_params)
+
+    obs, state = vmap_reset(2)(_rng)
+    init_done = jnp.zeros(2, dtype=bool)
+    init_action = jnp.zeros(2, dtype=int)
+    init_hs = model.initialize_carry(key=_rng)
+    hs = add_batch_dim(init_hs, 2)
+
+    # 初始化用于存储梯度的容器
+    obs_grads = []
+    act_grads = []
+    frame_shape = obs[0].shape
+    frames = jnp.zeros((500, *frame_shape), dtype=jnp.uint8)
+
+    carry = (hs, obs, init_done, init_action, state, frames, _rng, obs_grads, act_grads)
+    wandb.init(project=f'{config["PROJECT"]}')
+
+    # 定义梯度计算函数
+    def compute_grads(hs, obs_batch, done_batch, action_batch):
+        def q_val(obs_batch, action_batch):
+            _, q_val = model(hs, obs_batch, done_batch, action_batch)
+            return jnp.abs(q_val).mean()
+
+        # 计算对 obs_batch 和 action_batch 的梯度
+        grads_obs = jax.grad(q_val, argnums=0)(obs_batch, action_batch)
+        grads_act = jax.grad(q_val, argnums=1)(obs_batch, action_batch)
+        return grads_obs, grads_act
+
+    def evaluate_step(carry, i):
+        hs, obs, done, action, state, frames, _rng, obs_grads, act_grads = carry
+        _rng, rng_step = jax.random.split(_rng, 2)
+        obs_batch = obs[jnp.newaxis, :]
+        done_batch = done[jnp.newaxis, :]
+        action_batch = action[jnp.newaxis, :]
+
+        # 计算梯度
+        grads_obs, grads_act = compute_grads(hs, obs_batch, done_batch, action_batch)
+
+        # 前向传播
+        hs, q_val = model(hs, obs_batch, done_batch, action_batch)
+        q_val = lax.stop_gradient(q_val)
+        q_val = q_val.squeeze(axis=0)
+        action = jnp.argmax(q_val, axis=-1)
+        obs, new_state, reward, done, info = vmap_step(2)(rng_step, state, action)
+        state = new_state
+        frame = jnp.asarray(obs[0])
+        frame = (frame * 255).astype(jnp.uint8)
+        frames = frames.at[i].set(frame)
+
+        # 记录梯度（转换为 numpy 并存储）
+        obs_grads.append(np.array(grads_obs[0].mean()))  # 记录均值或其他统计量
+        act_grads.append(np.array(grads_act[0].mean()))
+
+        carry = (hs, obs, done, action, state, frames, _rng, obs_grads, act_grads)
+        return carry, reward
+
+    def body_fun(i, carry):
+        carry, _ = evaluate_step(carry, i)
+        return carry
+
+    carry = lax.fori_loop(0, 500, body_fun, carry)
+    _, _, _, _, _, frames, _rng, obs_grads, act_grads = carry
+    frames = np.array(frames, dtype=np.uint8)
+    frames = frames.transpose((0, 3, 1, 2))
+
+    # 记录视频
+    wandb.log({
+        "eval/video": wandb.Video(frames, fps=4),
+        # 绘制梯度变化曲线
+        "eval/obs_grad": wandb.plot.line_series(
+            xs=range(len(obs_grads)),
+            ys=[obs_grads, act_grads],
+            keys=["Observation Gradients", "Action Gradients"],
+            title="Gradient Trends"
+        )
+    })
+
+    # 可选：本地保存梯度分布图
+    plt.figure()
+    plt.plot(obs_grads, label="Observation Gradients")
+    plt.plot(act_grads, label="Action Gradients")
+    plt.xlabel("Step")
+    plt.ylabel("Gradient Mean")
+    plt.legend()
+    plt.savefig("gradient_trends.png")
+    plt.close()
+
+    # 可选：记录梯度分布直方图
+    plt.figure()
+    plt.hist(obs_grads, bins=50, alpha=0.5, label="Observation Gradients")
+    plt.hist(act_grads, bins=50, alpha=0.5, label="Action Gradients")
+    plt.xlabel("Gradient Value")
+    plt.ylabel("Frequency")
+    plt.legend()
+    plt.savefig("gradient_histogram.png")
+    plt.close()
+
+
 def single_run(config):
     # config = {**config, **config["alg"]}
 
