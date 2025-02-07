@@ -52,12 +52,12 @@ environments_config = {
     "BattleShipMedium": {
         "PPO": int(2e7),
         "PQN": int(2e7),
-        "TOTAL_TIMESTEPS_DECAY": int(2e6)
+        "TOTAL_TIMESTEPS_DECAY": int(4e6)
     },
     "BattleShipHard": {
         "PPO": int(2e7),
         "PQN": int(2e7),
-        "TOTAL_TIMESTEPS_DECAY": int(2e6)
+        "TOTAL_TIMESTEPS_DECAY": int(4e6)
     },
     "CountRecallEasy": {
         "PPO": int(2e7),
@@ -82,12 +82,12 @@ environments_config = {
     "NavigatorMedium": {
         "PPO": int(1e7),
         "PQN": int(1e7),
-        "TOTAL_TIMESTEPS_DECAY": int(2e6)
+        "TOTAL_TIMESTEPS_DECAY": int(4e6)
     },
     "NavigatorHard": {
         "PPO": int(1e7),
         "PQN": int(1e7),
-        "TOTAL_TIMESTEPS_DECAY": int(2e6)
+        "TOTAL_TIMESTEPS_DECAY": int(4e6)
     },
     "MineSweeperEasy": {
         "PPO": int(1e7),
