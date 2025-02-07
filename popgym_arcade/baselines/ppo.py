@@ -8,7 +8,7 @@ import time
 import popgym_arcade
 import numpy as np
 from typing import NamedTuple, Dict, Any
-from popgym_arcade.model.utils import filter_scan
+from popgym_arcade.baselines.utils import filter_scan
 from popgym_arcade.wrappers import LogWrapper
 from popgym_arcade.baselines.model.builder import ActorCritic
 

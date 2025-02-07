@@ -11,7 +11,7 @@ import popgym_arcade
 from popgym_arcade.wrappers import LogWrapper
 from popgym_arcade.baselines.model.memorax import add_batch_dim
 from popgym_arcade.baselines.model.builder import ActorCriticRNN
-from popgym_arcade.model.utils import filter_scan
+from popgym_arcade.baselines.utils import filter_scan
 
 
 class Transition(NamedTuple):

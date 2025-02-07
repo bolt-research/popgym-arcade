@@ -18,7 +18,6 @@ from popgym_arcade.baselines.model.builder import QNetworkRNN
 import wandb
 import time
 import copy
-import imageio
 
 
 def debug_shape(x):
