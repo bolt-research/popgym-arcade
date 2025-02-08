@@ -684,15 +684,8 @@ def visualize_grad_loop_bptt(model, config):
     env, env_params = popgym_arcade.make(config["ENV_NAME"], partial_obs=config["PARTIAL"])
     env = LogWrapper(env)
     
-    n_envs = 1 
-
-    init_obs, state = env.reset(env_params, _rng)
-    init_done = jnp.zeros(1, dtype=bool)
-    init_action = jnp.zeros(1, dtype=int)
-
     grad_accumulator = [] 
     grads = []
-    traj_obs = []
 
     def step_env_and_compute_grads(env_state, obs_seq, action_seq, key):
         """Step the environment and compute the gradient magnitude with respect to the final Q value:
