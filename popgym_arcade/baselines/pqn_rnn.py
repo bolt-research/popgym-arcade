@@ -675,6 +675,108 @@ def visualize_grad(model, config):
         "eval/obs_grad_heatmap": wandb.Image("obs_grad_heatmap.png"),
     })
 
+from matplotlib.animation import FuncAnimation
+def visualize_grad_loop(model, config):
+    seed = jax.random.PRNGKey(10)
+    seed, _rng = jax.random.split(seed)
+    env, env_params = popgym_arcade.make(config["ENV_NAME"], partial_obs=config["PARTIAL"])
+    env = LogWrapper(env)
+    
+    n_envs = 1 
+    vmap_reset = lambda n_envs: lambda rng: jax.vmap(env.reset, in_axes=(0, None))(
+        jax.random.split(rng, n_envs), env_params
+    )
+    vmap_step = lambda n_envs: lambda rng, env_state, action: jax.vmap(
+        env.step, in_axes=(0, 0, 0, None)
+    )(jax.random.split(rng, n_envs), env_state, action, env_params)
+
+    init_obs, state = vmap_reset(n_envs)(_rng)
+    init_done = jnp.zeros(n_envs, dtype=bool)
+    init_action = jnp.zeros(n_envs, dtype=int)
+    init_hs = model.initialize_carry(key=_rng)
+    hs = add_batch_dim(init_hs, n_envs)
+
+    grad_accumulator = [] 
+    traj_obs = []
+
+    def compute_grads(hs, obs_batch, done_batch, action_batch):
+        def q_val(obs_batch, action_batch):
+            _, q_val = model(hs, obs_batch, done_batch, action_batch)
+            return jnp.abs(q_val).mean()
+        
+        grads_obs = jax.grad(q_val, argnums=0)(obs_batch, action_batch)
+        return jnp.abs(grads_obs)
+    obs_batch = init_obs[jnp.newaxis, :]
+    done_batch = init_done[jnp.newaxis, :]
+    action_batch = init_action[jnp.newaxis, :].astype(jnp.float32)
+
+    for _ in range(600):
+        _rng, rng_step = jax.random.split(_rng, 2)
+        grads_obs = compute_grads(hs, obs_batch, done_batch, action_batch)
+        grad_accumulator.append(grads_obs[0][0])
+        hs, q_val = model(hs, obs_batch, done_batch, action_batch)
+        action = jnp.argmax(q_val.squeeze(0), axis=-1)
+        print(action)
+        obs, new_state, reward, done, info = vmap_step(n_envs)(rng_step, state, action)
+        traj_obs.append(obs[0])
+        state = new_state
+        obs_batch = obs[jnp.newaxis, :]
+        done_batch = done[jnp.newaxis, :]
+        action_batch = action[jnp.newaxis, :].astype(jnp.float32)
+        if done[0]:
+            break
+
+    grad_accumulator = [np.array(g) for g in grad_accumulator]
+    traj_obs = [np.array(o) for o in traj_obs]
+
+    accumulated_grads = []
+    for i in range(len(grad_accumulator)):
+        accumulated = np.sum(grad_accumulator[:i+1], axis=0)
+        accumulated_grads.append(accumulated.mean(axis=-1)) 
+
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(18, 6))
+    
+    img1 = ax1.imshow(traj_obs[0], aspect='auto')
+    img2 = ax2.imshow(np.zeros_like(accumulated_grads[0]), cmap='hot', aspect='auto')
+    img3 = ax3.imshow(np.zeros_like(accumulated_grads[0]), cmap='hot', aspect='auto')
+
+    for ax, title in zip([ax1, ax2, ax3], 
+                        ["Observation", "Current Gradient", "Accumulated Gradient"]):
+        ax.set_title(title)
+        ax.axis('off')
+
+    current_grads = [g.mean(axis=-1) for g in grad_accumulator]
+    current_vmin = min([g.min() for g in current_grads])
+    current_vmax = max([g.max() for g in current_grads])
+    
+    accum_vmin = min([g.min() for g in accumulated_grads])
+    accum_vmax = max([g.max() for g in accumulated_grads])
+
+    def update(frame):
+        img1.set_data(traj_obs[frame])
+        
+        current_grad = grad_accumulator[frame].mean(axis=-1)
+        img2.set_data(current_grad)
+        img2.set_clim(vmin=current_vmin, vmax=current_vmax)  
+        
+        img3.set_data(accumulated_grads[frame])
+        img3.set_clim(vmin=accum_vmin, vmax=accum_vmax)
+        
+        fig.suptitle(f"Step: {frame}/{len(grad_accumulator)}", fontsize=16)
+        return [img1, img2, img3]
+
+    ani = FuncAnimation(
+        fig,
+        update,
+        frames=len(grad_accumulator),
+        interval=50, 
+        blit=False
+    )
+
+    ani.save("graident_map_{}_{}_{}_model_Partial={}_SEED={}.gif".format(config["TRAIN_TYPE"], config["MEMORY_TYPE"], config["ENV_NAME"], config["PARTIAL"], config["SEED"]), writer="imagemagick", fps=5)
+    
+    plt.show()
+
 def single_run(config):
     # config = {**config, **config["alg"]}
 
