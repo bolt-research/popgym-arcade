@@ -285,8 +285,8 @@ def ppo_run(config: Dict[str, Any]):
         lambda x: x.squeeze(0) if (hasattr(x, "ndim") and x.ndim > 1 and x.shape[0] == 1) else x,
         network,
     )
-    # eqx.tree_serialise_leaves('ppo_model.pkl', network)
-    # rng, _rng = jax.random.split(rng)
-    # network = ActorCritic(key=_rng)
-    # model = eqx.tree_deserialise_leaves('ppo_model.pkl', network)
-    evaluate(network_squeezed, config)
+    eqx.tree_serialise_leaves('{}_{}_{}_model_Partial={}_SEED={}.pkl'.format(config["TRAIN_TYPE"], config["MEMORY_TYPE"], config["ENV_NAME"], config["PARTIAL"], config["SEED"]), network_squeezed)
+    rng, _rng = jax.random.split(rng)
+    network = ActorCritic(key=_rng)
+    model = eqx.tree_deserialise_leaves('{}_{}_{}_model_Partial={}_SEED={}.pkl'.format(config["TRAIN_TYPE"], config["MEMORY_TYPE"], config["ENV_NAME"], config["PARTIAL"], config["SEED"]), network)
+    evaluate(model, config)
