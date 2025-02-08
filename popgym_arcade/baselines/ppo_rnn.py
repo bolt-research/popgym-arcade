@@ -381,4 +381,13 @@ def ppo_rnn_run(config):
         lambda x: x.squeeze(0) if (hasattr(x, "ndim") and x.ndim > 1 and x.shape[0] == 1) else x,
         network,
     )
-    evaluate(network_squeezed, config)
+    eqx.tree_serialise_leaves(
+        '{}_{}_{}_model_Partial={}_SEED={}.pkl'.format(config["TRAIN_TYPE"], config["MEMORY_TYPE"], config["ENV_NAME"],
+                                                       config["PARTIAL"], config["SEED"]), network_squeezed)
+    rng, _rng = jax.random.split(rng)
+    network = ActorCriticRNN(_rng, config["MEMORY_TYPE"])
+    model = eqx.tree_deserialise_leaves(
+        '{}_{}_{}_model_Partial={}_SEED={}.pkl'.format(config["TRAIN_TYPE"], config["MEMORY_TYPE"], config["ENV_NAME"],
+                                                       config["PARTIAL"], config["SEED"]), network)
+    # visualize_grad(model, config)
+    evaluate(model, config)
