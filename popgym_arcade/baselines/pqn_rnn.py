@@ -18,6 +18,7 @@ from popgym_arcade.baselines.model.builder import QNetworkRNN
 import wandb
 import time
 import copy
+from matplotlib.animation import FuncAnimation
 
 
 def debug_shape(x):
@@ -675,7 +676,74 @@ def visualize_grad(model, config):
         "eval/obs_grad_heatmap": wandb.Image("obs_grad_heatmap.png"),
     })
 
-from matplotlib.animation import FuncAnimation
+def visualize_grad_loop_bptt(model, config):
+    """Visualize the grad loop, but taking the gradient via
+    backpropagation through time."""
+    seed = jax.random.PRNGKey(10)
+    seed, _rng = jax.random.split(seed)
+    env, env_params = popgym_arcade.make(config["ENV_NAME"], partial_obs=config["PARTIAL"])
+    env = LogWrapper(env)
+    
+    n_envs = 1 
+
+    init_obs, state = env.reset(env_params, _rng)
+    init_done = jnp.zeros(1, dtype=bool)
+    init_action = jnp.zeros(1, dtype=int)
+
+    grad_accumulator = [] 
+    grads = []
+    traj_obs = []
+
+    def step_env_and_compute_grads(env_state, obs_seq, action_seq, key):
+        """Step the environment and compute the gradient magnitude with respect to the final Q value:
+        obs: [T, *F]
+
+        Specifically, we compute [dQ(s_T, a_T)/do_0, dQ(s_T, a_T)/do_1, ...]
+
+        Returns: grad of shape [T, *F]
+        """
+        def q_val(obs_batch, action_batch):
+            hs = model.initialize_carry()
+            # Model is expecting time and batch dims most likely
+            # Unwrap the vmap so we can avoid batches
+            _, q_val = model.__wrapped__(hs, obs_batch, jnp.array(False), action_batch)
+            action = jnp.argmax(q_val[-1])
+            obs, new_state, reward, done, info = jax.lax.stop_gradient(env.step(key, env_state, action, env_params))
+            return jnp.abs(q_val[-1]), new_state, obs, action, done
+        
+        grads_obs, new_state, obs, action, done = jax.grad(q_val, argnums=0, has_aux=True)(obs_seq, action_seq)
+        obs_seq = jnp.concatenate(obs_seq, obs)
+        action_seq = jnp.concatenate(action_seq, action)
+        return grads_obs, new_state, obs_seq, action_seq, done
+
+    while not done:
+        # Grads = [dq/do_0, dq/do_1, dq/do_2, ...]
+        # shape: [T, *F]
+        key, _ = jax.random.split(key)
+        grad_obs, env_state, obs_seq, action_seq, done = jax.jit(step_env_and_compute_grads)(
+            env_state,
+            obs_seq,
+            action_seq,
+            key
+        )
+        # Accumulate gradient from obs 0...t 
+        grads.append(grad_obs)
+        grad_accumulator.append(grad_obs.sum(0))
+
+    # Our grads will have 2 leading indexes:
+    # [
+    #   [dQ(s_0, a_0) / do_0],
+    #   [dQ(s_1, a_1) / do_0, dQ(s_1, a_1) / do_1], 
+    #   ...
+    # ]
+    # Plotting this is hard, because we have T^2 / 2 gradients to plot
+    # If we take the cumulative sum over the do_t dimension, then we just have T gradients to plot
+
+    # TODO: Need to visualize
+    # Maybe we should use make_grid to generate images 
+    # https://gist.github.com/jotterbach/37ef8f096cbcd914edf24f84c7882596
+
+
 def visualize_grad_loop(model, config):
     seed = jax.random.PRNGKey(10)
     seed, _rng = jax.random.split(seed)
