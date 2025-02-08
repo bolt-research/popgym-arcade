@@ -631,22 +631,22 @@ def visualize_grad(model, config):
     env, env_params = popgym_arcade.make(config["ENV_NAME"], partial_obs=config["PARTIAL"])
     env = LogWrapper(env)
 
-    # 使用单个环境
     n_envs = 1
     vmap_reset = lambda n_envs: lambda rng: jax.vmap(env.reset, in_axes=(0, None))(
         jax.random.split(rng, n_envs), env_params
     )
     obs, state = vmap_reset(n_envs)(_rng)  # obs shape: (1, H, W, C)
 
-    # 初始化隐藏状态（匹配单环境）
     init_hs = model.initialize_carry(key=_rng)
-    hs = add_batch_dim(init_hs, n_envs)  # 调整批次维度
+    hs = add_batch_dim(init_hs, n_envs)  
 
-    # 初始化动作和done标记
     done_batch = jnp.zeros(n_envs, dtype=bool)
     action_batch = jnp.zeros(n_envs, dtype=int)
 
-    # 定义梯度计算函数
+    obs_batch = obs[jnp.newaxis, :]
+    done_batch = done_batch[jnp.newaxis, :]
+    action_batch = action_batch[jnp.newaxis, :].astype(jnp.float32)
+
     def compute_grads(hs, obs_batch, done_batch, action_batch):
         def q_val(obs_batch, action_batch):
             _, q_val = model(hs, obs_batch, done_batch, action_batch)
@@ -654,28 +654,22 @@ def visualize_grad(model, config):
 
         grads_obs = jax.grad(q_val, argnums=0)(obs_batch, action_batch)
         grads_act = jax.grad(q_val, argnums=1)(obs_batch, action_batch)
-        return grads_obs, grads_act
+        return jnp.abs(grads_obs), jnp.abs(grads_act)
 
-    # 计算单步梯度
-    grads_obs, grads_act = compute_grads(hs, obs, done_batch, action_batch)
+    grads_obs, grads_act = compute_grads(hs, obs_batch, done_batch, action_batch)
 
-    # 处理梯度数据生成热力图
-    grad_obs = np.array(grads_obs[0])  # 取第一个（唯一）环境的梯度
-    if grad_obs.ndim == 3:  # 假设为图像格式 (H, W, C)
-        # 聚合通道维度（取绝对值均值）
+    grad_obs = np.array(grads_obs[0])[0]  
+    print("grads shape:", grad_obs.shape)
+    if grad_obs.ndim == 3:  
         heatmap_data = np.abs(grad_obs).mean(axis=-1)
-    else:  # 处理一维观察空间
-        heatmap_data = np.abs(grad_obs).reshape(1, -1)  # 转为2D
 
-    # 绘制热力图
-    plt.figure(figsize=(10, 6))
     plt.imshow(heatmap_data, cmap='hot', aspect='auto')
     plt.colorbar()
     plt.title("Observation Gradient Heatmap")
+    plt.axis('off')
     plt.savefig("obs_grad_heatmap.png")
     plt.close()
 
-    # 记录到wandb
     wandb.init(project=f'{config["PROJECT"]}')
     wandb.log({
         "eval/obs_grad_heatmap": wandb.Image("obs_grad_heatmap.png"),
