@@ -280,13 +280,13 @@ def ppo_run(config: Dict[str, Any]):
     outs = jax.block_until_ready(train_vjit(rng_array))
     print(f"Took {time.time() - t0} seconds to complete.")
     runner_state = outs["runner_state"]
-    network, opt_state, tx, env_state, obsv, rng = runner_state
+    network = runner_state[0]
     network_squeezed = jax.tree.map(
         lambda x: x.squeeze(0) if (hasattr(x, "ndim") and x.ndim > 1 and x.shape[0] == 1) else x,
         network,
     )
-    eqx.tree_serialise_leaves('{}_{}_{}_model_Partial={}_SEED={}.pkl'.format(config["TRAIN_TYPE"], config["MEMORY_TYPE"], config["ENV_NAME"], config["PARTIAL"], config["SEED"]), network_squeezed)
+    eqx.tree_serialise_leaves('{}_{}_model_Partial={}_SEED={}.pkl'.format(config["TRAIN_TYPE"], config["ENV_NAME"], config["PARTIAL"], config["SEED"]), network_squeezed)
     rng, _rng = jax.random.split(rng)
     network = ActorCritic(key=_rng)
-    model = eqx.tree_deserialise_leaves('{}_{}_{}_model_Partial={}_SEED={}.pkl'.format(config["TRAIN_TYPE"], config["MEMORY_TYPE"], config["ENV_NAME"], config["PARTIAL"], config["SEED"]), network)
+    model = eqx.tree_deserialise_leaves('{}_{}_model_Partial={}_SEED={}.pkl'.format(config["TRAIN_TYPE"], config["ENV_NAME"], config["PARTIAL"], config["SEED"]), network)
     evaluate(model, config)
