@@ -624,49 +624,68 @@ def evaluate(model, config):
     # imageio.mimsave('{}_{}_{}_Partial={}_SEED={}.gif'.format(config["TRAIN_TYPE"], config["MEMORY_TYPE"], config["ENV_NAME"], config["PARTIAL"], config["SEED"]), frames)
     wandb.log({"{}_{}_{}_model_Partial={}_SEED={}".format(config["TRAIN_TYPE"], config["MEMORY_TYPE"], config["ENV_NAME"], config["PARTIAL"], config["SEED"]): wandb.Video(frames, fps=4)})
 
-
 import matplotlib.pyplot as plt
 def visualize_grad(model, config):
     seed = jax.random.PRNGKey(10)
     seed, _rng = jax.random.split(seed)
     env, env_params = popgym_arcade.make(config["ENV_NAME"], partial_obs=config["PARTIAL"])
     env = LogWrapper(env)
-
-    n_envs = 1
+    
+    n_envs = 1  
     vmap_reset = lambda n_envs: lambda rng: jax.vmap(env.reset, in_axes=(0, None))(
         jax.random.split(rng, n_envs), env_params
     )
-    obs, state = vmap_reset(n_envs)(_rng)  # obs shape: (1, H, W, C)
+    vmap_step = lambda n_envs: lambda rng, env_state, action: jax.vmap(
+        env.step, in_axes=(0, 0, 0, None)
+    )(jax.random.split(rng, n_envs), env_state, action, env_params)
 
+    obs, state = vmap_reset(n_envs)(_rng)
+    init_done = jnp.zeros(n_envs, dtype=bool)
+    init_action = jnp.zeros(n_envs, dtype=int)
     init_hs = model.initialize_carry(key=_rng)
-    hs = add_batch_dim(init_hs, n_envs)  
+    hs = add_batch_dim(init_hs, n_envs)
 
-    done_batch = jnp.zeros(n_envs, dtype=bool)
-    action_batch = jnp.zeros(n_envs, dtype=int)
-
-    obs_batch = obs[jnp.newaxis, :]
-    done_batch = done_batch[jnp.newaxis, :]
-    action_batch = action_batch[jnp.newaxis, :].astype(jnp.float32)
+    grad_accumulator = jnp.zeros_like(obs[0]) 
 
     def compute_grads(hs, obs_batch, done_batch, action_batch):
         def q_val(obs_batch, action_batch):
             _, q_val = model(hs, obs_batch, done_batch, action_batch)
             return jnp.abs(q_val).mean()
-
+        
         grads_obs = jax.grad(q_val, argnums=0)(obs_batch, action_batch)
-        grads_act = jax.grad(q_val, argnums=1)(obs_batch, action_batch)
-        return jnp.abs(grads_obs), jnp.abs(grads_act)
+        return jnp.abs(grads_obs)
 
-    grads_obs, grads_act = compute_grads(hs, obs_batch, done_batch, action_batch)
+    def episode_step(carry, i):
+        hs, obs, done, action, state, grad_accumulator, _rng = carry
+        _rng, rng_step = jax.random.split(_rng, 2)
 
-    grad_obs = np.array(grads_obs[0])[0]  
-    print("grads shape:", grad_obs.shape)
-    if grad_obs.ndim == 3:  
-        heatmap_data = np.abs(grad_obs).mean(axis=-1)
+        obs_batch = obs[jnp.newaxis, :]
+        done_batch = done[jnp.newaxis, :]
+        action_batch = action[jnp.newaxis, :].astype(jnp.float32)
+        
+        grads_obs = compute_grads(hs, obs_batch, done_batch, action_batch)
+        grad_accumulator = grad_accumulator + grads_obs[0][0] 
 
+        hs, q_val = model(hs, obs_batch, done_batch, action_batch)
+        action = jnp.argmax(q_val.squeeze(0), axis=-1)
+        obs, new_state, reward, done, info = vmap_step(n_envs)(rng_step, state, action)
+            
+        new_carry = (hs, obs, done, action, new_state, grad_accumulator, _rng)
+        return new_carry, None  
+
+
+    carry = (hs, obs, init_done, init_action, state, grad_accumulator, _rng)
+    carry, _ = lax.scan(episode_step, carry, jnp.arange(500))
+
+
+    _, obs, _, _, _, grad_accumulator, _ = carry
+
+    heatmap_data = np.array(grad_accumulator).mean(axis=-1) 
+
+    plt.figure(figsize=(10, 6))
     plt.imshow(heatmap_data, cmap='hot', aspect='auto')
     plt.colorbar()
-    plt.title("Observation Gradient Heatmap")
+    plt.title("Episode Gradient Accumulation Heatmap")
     plt.axis('off')
     plt.savefig("obs_grad_heatmap.png")
     plt.close()
