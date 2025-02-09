@@ -18,6 +18,7 @@ from popgym_arcade.baselines.model.builder import QNetworkRNN
 import wandb
 import time
 import copy
+from matplotlib.animation import FuncAnimation
 
 
 def debug_shape(x):
@@ -629,6 +630,8 @@ def visualize_grad(model, config):
     seed, _rng = jax.random.split(seed)
     env, env_params = popgym_arcade.make(config["ENV_NAME"], partial_obs=config["PARTIAL"])
     env = LogWrapper(env)
+    
+    n_envs = 1  
     vmap_reset = lambda n_envs: lambda rng: jax.vmap(env.reset, in_axes=(0, None))(
         jax.random.split(rng, n_envs), env_params
     )
@@ -636,101 +639,223 @@ def visualize_grad(model, config):
         env.step, in_axes=(0, 0, 0, None)
     )(jax.random.split(rng, n_envs), env_state, action, env_params)
 
-    obs, state = vmap_reset(2)(_rng)
-    init_done = jnp.zeros(2, dtype=bool)
-    init_action = jnp.zeros(2, dtype=int)
+    obs, state = vmap_reset(n_envs)(_rng)
+    init_done = jnp.zeros(n_envs, dtype=bool)
+    init_action = jnp.zeros(n_envs, dtype=int)
     init_hs = model.initialize_carry(key=_rng)
-    hs = add_batch_dim(init_hs, 2)
+    hs = add_batch_dim(init_hs, n_envs)
 
-    # 初始化用于存储梯度的容器
-    obs_grads = []
-    act_grads = []
-    frame_shape = obs[0].shape
-    frames = jnp.zeros((500, *frame_shape), dtype=jnp.uint8)
+    grad_accumulator = jnp.zeros_like(obs[0]) 
 
-    carry = (hs, obs, init_done, init_action, state, frames, _rng, obs_grads, act_grads)
-    wandb.init(project=f'{config["PROJECT"]}')
-
-    # 定义梯度计算函数
     def compute_grads(hs, obs_batch, done_batch, action_batch):
         def q_val(obs_batch, action_batch):
             _, q_val = model(hs, obs_batch, done_batch, action_batch)
             return jnp.abs(q_val).mean()
-
-        # 计算对 obs_batch 和 action_batch 的梯度
+        
         grads_obs = jax.grad(q_val, argnums=0)(obs_batch, action_batch)
-        grads_act = jax.grad(q_val, argnums=1)(obs_batch, action_batch)
-        return grads_obs, grads_act
+        return jnp.abs(grads_obs)
 
-    def evaluate_step(carry, i):
-        hs, obs, done, action, state, frames, _rng, obs_grads, act_grads = carry
+    def episode_step(carry, i):
+        hs, obs, done, action, state, grad_accumulator, _rng = carry
         _rng, rng_step = jax.random.split(_rng, 2)
+
         obs_batch = obs[jnp.newaxis, :]
         done_batch = done[jnp.newaxis, :]
-        action_batch = action[jnp.newaxis, :]
+        action_batch = action[jnp.newaxis, :].astype(jnp.float32)
+        
+        grads_obs = compute_grads(hs, obs_batch, done_batch, action_batch)
+        grad_accumulator = grad_accumulator + grads_obs[0][0] 
 
-        # 计算梯度
-        grads_obs, grads_act = compute_grads(hs, obs_batch, done_batch, action_batch)
-
-        # 前向传播
         hs, q_val = model(hs, obs_batch, done_batch, action_batch)
-        q_val = lax.stop_gradient(q_val)
-        q_val = q_val.squeeze(axis=0)
-        action = jnp.argmax(q_val, axis=-1)
-        obs, new_state, reward, done, info = vmap_step(2)(rng_step, state, action)
-        state = new_state
-        frame = jnp.asarray(obs[0])
-        frame = (frame * 255).astype(jnp.uint8)
-        frames = frames.at[i].set(frame)
+        action = jnp.argmax(q_val.squeeze(0), axis=-1)
+        obs, new_state, reward, done, info = vmap_step(n_envs)(rng_step, state, action)
+            
+        new_carry = (hs, obs, done, action, new_state, grad_accumulator, _rng)
+        return new_carry, None  
 
-        # 记录梯度（转换为 numpy 并存储）
-        obs_grads.append(np.array(grads_obs[0].mean()))  # 记录均值或其他统计量
-        act_grads.append(np.array(grads_act[0].mean()))
 
-        carry = (hs, obs, done, action, state, frames, _rng, obs_grads, act_grads)
-        return carry, reward
+    carry = (hs, obs, init_done, init_action, state, grad_accumulator, _rng)
+    carry, _ = lax.scan(episode_step, carry, jnp.arange(500))
 
-    def body_fun(i, carry):
-        carry, _ = evaluate_step(carry, i)
-        return carry
 
-    carry = lax.fori_loop(0, 500, body_fun, carry)
-    _, _, _, _, _, frames, _rng, obs_grads, act_grads = carry
-    frames = np.array(frames, dtype=np.uint8)
-    frames = frames.transpose((0, 3, 1, 2))
+    _, obs, _, _, _, grad_accumulator, _ = carry
 
-    # 记录视频
+    heatmap_data = np.array(grad_accumulator).mean(axis=-1) 
+
+    plt.figure(figsize=(10, 6))
+    plt.imshow(heatmap_data, cmap='hot', aspect='auto')
+    plt.colorbar()
+    plt.title("Episode Gradient Accumulation Heatmap")
+    plt.axis('off')
+    plt.savefig("obs_grad_heatmap.png")
+    plt.close()
+
+    wandb.init(project=f'{config["PROJECT"]}')
     wandb.log({
-        "eval/video": wandb.Video(frames, fps=4),
-        # 绘制梯度变化曲线
-        "eval/obs_grad": wandb.plot.line_series(
-            xs=range(len(obs_grads)),
-            ys=[obs_grads, act_grads],
-            keys=["Observation Gradients", "Action Gradients"],
-            title="Gradient Trends"
-        )
+        "eval/obs_grad_heatmap": wandb.Image("obs_grad_heatmap.png"),
     })
 
-    # 可选：本地保存梯度分布图
-    plt.figure()
-    plt.plot(obs_grads, label="Observation Gradients")
-    plt.plot(act_grads, label="Action Gradients")
-    plt.xlabel("Step")
-    plt.ylabel("Gradient Mean")
-    plt.legend()
-    plt.savefig("gradient_trends.png")
-    plt.close()
+def visualize_grad_loop_bptt(model, config):
+    """Visualize the grad loop, but taking the gradient via
+    backpropagation through time."""
+    seed = jax.random.PRNGKey(10)
+    seed, _rng = jax.random.split(seed)
+    env, env_params = popgym_arcade.make(config["ENV_NAME"], partial_obs=config["PARTIAL"])
+    env = LogWrapper(env)
+    
+    grad_accumulator = [] 
+    grads = []
 
-    # 可选：记录梯度分布直方图
-    plt.figure()
-    plt.hist(obs_grads, bins=50, alpha=0.5, label="Observation Gradients")
-    plt.hist(act_grads, bins=50, alpha=0.5, label="Action Gradients")
-    plt.xlabel("Gradient Value")
-    plt.ylabel("Frequency")
-    plt.legend()
-    plt.savefig("gradient_histogram.png")
-    plt.close()
+    def step_env_and_compute_grads(env_state, obs_seq, action_seq, key):
+        """Step the environment and compute the gradient magnitude with respect to the final Q value:
+        obs: [T, *F]
 
+        Specifically, we compute [dQ(s_T, a_T)/do_0, dQ(s_T, a_T)/do_1, ...]
+
+        Returns: grad of shape [T, *F]
+        """
+        def q_val(obs_batch, action_batch):
+            hs = model.initialize_carry()
+            # Model is expecting time and batch dims most likely
+            # Unwrap the vmap so we can avoid batches
+            _, q_val = model.__wrapped__(hs, obs_batch, jnp.array(False), action_batch)
+            action = jnp.argmax(q_val[-1])
+            obs, new_state, reward, done, info = jax.lax.stop_gradient(env.step(key, env_state, action, env_params))
+            return jnp.abs(q_val[-1]), new_state, obs, action, done
+        
+        grads_obs, new_state, obs, action, done = jax.grad(q_val, argnums=0, has_aux=True)(obs_seq, action_seq)
+        obs_seq = jnp.concatenate(obs_seq, obs)
+        action_seq = jnp.concatenate(action_seq, action)
+        return grads_obs, new_state, obs_seq, action_seq, done
+
+    while not done:
+        # Grads = [dq/do_0, dq/do_1, dq/do_2, ...]
+        # shape: [T, *F]
+        key, _ = jax.random.split(key)
+        grad_obs, env_state, obs_seq, action_seq, done = jax.jit(step_env_and_compute_grads)(
+            env_state,
+            obs_seq,
+            action_seq,
+            key
+        )
+        # Accumulate gradient from obs 0...t 
+        grads.append(grad_obs)
+        grad_accumulator.append(grad_obs.sum(0))
+
+    # Our grads will have 2 leading indexes:
+    # [
+    #   [dQ(s_0, a_0) / do_0],
+    #   [dQ(s_1, a_1) / do_0, dQ(s_1, a_1) / do_1], 
+    #   ...
+    # ]
+    # Plotting this is hard, because we have T^2 / 2 gradients to plot
+    # If we take the cumulative sum over the do_t dimension, then we just have T gradients to plot
+
+    # TODO: Need to visualize
+    # Maybe we should use make_grid to generate images 
+    # https://gist.github.com/jotterbach/37ef8f096cbcd914edf24f84c7882596
+
+
+def visualize_grad_loop(model, config):
+    seed = jax.random.PRNGKey(10)
+    seed, _rng = jax.random.split(seed)
+    env, env_params = popgym_arcade.make(config["ENV_NAME"], partial_obs=config["PARTIAL"])
+    env = LogWrapper(env)
+    
+    n_envs = 1 
+    vmap_reset = lambda n_envs: lambda rng: jax.vmap(env.reset, in_axes=(0, None))(
+        jax.random.split(rng, n_envs), env_params
+    )
+    vmap_step = lambda n_envs: lambda rng, env_state, action: jax.vmap(
+        env.step, in_axes=(0, 0, 0, None)
+    )(jax.random.split(rng, n_envs), env_state, action, env_params)
+
+    init_obs, state = vmap_reset(n_envs)(_rng)
+    init_done = jnp.zeros(n_envs, dtype=bool)
+    init_action = jnp.zeros(n_envs, dtype=int)
+    init_hs = model.initialize_carry(key=_rng)
+    hs = add_batch_dim(init_hs, n_envs)
+
+    grad_accumulator = [] 
+    traj_obs = []
+
+    def compute_grads(hs, obs_batch, done_batch, action_batch):
+        def q_val(obs_batch, action_batch):
+            _, q_val = model(hs, obs_batch, done_batch, action_batch)
+            return jnp.abs(q_val).mean()
+        
+        grads_obs = jax.grad(q_val, argnums=0)(obs_batch, action_batch)
+        return jnp.abs(grads_obs)
+    obs_batch = init_obs[jnp.newaxis, :]
+    done_batch = init_done[jnp.newaxis, :]
+    action_batch = init_action[jnp.newaxis, :].astype(jnp.float32)
+
+    for _ in range(600):
+        _rng, rng_step = jax.random.split(_rng, 2)
+        grads_obs = compute_grads(hs, obs_batch, done_batch, action_batch)
+        grad_accumulator.append(grads_obs[0][0])
+        hs, q_val = model(hs, obs_batch, done_batch, action_batch)
+        action = jnp.argmax(q_val.squeeze(0), axis=-1)
+        print(action)
+        obs, new_state, reward, done, info = vmap_step(n_envs)(rng_step, state, action)
+        traj_obs.append(obs[0])
+        state = new_state
+        obs_batch = obs[jnp.newaxis, :]
+        done_batch = done[jnp.newaxis, :]
+        action_batch = action[jnp.newaxis, :].astype(jnp.float32)
+        if done[0]:
+            break
+
+    grad_accumulator = [np.array(g) for g in grad_accumulator]
+    traj_obs = [np.array(o) for o in traj_obs]
+
+    accumulated_grads = []
+    for i in range(len(grad_accumulator)):
+        accumulated = np.sum(grad_accumulator[:i+1], axis=0)
+        accumulated_grads.append(accumulated.mean(axis=-1)) 
+
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(18, 6))
+    
+    img1 = ax1.imshow(traj_obs[0], aspect='auto')
+    img2 = ax2.imshow(np.zeros_like(accumulated_grads[0]), cmap='hot', aspect='auto')
+    img3 = ax3.imshow(np.zeros_like(accumulated_grads[0]), cmap='hot', aspect='auto')
+
+    for ax, title in zip([ax1, ax2, ax3], 
+                        ["Observation", "Current Gradient", "Accumulated Gradient"]):
+        ax.set_title(title)
+        ax.axis('off')
+
+    current_grads = [g.mean(axis=-1) for g in grad_accumulator]
+    current_vmin = min([g.min() for g in current_grads])
+    current_vmax = max([g.max() for g in current_grads])
+    
+    accum_vmin = min([g.min() for g in accumulated_grads])
+    accum_vmax = max([g.max() for g in accumulated_grads])
+
+    def update(frame):
+        img1.set_data(traj_obs[frame])
+        
+        current_grad = grad_accumulator[frame].mean(axis=-1)
+        img2.set_data(current_grad)
+        img2.set_clim(vmin=current_vmin, vmax=current_vmax)  
+        
+        img3.set_data(accumulated_grads[frame])
+        img3.set_clim(vmin=accum_vmin, vmax=accum_vmax)
+        
+        fig.suptitle(f"Step: {frame}/{len(grad_accumulator)}", fontsize=16)
+        return [img1, img2, img3]
+
+    ani = FuncAnimation(
+        fig,
+        update,
+        frames=len(grad_accumulator),
+        interval=50, 
+        blit=False
+    )
+
+    ani.save("graident_map_{}_{}_{}_model_Partial={}_SEED={}.gif".format(config["TRAIN_TYPE"], config["MEMORY_TYPE"], config["ENV_NAME"], config["PARTIAL"], config["SEED"]), writer="imagemagick", fps=5)
+    
+    plt.show()
 
 def single_run(config):
     # config = {**config, **config["alg"]}
