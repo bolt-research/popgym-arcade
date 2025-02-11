@@ -37,10 +37,26 @@ To install the environments, run
 pip install git+https://www.github.com/bolt-research/popgym_arcade
 ```
 
+Or from source
+
+```bash
+git clone https://www.github.com/bolt-research/popgym_arcade
+cd popgym_arcade
+pip install -e .
+```
+
 If you plan to use our training scripts, install the baselines as well
 
 ```bash
 pip install popgym_arcade[baselines] @ git+https://www.github.com/bolt-research/popgym_arcade.git
+```
+
+Or from source
+
+```bash
+git clone https://www.github.com/bolt-research/popgym_arcade
+cd popgym_arcade
+pip install -e '.[baselines]'
 ```
 
 ### Creating and Stepping Environments
