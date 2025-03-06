@@ -26,6 +26,12 @@ POPGym Arcade contains 7 pixel-based POMDPs in the style of the [Arcade Learning
 - Fully observable and partially observable configurations
 - Fast and easy GPU vectorization using `jax.vmap` and `jax.jit`
 
+## Throughput
+You can expect millions of frames per second on a consumer-grade GPU
+
+<img src="imgs/fps.png" height="192" /> 
+
+
 ## Getting Started
 
 
@@ -105,7 +111,7 @@ markov_state, env_state, reward, done, info = mdp_step(step_keys, env_state, act
 ```
 
 ## Human Play
-To best understand the environments, you should try and play them yourself. You can easily integrate with `popgym-arcade` with `pygame`.
+To best understand the environments, you should try and play them yourself. You can easily integrate with `popgym_arcade` with `pygame`.
 
 First, you'll need to install `pygame`
 
