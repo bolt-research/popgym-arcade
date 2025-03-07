@@ -132,4 +132,11 @@ python play.py
 - [`popjym`](https://github.com/EdanToledo/popjym) - A more readable version of `popjaxrl` environments that served as a basis for our work
 
 ## Citation
-Forthcoming
+```
+@article{wang2025popgym,
+  title={POPGym Arcade: Parallel Pixelated POMDPs},
+  author={Wang, Zekang and He, Zhe and Toledo, Edan and Morad, Steven},
+  journal={arXiv preprint arXiv:2503.01450},
+  year={2025}
+}
+```
