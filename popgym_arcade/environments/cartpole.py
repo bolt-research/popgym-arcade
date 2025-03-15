@@ -94,52 +94,77 @@ class CartPole(environment.Environment[EnvState, EnvParams]):
     max_steps_in_episode: max steps agent can play in each episode.
     """
 
-    render_canvas = {
+    render_256x = {
+        # parameters for rendering canvas
         "size": 256,
         "clr": jnp.array([0.2, 0.2, 0.2]),
         "sub_size": 192,
         "sub_clr": jnp.array([0.2, 0.2, 0.2]),
-    }
-
-    render_cart = {
+        # parameters for rendering cart
         "cart_w": 64,
         "cart_h": 32,
         "cart_pos": 96,
         "cart_clr": jnp.array([0.96, 0.29, 0.55]),
-    }
-
-    render_pole = {
+        # parameters for rendering pole
         "pole_clr": jnp.array([0.55, 0.27, 0.07]),
         "pole_px": 5,
-    }
-
-    render_harrow = {
+        # parameters for rendering harrow
         "harrow_t_l": (10, 138),
         "harrow_b_r": (54, 182),
-        "harrow_clr":  jnp.array([0.8, 0.8, 0.8]),
-    }
-
-    render_carrow = {
+        "harrow_clr": jnp.array([0.8, 0.8, 0.8]),
+        # parameters for rendering carrow
         "carrow_t_l": (138, 138),
         "carrow_b_r": (182, 182),
         "carrow_clr": jnp.array([0.8, 0.8, 0.8]),
-    }
-
-    render_score = {
+        # parameters for rendering score
         "sc_t_l": (86, 2),
         "sc_b_r": (171, 30),
         "sc_clr": jnp.array([0.0, 1.0, 0.5]),
-
-    }
-
-    render_envName = {
+        # parameters for rendering envName
         "env_t_l": (0, 231),
         "env_b_r": (256, 256),
         "env_clr": jnp.array([0.29, 0.84, 0.97]),
     }
 
+    render_128x = {
+        # parameters for rendering canvas
+        "size": 128,
+        "clr": jnp.array([0.2, 0.2, 0.2]),
+        "sub_size": 96,
+        "sub_clr": jnp.array([0.2, 0.2, 0.2]),
+        # parameters for rendering cart
+        "cart_w": 32,
+        "cart_h": 16,
+        "cart_pos": 48,
+        "cart_clr": jnp.array([0.96, 0.29, 0.55]),
+        # parameters for rendering pole
+        "pole_clr": jnp.array([0.55, 0.27, 0.07]),
+        "pole_px": 3,
+        # parameters for rendering harrow
+        "harrow_t_l": (5, 69),
+        "harrow_b_r": (27, 91),
+        "harrow_clr": jnp.array([0.8, 0.8, 0.8]),
+        # parameters for rendering carrow
+        "carrow_t_l": (69, 69),
+        "carrow_b_r": (91, 91),
+        "carrow_clr": jnp.array([0.8, 0.8, 0.8]),
+        # parameters for rendering score
+        "sc_t_l": (43, 1),
+        "sc_b_r": (85, 15),
+        "sc_clr": jnp.array([0.0, 1.0, 0.5]),
+        # parameters for rendering envName
+        "env_t_l": (0, 115),
+        "env_b_r": (128, 128),
+        "env_clr": jnp.array([0.29, 0.84, 0.97]),
+    }
+    render_mode = {
+        256: render_256x,
+        128: render_128x,
+    }
+
     def __init__(
             self,
+            obs_size: int = 256,
             n_sigma: float = 0.0,
             max_steps_in_episode: int = 200,
             partial_obs: bool = False,
@@ -152,6 +177,7 @@ class CartPole(environment.Environment[EnvState, EnvParams]):
             max_steps_in_episode: Maximum number of steps per episode.
             partial_obs: Whether to use partial observability.
         """
+        self.obs_size = obs_size
         self.n_sigma = n_sigma
         self.max_steps_in_episode = max_steps_in_episode
         self.partial_obs = partial_obs
@@ -310,6 +336,9 @@ class CartPole(environment.Environment[EnvState, EnvParams]):
             A `chex.Array` of shape `(256, 256, 3)` representing the observation.
         """
 
+        # Select render mode
+        render_config = self.render_mode[self.obs_size]
+
         def map_value_to_canvas(value, car_width):
             """
             Map a value from the range (-2.4, 2.4) to (0, sub_size - car_width).
@@ -322,23 +351,23 @@ class CartPole(environment.Environment[EnvState, EnvParams]):
                 The mapped value.
             """
             map_factor = (
-                    (self.render_canvas["sub_size"] - car_width)
+                    (render_config["sub_size"] - car_width)
                     / (params.x_threshold * 2)
             )
             map_bias = (
-                    (self.render_canvas["sub_size"] - car_width)
+                    (render_config["sub_size"] - car_width)
                     - map_factor * 2.4
             )
             return value * map_factor + map_bias
 
         # Initialize canvas and sub-canvas
         canvas = jnp.zeros(
-            (self.render_canvas["size"], self.render_canvas["size"], 3)
-        ) + self.render_canvas["clr"]
+            (render_config["size"], render_config["size"], 3)
+        ) + render_config["clr"]
 
         sub_canvas = jnp.zeros(
-            (self.render_canvas["sub_size"], self.render_canvas["sub_size"], 3)
-        ) + self.render_canvas["sub_clr"]
+            (render_config["sub_size"], render_config["sub_size"], 3)
+        ) + render_config["sub_clr"]
 
         # Add noise to the state
         noise = jax.random.normal(key, shape=(4,)) * self.n_sigma
@@ -356,16 +385,16 @@ class CartPole(environment.Environment[EnvState, EnvParams]):
         )
 
         # Map noisy state to canvas coordinates
-        x = map_value_to_canvas(noisy_state[0], self.render_cart["cart_w"]).astype(jax.numpy.int32)
+        x = map_value_to_canvas(noisy_state[0], render_config["cart_w"]).astype(jax.numpy.int32)
         x_dot = noisy_state[1]
         theta = noisy_state[2]
         theta_dot = noisy_state[3]
 
         # Define cart and pole positions
-        cart_t_l = (x, self.render_cart["cart_pos"])
+        cart_t_l = (x, render_config["cart_pos"])
         cart_b_r = (
-            x + self.render_cart["cart_w"],
-            self.render_cart["cart_pos"] + self.render_cart["cart_h"],
+            x + render_config["cart_w"],
+            render_config["cart_pos"] + render_config["cart_h"],
         )
         pole_start = (
             (cart_t_l[0] + cart_b_r[0]) // 2,
@@ -373,22 +402,22 @@ class CartPole(environment.Environment[EnvState, EnvParams]):
         )
         pole_end = (
             pole_start[0],
-            pole_start[1] - self.render_cart["cart_w"],
+            pole_start[1] - render_config["cart_w"],
         )
 
         def render_partial(sub_canvas):
             """Render the partially observable state."""
             sub_canvas = draw_horizontal_arrow(
-                self.render_harrow["harrow_t_l"],
-                self.render_harrow["harrow_b_r"],
-                self.render_harrow["harrow_clr"],
+                render_config["harrow_t_l"],
+                render_config["harrow_b_r"],
+                render_config["harrow_clr"],
                 x_dot,
                 sub_canvas,
             )
             sub_canvas = draw_crooked_arrow(
-                self.render_carrow["carrow_t_l"],
-                self.render_carrow["carrow_b_r"],
-                self.render_carrow["carrow_clr"],
+                render_config["carrow_t_l"],
+                render_config["carrow_b_r"],
+                render_config["carrow_clr"],
                 theta_dot,
                 sub_canvas,
             )
@@ -397,27 +426,27 @@ class CartPole(environment.Environment[EnvState, EnvParams]):
         def render_full(sub_canvas):
             """Render the fully observable state."""
             sub_canvas = draw_rectangle(
-                cart_t_l, cart_b_r, self.render_cart["cart_clr"], sub_canvas
+                cart_t_l, cart_b_r, render_config["cart_clr"], sub_canvas
             )
             sub_canvas = draw_pole(
                 pole_start,
                 pole_end,
-                self.render_pole["pole_clr"],
+                render_config["pole_clr"],
                 theta,
-                self.render_pole["pole_px"],
+                render_config["pole_px"],
                 sub_canvas,
             )
             sub_canvas = draw_horizontal_arrow(
-                self.render_harrow["harrow_t_l"],
-                self.render_harrow["harrow_b_r"],
-                self.render_harrow["harrow_clr"],
+                render_config["harrow_t_l"],
+                render_config["harrow_b_r"],
+                render_config["harrow_clr"],
                 x_dot,
                 sub_canvas,
             )
             sub_canvas = draw_crooked_arrow(
-                self.render_carrow["carrow_t_l"],
-                self.render_carrow["carrow_b_r"],
-                self.render_carrow["carrow_clr"],
+                render_config["carrow_t_l"],
+                render_config["carrow_b_r"],
+                render_config["carrow_clr"],
                 theta_dot,
                 sub_canvas,
             )
@@ -425,9 +454,9 @@ class CartPole(environment.Environment[EnvState, EnvParams]):
 
         # Draw score and environment name
         canvas = draw_number(
-            self.render_score["sc_t_l"],
-            self.render_score["sc_b_r"],
-            jnp.array([1, 0, 0]),
+            render_config["sc_t_l"],
+            render_config["sc_b_r"],
+            render_config["sc_clr"],
             canvas,
             state.score,
         )
@@ -441,9 +470,9 @@ class CartPole(environment.Environment[EnvState, EnvParams]):
             ),
         )
         canvas = draw_str(
-            self.render_envName["env_t_l"],
-            self.render_envName["env_b_r"],
-            self.render_envName["env_clr"],
+            render_config["env_t_l"],
+            render_config["env_b_r"],
+            render_config["env_clr"],
             canvas,
             self.name,
             horizontal=True,
@@ -487,7 +516,7 @@ class CartPole(environment.Environment[EnvState, EnvParams]):
 
     def observation_space(self, params: EnvParams) -> spaces.Box:
         """Observation space of the environment."""
-        return spaces.Box(jnp.array(0, ), jnp.array(1, ), (256, 256, 3), dtype=jnp.float32)
+        return spaces.Box(jnp.array(0, ), jnp.array(1, ), (self.obs_size, self.obs_size, 3), dtype=jnp.float32)
 
     def state_space(self, params: EnvParams) -> spaces.Dict:
         """State space of the environment."""
