@@ -195,9 +195,9 @@ def get_args():
                                 default='online',
                                 help='WanDB mode')
     ppo_rnn_parser.add_argument('--OBS_SIZE',
-                        type=int,
-                        default=256,
-                        help='Observation size')
+                                type=int,
+                                default=256,
+                                help='Observation size')
 
     # pqn parser
     pqn_parser = subparsers.add_parser('PQN', help='Training with PQN')
