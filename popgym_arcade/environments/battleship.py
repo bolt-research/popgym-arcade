@@ -383,7 +383,6 @@ class BattleShip(environment.Environment):
         # Define board and square sizes
         render_config = self.render_mode[self.obs_size]
         board_size = self.board_size
-        print(render_config)
         square_size = (
                 render_config["sub_size"][board_size]
                 - (board_size + 1) * render_config["grid_px"]

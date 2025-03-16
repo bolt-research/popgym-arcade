@@ -4,7 +4,7 @@ import pygame
 import numpy as np
 
 # Change these to play other games
-ENV_NAME = "BattleShipEasy"
+ENV_NAME = "NavigatorEasy"
 IS_POMDP = False
 OBS_SIZE = 128
 

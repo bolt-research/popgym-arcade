@@ -586,6 +586,7 @@ def draw_matchstick_man(
     Returns:
         Updated canvas with matchstick man drawn
     """
+
     top_x, top_y = top_left
     bottom_x, bottom_y = bottom_right
 
@@ -1968,7 +1969,7 @@ def draw_words_h(
     else:
         letter_width = 10
         margin = 1
-        space = 2
+        space = 1
 
     top_x, top_y = top_left
     bottom_x, bottom_y = bottom_right
