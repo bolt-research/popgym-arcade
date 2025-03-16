@@ -123,50 +123,93 @@ class AutoEncode(environment.Environment):
         "electric_blue": jnp.array([0.0, 0.45, 0.74]),
         "neon_pink": jnp.array([1.0, 0.41, 0.73]),
     }
-    value_cards_pos = {
-        "top_left": (0, 0),
-        "bottom_right": (20, 40),
+    size={
+        256: {
+            "canvas_size" : 256,
+            "small_canvas_size" : 192,
+            "value_cards_pos": {
+                "top_left": (0, 0),
+                "bottom_right": (20, 40),
+            },
+            "value_suit_pos": {
+                "top_left": (0, 0),
+                "bottom_right": (20, 40),
+            },
+            "left_triangle_pos": {
+                "top_left": (92, 224),
+                "bottom_right": (112, 256),
+            },
+            "current_suit_pos": {
+                "top_left": (234, 0),
+                "bottom_right": (254, 40),
+            },
+            "right_triangle_pos": {
+                "top_left": (152, 224),
+                "bottom_right": (172, 256),
+            },
+            "name_pos": {
+                "top_left": (0, 256 - 25),
+                "bottom_right": (256, 256),
+            },
+            "score": {
+                "top_left": (86, 2),
+                "bottom_right": (171, 30),
+            }
+        },
+        128: {
+            "canvas_size" : 128,
+            "small_canvas_size" : 96,
+            "value_cards_pos": {
+                "top_left": (0, 0),
+                "bottom_right": (10, 20),
+            },
+            "value_suit_pos": {
+                "top_left": (0, 0),
+                "bottom_right": (10, 20),
+            },
+            "left_triangle_pos": {
+                "top_left": (46, 112),
+                "bottom_right": (56, 128),
+            },
+            "current_suit_pos": {
+                "top_left": (117, 0),
+                "bottom_right": (127, 20),
+            },
+            "right_triangle_pos": {
+                "top_left": (76, 112),
+                "bottom_right": (86, 128),
+            },
+            "name_pos": {
+                "top_left": (0, 128 - 12),
+                "bottom_right": (128, 128),
+            },
+            "score": {
+                "top_left": (43, 1),
+                "bottom_right": (85, 15),
+            }
+        }
+
     }
-    value_suit_pos = {
-        "top_left": (0, 0),
-        "bottom_right": (20, 40),
-    }
-    left_triangle_pos = {
-        "top_left": (92, 224),
-        "bottom_right": (112, 256),
-    }
-    current_suit_pos = {
-        "top_left": (234, 0),
-        "bottom_right": (254, 40),
-    }
-    right_triangle_pos = {
-        "top_left": (152, 224),
-        "bottom_right": (172, 256),
-    }
-    name_pos = {
-        "top_left": (0, 256 - 25),
-        "bottom_right": (256, 256),
-    }
-    score = {
-        "top_left": (86, 2),
-        "bottom_right": (171, 30),
-    }
+
+
+   
 
     def __init__(
             self,
             num_decks=1,
-            partial_obs=False
+            partial_obs=False,
+            obs_size=128
     ):
         super().__init__()
         self.partial_obs = partial_obs
         self.num_suits = 4
         self.decksize = 26
         self.num_decks = num_decks
-        self.canva_size = 256
-        self.canva_color = self.color["light_blue"]
-        self.large_canva = jnp.ones((self.canva_size, self.canva_size, 3)) * self.canva_color
-        self.small_canva_size = 192
-        self.small_canva = jnp.ones((self.small_canva_size, self.small_canva_size, 3)) * self.canva_color
+        self.canvas_size = self.size[obs_size]["canvas_size"]
+        self.canvas_color = self.color["light_blue"]
+        self.large_canvas = jnp.ones((self.canvas_size, self.canvas_size, 3)) * self.canvas_color
+        self.small_canvas_size = self.size[obs_size]["small_canvas_size"]
+        self.small_canvas = jnp.ones((self.small_canvas_size, self.small_canvas_size, 3)) * self.canvas_color
 
 
         self.max_steps_in_episode = 140 + self.decksize * self.num_decks
@@ -248,23 +291,33 @@ class AutoEncode(environment.Environment):
         return obs, state
 
     def setup_render_templates(self):
-        base_large = self.large_canva.copy()
-        base_small = self.small_canva.copy()
+        if self.canvas_size == 256:
+            value_suit_adjust = 6
+            hist_adjust = 20
+            hist_endings_adjust = jnp.array([12, 20])
+        elif self.canvas_size == 128:
+            value_suit_adjust = 3
+            hist_adjust = 10
+            hist_endings_adjust = jnp.array([8, 14])
+        else:
+            pass
+        base_large = self.large_canvas.copy()
+        base_small = self.small_canvas.copy()
 
-        value_suit_top_left = self.value_suit_pos["top_left"]
-        value_suit_bottom_right = self.value_suit_pos["bottom_right"]
-        
+        value_suit_top_left = self.size[self.canvas_size]["value_suit_pos"]["top_left"]
+        value_suit_bottom_right = self.size[self.canvas_size]["value_suit_pos"]["bottom_right"]
+
         self.value_card_templates = jnp.stack([
             draw_heart(value_suit_top_left, value_suit_bottom_right, self.color["red"], base_large),
-            draw_spade(value_suit_top_left, (value_suit_bottom_right[0], value_suit_bottom_right[1] - 6), self.color["black"], base_large),
-            draw_club(value_suit_top_left, (value_suit_bottom_right[0], value_suit_bottom_right[1] - 6), self.color["black"], base_large),
+            draw_spade(value_suit_top_left, (value_suit_bottom_right[0], value_suit_bottom_right[1] - value_suit_adjust), self.color["black"], base_large),
+            draw_club(value_suit_top_left, (value_suit_bottom_right[0], value_suit_bottom_right[1] - value_suit_adjust), self.color["black"], base_large),
             draw_diamond(value_suit_top_left, value_suit_bottom_right, self.color["red"], base_large)
         ])
 
-        hist_positions = jnp.array([((i%9)*20, (i//9)*20) for i in range(self.decksize*self.num_decks)])
+        hist_positions = jnp.array([((i%9)*hist_adjust, (i//9)*hist_adjust) for i in range(self.decksize*self.num_decks)])
         
-        hist_endings_red = hist_positions + jnp.array([12, 20])
-        hist_endings_black = hist_positions + jnp.array([12, 14])
+        hist_endings_red = hist_positions + hist_endings_adjust
+        hist_endings_black = hist_positions + hist_endings_adjust
         
         vmap_draw = lambda fn: jax.vmap(fn, in_axes=(0, 0, None, None))
         self.history_card_templates = jnp.stack([
@@ -276,8 +329,8 @@ class AutoEncode(environment.Environment):
 
     @functools.partial(jax.jit, static_argnums=(0,))
     def render(self, state: EnvState) -> chex.Array:
-        large_canva = self.large_canva.copy()
-        small_canva = self.small_canva.copy()
+        large_canvas = self.large_canvas.copy()
+        small_canvas = self.small_canvas.copy()
 
         valid_current_card = state.timestep < self.decksize * self.num_decks
         current_suit = jax.lax.select(
@@ -285,10 +338,10 @@ class AutoEncode(environment.Environment):
             state.cards[state.timestep].astype(int),
             0
         )
-        large_canva = jnp.where(
+        large_canvas = jnp.where(
             valid_current_card,
             self.value_card_templates[current_suit],
-            large_canva
+            large_canvas
         )
 
         def render_history(canvas):
@@ -303,26 +356,26 @@ class AutoEncode(environment.Environment):
                 axis=1
             ).squeeze(1)
 
-            bg_color = self.small_canva[0, 0]
+            bg_color = self.small_canvas[0, 0]
             valid_symbol = valid_mask[:, None, None] & jnp.any(selected != bg_color, axis=-1)
             
             card_priority = jnp.arange(num_cards)[:, None, None] * valid_symbol
             last_valid_idx = jnp.argmax(card_priority, axis=0)
             any_valid = jnp.any(valid_symbol, axis=0)
             
-            h, w = jnp.indices((self.small_canva_size, self.small_canva_size))
+            h, w = jnp.indices((self.small_canvas_size, self.small_canvas_size))
             final_colors = selected[last_valid_idx, h, w]
             
             return jnp.where(any_valid[..., None], final_colors, canvas)
         
-        small_canva = lax.cond(
+        small_canvas = lax.cond(
             self.partial_obs,
-            lambda: small_canva,
-            lambda: render_history(small_canva)
+            lambda: small_canvas,
+            lambda: render_history(small_canvas)
         )
 
-        a_pos = (self.current_suit_pos["top_left"], 
-                self.current_suit_pos["bottom_right"])
+        a_pos = (self.size[self.canvas_size]["current_suit_pos"]["top_left"], 
+                self.size[self.canvas_size]["current_suit_pos"]["bottom_right"])
         action_color = jnp.array([
             self.color["red"], 
             self.color["black"], 
@@ -330,7 +383,7 @@ class AutoEncode(environment.Environment):
             self.color["red"]
         ])[state.default_action]
         
-        large_canva = jax.lax.switch(
+        large_canvas = jax.lax.switch(
             state.default_action,
             [
                 lambda p0, p1, c, cnvs: draw_heart(p0, p1, c, cnvs),
@@ -338,15 +391,17 @@ class AutoEncode(environment.Environment):
                 lambda p0, p1, c, cnvs: draw_club(p0, p1, c, cnvs),
                 lambda p0, p1, c, cnvs: draw_diamond(p0, p1, c, cnvs)
             ],
-            a_pos[0], a_pos[1], action_color, large_canva
+            a_pos[0], a_pos[1], action_color, large_canvas
         )
 
-        large_canva = draw_number(self.score["top_left"], self.score["bottom_right"],
-                                self.color["bright_red"], large_canva, state.score)
-        large_canva = draw_str(self.name_pos["top_left"], self.name_pos["bottom_right"],
-                            self.color["neon_pink"], large_canva, self.name)
+        large_canvas = draw_number(self.size[self.canvas_size]["score"]["top_left"],
+                                self.size[self.canvas_size]["score"]["bottom_right"],
+                                self.color["bright_red"], large_canvas, state.score)
+        large_canvas = draw_str(self.size[self.canvas_size]["name_pos"]["top_left"],
+                                 self.size[self.canvas_size]["name_pos"]["bottom_right"],
+                            self.color["neon_pink"], large_canvas, self.name)
         
-        return draw_sub_canvas(small_canva, large_canva)
+        return draw_sub_canvas(small_canvas, large_canvas)
 
     def get_obs(self, state: EnvState) -> chex.Array:
         """Returns observation from the state."""
@@ -363,15 +418,15 @@ class AutoEncode(environment.Environment):
 
 
 class AutoEncodeEasy(AutoEncode):
-    def __init__(self, partial_obs=False):
-        super().__init__(num_decks=1, partial_obs=partial_obs)
+    def __init__(self, partial_obs=False, **kwargs):
+        super().__init__(num_decks=1, partial_obs=partial_obs, **kwargs)
 
 
 class AutoEncodeMedium(AutoEncode):
-    def __init__(self, partial_obs=False):
-        super().__init__(num_decks=2, partial_obs=partial_obs)
+    def __init__(self, partial_obs=False, **kwargs):
+        super().__init__(num_decks=2, partial_obs=partial_obs, **kwargs)
 
 
 class AutoEncodeHard(AutoEncode):
-    def __init__(self, partial_obs=False):
-        super().__init__(num_decks=3, partial_obs=partial_obs)
+    def __init__(self, partial_obs=False, **kwargs):
+        super().__init__(num_decks=3, partial_obs=partial_obs, **kwargs)
