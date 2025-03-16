@@ -129,8 +129,8 @@ class MineSweeper(environment.Environment):
     num_mines: number of mines to generate.
     partial_obs: bool switch with POMDP and FOMDP.
     """
-
-    render_canvas = {
+    render_256x = {
+        # parameters for rendering (256, 256, 3) canvas
         "size": 256,
         "clr": jnp.array([0.9, 0.92, 0.95]),
         "sub_size": {
@@ -138,36 +138,41 @@ class MineSweeper(environment.Environment):
             6: 182,
             8: 186,
         },
-        "sub_clr": jnp.array([0.0, 0.0, 0.0])
-    }
-    render_number = {
-        "num_clr": jnp.array([1.0, 1.0, 1.0])
-    }
-    render_action = {
+        "sub_clr": jnp.array([0.0, 0.0, 0.0]),
+        # parameters for rendering numbers
+        "num_clr": jnp.array([1.0, 1.0, 1.0]),
+        # parameters for rendering current action position
         "action_clr": jnp.array([1.0, 0.5, 0.0]),
-    }
-    render_grid = {
+        # parameters for rendering grids
         "grid_px": 2,
         "grid_clr": jnp.array([0.4, 0.4, 0.4]),
-    }
-    render_score = {
+        # parameters for rendering score
         "sc_t_l": (86, 2),
         "sc_b_r": (171, 30),
         "sc_clr": jnp.array([0.6, 0.0, 0.8]),
-    }
-    render_envName = {
+        # parameters for rendering env name
         "env_t_l": (0, 231),
         "env_b_r": (256, 256),
         "env_clr": jnp.array([0.0, 0.2, 0.4]),
     }
 
+    render_128x = {
+
+    }
+    render_mode = {
+        256: render_256x,
+        128: render_128x,
+    }
+
     def __init__(
             self,
+            obs_size: int,
             board_size: int,
             num_mines: int = 2,
             partial_obs: bool = False,
     ):
         super().__init__()
+        self.obs_size = obs_size
         self.board_size = board_size
         self.num_mines = num_mines
         self.partial_obs = partial_obs
