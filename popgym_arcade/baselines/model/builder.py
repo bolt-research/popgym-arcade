@@ -190,26 +190,41 @@ class ActorCriticRNN(eqx.Module):
 
 class QNetwork(eqx.Module):
     """CNN + MLP"""
-    action_dim: int
+    action_dim: int = 5
     cnn: nn.Sequential
     trunk: nn.Sequential
 
-    def __init__(self, action_dim: int, key: PRNGKeyArray):
-        self.action_dim = action_dim
+    def __init__(self, key: PRNGKeyArray, obs_size: int):
         keys = jax.random.split(key, 7)
-        self.cnn = nn.Sequential([
-            nn.Conv2d(in_channels=3, out_channels=64, kernel_size=5, stride=2, key=keys[0]),
-            nn.Lambda(jax.nn.leaky_relu),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=2, key=keys[1]),
-            nn.Lambda(jax.nn.leaky_relu),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=2, key=keys[2]),
-            nn.Lambda(jax.nn.leaky_relu),
-            nn.MaxPool2d(kernel_size=3, stride=1),
-            nn.Conv2d(in_channels=256, out_channels=512, kernel_size=1, stride=1, key=keys[3]),
-            nn.Lambda(jax.nn.leaky_relu),
-        ])
+        if obs_size == 256:
+            self.cnn = nn.Sequential([
+                nn.Conv2d(in_channels=3, out_channels=64, kernel_size=7, stride=2, key=keys[0]),
+                nn.Lambda(jax.nn.leaky_relu),
+                nn.MaxPool2d(kernel_size=2, stride=2),
+                nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=2, key=keys[1]),
+                nn.Lambda(jax.nn.leaky_relu),
+                nn.MaxPool2d(kernel_size=2, stride=2),
+                nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=2, key=keys[2]),
+                nn.Lambda(jax.nn.leaky_relu),
+                nn.MaxPool2d(kernel_size=2, stride=2),
+                nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, stride=2, key=keys[3]),
+                nn.Lambda(jax.nn.leaky_relu),
+            ])
+        else:
+            self.cnn = nn.Sequential([
+                nn.Conv2d(in_channels=3, out_channels=64, kernel_size=5, stride=2, key=keys[0]),
+                nn.Lambda(jax.nn.leaky_relu),
+                nn.MaxPool2d(kernel_size=2, stride=2),
+                nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=2, key=keys[1]),
+                nn.Lambda(jax.nn.leaky_relu),
+                nn.MaxPool2d(kernel_size=2, stride=2),
+                nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=2, key=keys[2]),
+                nn.Lambda(jax.nn.leaky_relu),
+                nn.MaxPool2d(kernel_size=3, stride=1),
+                nn.Conv2d(in_channels=256, out_channels=512, kernel_size=1, stride=1, key=keys[3]),
+                nn.Lambda(jax.nn.leaky_relu),
+                ])
+
         self.trunk = nn.Sequential([
             nn.Linear(in_features=512, out_features=256, key=keys[4]),
             nn.LayerNorm(shape=256),
@@ -230,13 +245,12 @@ class QNetwork(eqx.Module):
 
 class QNetworkRNN(eqx.Module):
     """CNN + MLP"""
-    action_dim: int
+    action_dim: int = 5
     cnn: nn.Sequential
     rnn: eqx.Module
     trunk: nn.Sequential
 
-    def __init__(self, action_dim: int, key: PRNGKeyArray, rnn_type: str = "lru"):
-        self.action_dim = action_dim
+    def __init__(self, key: PRNGKeyArray, rnn_type: str = "lru"):
         keys = jax.random.split(key, 8)
         self.cnn = nn.Sequential([
             nn.Conv2d(in_channels=3, out_channels=64, kernel_size=7, stride=2, key=keys[0]),

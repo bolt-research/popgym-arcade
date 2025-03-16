@@ -149,7 +149,7 @@ def make_train(config):
         lr = lr_scheduler if config.get("LR_LINEAR_DECAY", False) else config["LR"]
         rng, _rng, rng_init = jax.random.split(rng, 3)
 
-        network = QNetworkRNN(5, rng, config["MEMORY_TYPE"])
+        network = QNetworkRNN(rng, config["MEMORY_TYPE"])
 
         hidden_state = network.initialize_carry(key=rng_init)
         hidden_state = add_batch_dim(hidden_state, config["NUM_ENVS"])

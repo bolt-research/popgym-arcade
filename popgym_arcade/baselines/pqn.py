@@ -146,7 +146,7 @@ def make_train(config):
 
         lr = lr_scheduler if config.get("LR_LINEAR_DECAY", False) else config["LR"]
         rng, _rng = jax.random.split(rng)
-        network = QNetwork(5, rng)
+        network = QNetwork(rng, obs_size=config["OBS_SIZE"])
         opt = optax.chain(
             optax.clip_by_global_norm(config["MAX_GRAD_NORM"]),
             optax.radam(learning_rate=lr),
