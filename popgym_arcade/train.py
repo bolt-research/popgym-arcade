@@ -98,6 +98,10 @@ def get_args():
                             type=str,
                             default='online',
                             help='WanDB mode')
+    ppo_parser.add_argument('--OBS_SIZE',
+                            type=int,
+                            default=256,
+                            help='Observation size')
     # ppo with rnn parser
     ppo_rnn_parser = subparsers.add_parser('PPO_RNN', help='training with PPO using RNN models')
 
@@ -190,6 +194,10 @@ def get_args():
                                 type=str,
                                 default='online',
                                 help='WanDB mode')
+    ppo_rnn_parser.add_argument('--OBS_SIZE',
+                        type=int,
+                        default=256,
+                        help='Observation size')
 
     # pqn parser
     pqn_parser = subparsers.add_parser('PQN', help='Training with PQN')
@@ -291,7 +299,7 @@ def get_args():
                             help='WanDB Project name')
     pqn_parser.add_argument('--WANDB_MODE',
                             type=str,
-                            default='online',
+                            default='disabled',
                             help='WanDB mode')
     pqn_parser.add_argument('--SEED',
                             type=int,
@@ -332,6 +340,10 @@ def get_args():
                             type=str,
                             default='PQN',
                             help='Algorithm name')
+    pqn_parser.add_argument('--OBS_SIZE',
+                            type=int,
+                            default=256,
+                            help='Observation size')
     
     
     #####################################################################
@@ -477,6 +489,10 @@ def get_args():
                             type=str,
                             default='PQN_RNN',
                             help='Algorithm name')
+    pqn_rnn_parser.add_argument('--OBS_SIZE',
+                        type=int,
+                        default=256,
+                        help='Observation size')
     
     return parser.parse_args()
 
