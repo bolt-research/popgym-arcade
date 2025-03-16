@@ -284,6 +284,12 @@ def draw_heart(
     Draws a heart shape defined by top_left and bottom_right on the canvas.
     The heart is oriented upward like a standard playing card symbol ♥.
     """
+    if canvas.shape[0] == 256 or canvas.shape[0] == 192:
+        adjust = 6
+    elif canvas.shape[0] == 128 or canvas.shape[0] == 96:
+        adjust = 4
+    else:
+        pass
     top_x, top_y = top_left
     bottom_x, bottom_y = bottom_right
 
@@ -295,9 +301,9 @@ def draw_heart(
     # Calculate center and scale
     center_x = (top_x + bottom_x) // 2
     center_y = (top_y + bottom_y) // 2
-    scale = size // 2 + 6
+    scale = size // 2 + adjust
 
-    # canvas = jnp.zeros_like(canvas)
+    # canvas = jnp.zeros_like(canva)
     y, x = jnp.ogrid[:canvas.shape[0], :canvas.shape[1]]
 
     # Normalize coordinates to [-2, 2] range within the specified rectangle
@@ -482,6 +488,12 @@ def draw_diamond(
     Draws a diamond shape (♦) within the specified boundary.
     The diamond is created using coordinate transformations and masks.
     """
+    if canvas.shape[0] == 256 or canvas.shape[0] == 192:
+        adjust = 1.48
+    elif canvas.shape[0] == 128 or canvas.shape[0] == 96:
+        adjust = 1.2
+    else:
+        pass
     top_x, top_y = top_left
     bottom_x, bottom_y = bottom_right
 
@@ -499,8 +511,8 @@ def draw_diamond(
     scale_y = height // 2
 
     # Normalize coordinates to [-1, 1] range
-    x_norm = (x - center_x) / scale_x * 1.48
-    y_norm = (y - center_y) / scale_y * 1.48
+    x_norm = (x - center_x) / scale_x * adjust
+    y_norm = (y - center_y) / scale_y * adjust
 
     # Create diamond mask using normalized coordinates
     diamond_mask = (
@@ -521,6 +533,7 @@ def draw_diamond(
     colored_canvas = jnp.where(final_mask[:, :, None], color, canvas)
 
     return colored_canvas
+
 
 
 def draw_hexagon(

@@ -134,54 +134,107 @@ class CountRecall(environment.Environment):
         "bright_blue": jnp.array([0.29, 0.75, 0.94]),
         "muted_blue": jnp.array([0.6, 0.7, 0.8]),
     }
-    value_pos = {
-        "cards": {
-            "top_left": (0, 0),
-            "bottom_right": (20, 40),
+    size = {
+        256 :{
+            "canvas_size" : 256,
+            "small_canvas_size" : 192,
+            "value_pos" : {
+                "cards": {
+                    "top_left": (0, 0),
+                    "bottom_right": (20, 40),
+                },
+                "suit": {
+                    "top_left": (0, 0),
+                    "bottom_right": (20, 40),
+                },
+            },
+            "query_pos" : {
+                "cards": {
+                    "top_left": (234, 0),
+                    "bottom_right": (254, 40),
+                },
+                "suit": {
+                    "top_left": (234, 0),
+                    "bottom_right": (254, 40),
+                },
+            },
+            "action_pos" : {
+                "left_triangle": {
+                    "top_left": (256//2 - 65, 228),
+                    "bottom_right": (256//2 - 35, 254),
+                },
+                "action": {
+                    "top_left": (136, 2),
+                    "bottom_right": (246, 30),
+                },
+                "right_triangle": {
+                    "top_left": (256//2 + 30, 228),
+                    "bottom_right": (256//2 + 60, 254),
+                },
+            },
+            "score_pos" : {
+                "top_left": (86, 2),
+                "bottom_right": (171, 30),
+            },
+            "name_pos" : {
+                "top_left": (0, 256-25),
+                "bottom_right": (256, 256),
+            },
         },
-        "suit": {
-            "top_left": (0, 0),
-            "bottom_right": (20, 40),
-        },
-    }
-    query_pos = {
-        "cards": {
-            "top_left": (234, 0),
-            "bottom_right": (254, 40),
-        },
-        "suit": {
-            "top_left": (234, 0),
-            "bottom_right": (254, 40),
-        },
-    }
-    action_pos = {
-        "left_triangle": {
-            "top_left": (256//2 - 65, 228),
-            "bottom_right": (256//2 - 35, 254),
-        },
-        "action": {
-            "top_left": (136, 2),
-            "bottom_right": (246, 30),
-        },
-        "right_triangle": {
-            "top_left": (256//2 + 30, 228),
-            "bottom_right": (256//2 + 60, 254),
-        },
-    }
-    score_pos = {
-        "top_left": (86, 2),
-        "bottom_right": (171, 30),
-    }
-    name_pos = {
-        "top_left": (0, 256-25),
-        "bottom_right": (256, 256),
+        128:{
+            "canvas_size" : 128,
+            "small_canvas_size" : 96,
+            "value_pos" : {
+                "cards": {
+                    "top_left": (0, 0),
+                    "bottom_right": (10, 20),
+                },
+                "suit": {
+                    "top_left": (0, 0),
+                    "bottom_right": (10, 20),
+                },
+            },
+            "query_pos" : {
+                "cards": {
+                    "top_left": (117, 0),
+                    "bottom_right": (127, 20),
+                },
+                "suit": {
+                    "top_left": (117, 0),
+                    "bottom_right": (127, 20),
+                },
+            },
+            "action_pos" : {
+                "left_triangle": {
+                    "top_left": (128//2 - 32, 114),
+                    "bottom_right": (128//2 - 17, 127),
+                },
+                "action": {
+                    "top_left": (68, 1),
+                    "bottom_right": (123, 15),
+                },
+                "right_triangle": {
+                    "top_left": (128//2 + 15, 114),
+                    "bottom_right": (128//2 + 30, 127),
+                },
+            },
+            "score_pos" : {
+                "top_left": (43, 1),
+                "bottom_right": (85, 15),
+            },
+            "name_pos" : {
+                "top_left": (0, 128-12),
+                "bottom_right": (128, 128),
+            },
+        }
     }
     
     def __init__(
         self, 
         num_decks=1, 
         num_types=2, 
-        partial_obs: bool = False
+        partial_obs: bool = False,
+        obs_size=128
     ):
         self.partial_obs = partial_obs
         self.decksize = 26
@@ -193,11 +246,11 @@ class CountRecall(environment.Environment):
 
         self.max_steps_in_episode = 100 + self.num_cards
 
-        self.canva_size = 256
-        self.small_canva_size = 192
-        self.canva_color = self.color["light_gray"]
-        self.large_canva = jnp.zeros((self.canva_size, self.canva_size, 3)) + self.canva_color
-        self.small_canva = jnp.zeros((self.small_canva_size, self.small_canva_size, 3)) + self.color["muted_blue"]
+        self.canvas_size = self.size[obs_size]["canvas_size"]
+        self.small_canvas_size = self.size[obs_size]["small_canvas_size"]
+        self.canvas_color = self.color["light_gray"]
+        self.large_canvas = jnp.zeros((self.canvas_size, self.canvas_size, 3)) + self.canvas_color
+        self.small_canvas = jnp.zeros((self.small_canvas_size, self.small_canvas_size, 3)) + self.color["muted_blue"]
 
         self.setup_render_templates()
 
@@ -283,23 +336,31 @@ class CountRecall(environment.Environment):
 
     def setup_render_templates(self):
         """Precompute all possible card templates once during init"""
+        if self.canvas_size == 256:
+            hist_positions_adjust = 20
+            hist_endings_adjust = jnp.array([12, 20])
+        elif self.canvas_size == 128:
+            hist_positions_adjust = 10
+            hist_endings_adjust = jnp.array([8, 12])
+        else:
+            pass
         # Value/Query card templates
         self.value_templates = self._create_card_templates(
-            self.value_pos["suit"]["top_left"],
-            self.value_pos["suit"]["bottom_right"]
+            self.size[self.canvas_size]["value_pos"]["suit"]["top_left"],
+            self.size[self.canvas_size]["value_pos"]["suit"]["bottom_right"]
         )
         self.query_templates = self._create_card_templates(
-            self.query_pos["suit"]["top_left"],
-            self.query_pos["suit"]["bottom_right"]
+            self.size[self.canvas_size]["query_pos"]["suit"]["top_left"],
+            self.size[self.canvas_size]["query_pos"]["suit"]["bottom_right"]
         )
 
         # History templates with proper vmap dimensions
         num_history = self.decksize * self.num_decks
-        hist_positions = jnp.array([((i%9)*20, (i//9)*20) for i in range(num_history)])
-        hist_endings = hist_positions + jnp.array([12, 20])
+        hist_positions = jnp.array([((i%9)*hist_positions_adjust, (i//9)*hist_positions_adjust) for i in range(num_history)])
+        hist_endings = hist_positions + hist_endings_adjust
         
         # Create base canvas for each history position
-        base_canvases = jnp.tile(self.small_canva[None], (num_history, 1, 1, 1))
+        base_canvases = jnp.tile(self.small_canvas[None], (num_history, 1, 1, 1))
 
         # Create vmap with proper axis mapping
         vmap_draw = lambda fn: jax.vmap(fn, in_axes=(0, 0, None, 0))
@@ -314,7 +375,7 @@ class CountRecall(environment.Environment):
     def _create_card_templates(self, top_left, bottom_red):
         """Create templates for a card position (value/query)"""
         bottom_black = (bottom_red[0], bottom_red[1] - 6)
-        base = self.large_canva.copy()
+        base = self.large_canvas.copy()
         return jnp.stack([
             draw_heart(top_left, bottom_red, self.color["red"], base),
             draw_spade(top_left, bottom_black, self.color["black"], base),
@@ -324,27 +385,27 @@ class CountRecall(environment.Environment):
 
     @functools.partial(jax.jit, static_argnums=(0,))
     def render(self, state) -> chex.Array:
-        large_canva = self.large_canva.copy()
-        small_canva = self.small_canva.copy()
+        large_canvas = self.large_canvas.copy()
+        small_canvas = self.small_canvas.copy()
 
         valid_value = state.timestep < len(state.value_cards)
         value_idx = state.value_cards[state.timestep]
         value_template = self.value_templates[value_idx]
-        value_mask = (value_template != self.large_canva).any(axis=-1, keepdims=True)
-        large_canva = jnp.where(
+        value_mask = (value_template != self.large_canvas).any(axis=-1, keepdims=True)
+        large_canvas = jnp.where(
             valid_value & value_mask,
             value_template,
-            large_canva
+            large_canvas
         )
 
         valid_query = state.timestep < len(state.query_cards)
         query_idx = state.query_cards[state.timestep]
         query_template = self.query_templates[query_idx]
-        query_mask = (query_template != self.large_canva).any(axis=-1, keepdims=True)
-        large_canva = jnp.where(
+        query_mask = (query_template != self.large_canvas).any(axis=-1, keepdims=True)
+        large_canvas = jnp.where(
             valid_query & query_mask,
             query_template,
-            large_canva
+            large_canvas
         )
 
         if not self.partial_obs:
@@ -352,45 +413,44 @@ class CountRecall(environment.Environment):
             card_indices = state.history.astype(int)
             
             selected = self.history_templates[card_indices, jnp.arange(len(state.history))]
-            valid_symbols = valid_mask[:, None, None] & jnp.any(selected != self.small_canva[0,0], axis=-1)
+            valid_symbols = valid_mask[:, None, None] & jnp.any(selected != self.small_canvas[0,0], axis=-1)
             
             priority = jnp.arange(len(state.history))[:, None, None] * valid_symbols
             last_idx = jnp.argmax(priority, axis=0)
-            h, w = jnp.indices(small_canva.shape[:2])
-            small_canva = jnp.where(
+            h, w = jnp.indices(small_canvas.shape[:2])
+            small_canvas = jnp.where(
                 jnp.any(valid_symbols, axis=0)[..., None],
                 selected[last_idx, h, w],
-                small_canva
+                small_canvas
             )
 
-        score_top_left = self.score_pos["top_left"]
-        score_bottom_right = self.score_pos["bottom_right"]
-        action_top_left = self.action_pos["action"]["top_left"]
-        action_bottom_right = self.action_pos["action"]["bottom_right"]
-        large_canva = draw_number(
+        score_top_left = self.size[self.canvas_size]["score_pos"]["top_left"]
+        score_bottom_right = self.size[self.canvas_size]["score_pos"]["bottom_right"]
+        action_top_left = self.size[self.canvas_size]["action_pos"]["action"]["top_left"]
+        action_bottom_right = self.size[self.canvas_size]["action_pos"]["action"]["bottom_right"]
+        large_canvas = draw_number(
             score_top_left, 
             score_bottom_right, 
             self.color["dark_red"], 
-            large_canva, 
+            large_canvas, 
             state.score
             )
-        large_canva = draw_number(
+        large_canvas = draw_number(
             action_top_left, 
             action_bottom_right, 
             self.color["soft_green"], 
-            large_canva, 
+            large_canvas, 
             state.default_action,
             )
-        large_canva = draw_str(
-            self.name_pos["top_left"],
-            self.name_pos["bottom_right"],
+        large_canvas = draw_str(
+            self.size[self.canvas_size]["name_pos"]["top_left"],
+            self.size[self.canvas_size]["name_pos"]["bottom_right"],
             self.color["bright_blue"],
-            large_canva,
+            large_canvas,
             self.name,
             )
-        large_canva = draw_sub_canvas(small_canva, large_canva)
         
-        return large_canva
+        return draw_sub_canvas(small_canvas, large_canvas)
 
     def get_obs(self, state: EnvState) -> chex.Array:
         """Returns observation from the state."""
@@ -407,13 +467,13 @@ class CountRecall(environment.Environment):
 
 
 class CountRecallEasy(CountRecall):
-    def __init__(self, partial_obs: bool = False):
-        super().__init__(num_decks=1, num_types=2, partial_obs=partial_obs)
+    def __init__(self, partial_obs: bool = False, **kwargs):
+        super().__init__(num_decks=1, num_types=2, partial_obs=partial_obs, **kwargs)
 
 class CountRecallMedium(CountRecall):
-    def __init__(self, partial_obs: bool = False):
-        super().__init__(num_decks=2, num_types=2, partial_obs=partial_obs)
+    def __init__(self, partial_obs: bool = False, **kwargs):
+        super().__init__(num_decks=2, num_types=2, partial_obs=partial_obs, **kwargs)
 
 class CountRecallHard(CountRecall):
-    def __init__(self, partial_obs: bool = False):
-        super().__init__(num_decks=3, num_types=4, partial_obs=partial_obs)
+    def __init__(self, partial_obs: bool = False, **kwargs):
+        super().__init__(num_decks=3, num_types=4, partial_obs=partial_obs, **kwargs)
