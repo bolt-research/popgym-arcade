@@ -14,7 +14,8 @@ from popgym_arcade.environments.draw_utils import (draw_str,
                                             draw_number,
                                             draw_matchstick_man,
                                             draw_tnt_block,
-                                            draw_sub_canvas)
+                                            draw_sub_canvas,
+                                            draw_rectangle)
 
 
 def is_valid_tnt_placement(
@@ -482,7 +483,6 @@ class Navigator(environment.Environment):
 
         # Render mode setup
         render_config = self.render_mode[self.obs_size]
-        print(render_config)
         # Board and grid setup
         board_size = self.board_size
         grid_px = render_config["grid_px"]
@@ -559,12 +559,18 @@ class Navigator(environment.Environment):
         # Draw matchstick man on the current action cell
         action_tl = all_top_left[action_x, action_y]
         action_br = all_bottom_right[action_x, action_y]
-        sub_canvas = draw_matchstick_man(
-            action_tl, 
-            action_br, 
+        sub_canvas = draw_rectangle(
+            action_tl,
+            action_br,
             render_config["action_clr"],
             sub_canvas
         )
+        # sub_canvas = draw_matchstick_man(
+        #     action_tl,
+        #     action_br,
+        #     render_config["action_clr"],
+        #     sub_canvas
+        # )
 
         # Draw grid lines
         sub_canvas = draw_grid(
