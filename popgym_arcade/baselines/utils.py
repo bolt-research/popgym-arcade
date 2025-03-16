@@ -58,7 +58,7 @@ def get_saliency_maps(
     """
 
     seed, _rng = jax.random.split(seed)
-    env, env_params = popgym_arcade.make(config["ENV_NAME"], partial_obs=config["PARTIAL"])
+    env, env_params = popgym_arcade.make(config["ENV_NAME"], partial_obs=config["PARTIAL"], obs_size=config["OBS_SIZE"])
     env = LogWrapper(env)
     n_envs = 1
     vmap_reset = lambda n_envs: lambda rng: jax.vmap(env.reset, in_axes=(0, None))(
