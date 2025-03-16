@@ -266,6 +266,7 @@ def draw_sub_canvas(
     canvas_height = canvas.shape[1]
     margin_width = (canvas_width - sub_canvas_width) // 2
     margin_height = (canvas_height - sub_canvas_height) // 2
+    print(margin_width, margin_height)
     merged_canvas = (canvas.at[
                      margin_width:canvas_width - margin_width,
                      margin_height:canvas_height - margin_height,

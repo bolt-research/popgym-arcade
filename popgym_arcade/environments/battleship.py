@@ -164,7 +164,8 @@ class BattleShip(environment.Environment):
     partial_obs: bool switch with POMDP and FOMDP.
     """
 
-    render_canvas = {
+    render_256x = {
+        # parameters for rendering (256, 256, 3) canvas
         "size": 256,
         "clr": jnp.array([1.0, 1.0, 1.0]),
         "sub_size": {
@@ -172,42 +173,71 @@ class BattleShip(environment.Environment):
             10: 192,
             12: 182,
         },
-        "sub_clr": jnp.array([0.75, 0.75, 0.75])
-    }
-    render_grid = {
+        "sub_clr": jnp.array([0.75, 0.75, 0.75]),
+        # parameters for rendering grids
         "grid_px": 2,
         "grid_clr": jnp.array([0.4, 0.4, 0.4]),
-    }
-    render_action = {
+        # parameters for rendering current action position
         "action_clr": jnp.array([0.85, 0.65, 0.13]),
-    }
-    render_x = {
+        # parameters for render hit ship grids
         "x_px": 2,
         "x_clr": jnp.array([1.0, 0.0, 0.0]),
-    }
-    render_o = {
+        # parameters for render hit enpty grids
         "o_px": 2,
         "o_clr": jnp.array([0.0, 0.0, 0.0]),
-    }
-
-    render_score = {
+        # parameters for render score
         "sc_t_l": (86, 2),
         "sc_b_r": (171, 30),
         "sc_clr": jnp.array([1.0, 0.5, 0.0]),
-    }
-
-    render_envName = {
+        # parameters for render env name
         "env_t_l": (0, 231),
         "env_b_r": (256, 256),
         "env_clr": jnp.array([0.29, 0.84, 0.97]),
     }
 
+    render_128x = {
+        # parameters for rendering (128, 128, 3) canvas
+        "size": 128,
+        "clr": jnp.array([1.0, 1.0, 1.0]),
+        "sub_size": {
+            8: 90,
+            10: 92,
+            12: 98,
+        },
+        "sub_clr": jnp.array([0.75, 0.75, 0.75]),
+        # parameters for rendering grids
+        "grid_px": 2,
+        "grid_clr": jnp.array([0.4, 0.4, 0.4]),
+        # parameters for rendering current action position
+        "action_clr": jnp.array([0.85, 0.65, 0.13]),
+        # parameters for render hit ship grids
+        "x_px": 1,
+        "x_clr": jnp.array([1.0, 0.0, 0.0]),
+        # parameters for render hit enpty grids
+        "o_px": 1,
+        "o_clr": jnp.array([0.0, 0.0, 0.0]),
+        # parameters for rendering score
+        "sc_t_l": (43, 1),
+        "sc_b_r": (85, 15),
+        "sc_clr": jnp.array([0.0, 1.0, 0.5]),
+        # parameters for rendering envName
+        "env_t_l": (0, 115),
+        "env_b_r": (128, 128),
+        "env_clr": jnp.array([0.29, 0.84, 0.97]),
+    }
+    render_mode = {
+        256: render_256x,
+        128: render_128x,
+    }
+
     def __init__(
             self,
-            board_size,
+            obs_size: int,
+            board_size: int,
             partial_obs: bool = False,
     ):
         """Initialize the Battleship environment."""
+        self.obs_size = obs_size
         self.partial_obs = partial_obs
         self.board_size = board_size
         self.ship_sizes = [2, 3, 3, 4]
@@ -351,32 +381,34 @@ class BattleShip(environment.Environment):
     def render(self, state) -> chex.Array:
         """Render the current state into an image observation."""
         # Define board and square sizes
+        render_config = self.render_mode[self.obs_size]
         board_size = self.board_size
+        print(render_config)
         square_size = (
-                self.render_canvas["sub_size"][board_size]
-                - (board_size + 1) * self.render_grid["grid_px"]
+                render_config["sub_size"][board_size]
+                - (board_size + 1) * render_config["grid_px"]
         ) // board_size
 
         # Generate grid coordinates using meshgrid
         x_coords, y_coords = jnp.arange(board_size), jnp.arange(board_size)
         xx, yy = jnp.meshgrid(x_coords, y_coords, indexing='ij')
-        top_left_x = self.render_grid["grid_px"] + xx * (square_size + self.render_grid["grid_px"])
-        top_left_y = self.render_grid["grid_px"] + yy * (square_size + self.render_grid["grid_px"])
+        top_left_x = render_config["grid_px"] + xx * (square_size + render_config["grid_px"])
+        top_left_y = render_config["grid_px"] + yy * (square_size + render_config["grid_px"])
         bottom_right_x = top_left_x + square_size
         bottom_right_y = top_left_y + square_size
 
         # Initialize canvases
         canvas = jnp.full(
-            (self.render_canvas["size"], self.render_canvas["size"], 3),
-            self.render_canvas["clr"]
+            (render_config["size"], render_config["size"], 3),
+            render_config["clr"]
         )
         sub_canvas = jnp.full(
             (
-                self.render_canvas["sub_size"][board_size],
-                self.render_canvas["sub_size"][board_size],
+                render_config["sub_size"][board_size],
+                render_config["sub_size"][board_size],
                 3,
             ),
-            self.render_canvas["sub_clr"]
+            render_config["sub_clr"]
         )
 
         # Extract action coordinates
@@ -387,7 +419,7 @@ class BattleShip(environment.Environment):
         br_x, br_y = bottom_right_x[action_x, action_y], bottom_right_y[action_x, action_y]
         sub_canvas = draw_rectangle(
             (tl_x, tl_y), (br_x, br_y),
-            self.render_action["action_clr"], sub_canvas
+            render_config["action_clr"], sub_canvas
         )
 
         # Precompute hit conditions
@@ -401,7 +433,7 @@ class BattleShip(environment.Environment):
                 hit_ship[action_x, action_y],
                 lambda: draw_x(
                     (tl_x, tl_y), (br_x, br_y),
-                    self.render_x["x_px"], self.render_x["x_clr"], _sub_canvas
+                    render_config["x_px"], render_config["x_clr"], _sub_canvas
                 ),
                 lambda: _sub_canvas
             )
@@ -409,7 +441,7 @@ class BattleShip(environment.Environment):
                 hit_empty[action_x, action_y],
                 lambda: draw_o(
                     (tl_x, tl_y), (br_x, br_y),
-                    self.render_o["o_px"], self.render_o["o_clr"], _sub_canvas
+                    render_config["o_px"], render_config["o_clr"], _sub_canvas
                 ),
                 lambda: _sub_canvas
             )
@@ -428,8 +460,8 @@ class BattleShip(environment.Environment):
                 canvas = lax.cond(
                     hit_ship[x, y],
                     lambda: draw_x(cell_tl, cell_br,
-                                   self.render_x["x_px"],
-                                   self.render_x["x_clr"],
+                                   render_config["x_px"],
+                                   render_config["x_clr"],
                                    canvas),
                     lambda: canvas
                 )
@@ -437,8 +469,8 @@ class BattleShip(environment.Environment):
                 return lax.cond(
                     hit_empty[x, y],
                     lambda: draw_o(cell_tl, cell_br,
-                                   self.render_o["o_px"],
-                                   self.render_o["o_clr"],
+                                   render_config["o_px"],
+                                   render_config["o_clr"],
                                    canvas),
                     lambda: canvas
                 )
@@ -450,8 +482,8 @@ class BattleShip(environment.Environment):
 
         # Draw score on canvas
         canvas = draw_number(
-            self.render_score["sc_t_l"], self.render_score["sc_b_r"],
-            self.render_score["sc_clr"], canvas, state.score
+            render_config["sc_t_l"], render_config["sc_b_r"],
+            render_config["sc_clr"], canvas, state.score
         )
 
         # Conditional rendering logic
@@ -464,16 +496,16 @@ class BattleShip(environment.Environment):
         # Draw grid lines
         sub_canvas = draw_grid(
             square_size,
-            self.render_grid["grid_px"],
-            self.render_grid["grid_clr"],
+            render_config["grid_px"],
+            render_config["grid_clr"],
             sub_canvas
         )
 
         # Draw environment name
         canvas = draw_str(
-            self.render_envName["env_t_l"],
-            self.render_envName["env_b_r"],
-            self.render_envName["env_clr"],
+            render_config["env_t_l"],
+            render_config["env_b_r"],
+            render_config["env_clr"],
             canvas,
             self.name,
             horizontal=True

@@ -95,7 +95,7 @@ class CartPole(environment.Environment[EnvState, EnvParams]):
     """
 
     render_256x = {
-        # parameters for rendering canvas
+        # parameters for rendering (256, 256, 3) canvas
         "size": 256,
         "clr": jnp.array([0.2, 0.2, 0.2]),
         "sub_size": 192,
@@ -127,7 +127,7 @@ class CartPole(environment.Environment[EnvState, EnvParams]):
     }
 
     render_128x = {
-        # parameters for rendering canvas
+        # parameters for rendering (128, 128, 3) canvas
         "size": 128,
         "clr": jnp.array([0.2, 0.2, 0.2]),
         "sub_size": 96,
@@ -164,7 +164,7 @@ class CartPole(environment.Environment[EnvState, EnvParams]):
 
     def __init__(
             self,
-            obs_size: int = 256,
+            obs_size: int,
             n_sigma: float = 0.0,
             max_steps_in_episode: int = 200,
             partial_obs: bool = False,

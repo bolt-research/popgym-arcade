@@ -6,6 +6,7 @@ import numpy as np
 # Change these to play other games
 ENV_NAME = "BattleShipEasy"
 IS_POMDP = False
+OBS_SIZE = 128
 
 def to_surf(arr):
     # Convert jax arry to pygame surface
@@ -14,7 +15,7 @@ def to_surf(arr):
 
 # Create env env variant
 env, env_params = popgym_arcade.make(
-    ENV_NAME, partial_obs=IS_POMDP
+    ENV_NAME, partial_obs=IS_POMDP, obs_size=OBS_SIZE
 )
 
 # Vectorize and compile the env
@@ -29,7 +30,7 @@ done = False
 
 # Pygame setup
 pygame.init()
-screen = pygame.display.set_mode((256,256))
+screen = pygame.display.set_mode((OBS_SIZE, OBS_SIZE))
 clock = pygame.time.Clock()
 running = True
 
