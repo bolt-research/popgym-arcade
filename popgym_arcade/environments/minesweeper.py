@@ -157,7 +157,30 @@ class MineSweeper(environment.Environment):
     }
 
     render_128x = {
-
+        # parameters for rendering (128, 128, 3) canvas
+        "size": 128,
+        "clr": jnp.array([0.9, 0.92, 0.95]),
+        "sub_size": {
+            4: 94,
+            6: 92,
+            8: 90,
+        },
+        "sub_clr": jnp.array([0.0, 0.0, 0.0]),
+        # parameters for rendering numbers
+        "num_clr": jnp.array([1.0, 1.0, 1.0]),
+        # parameters for rendering current action position
+        "action_clr": jnp.array([1.0, 0.5, 0.0]),
+        # parameters for rendering grids
+        "grid_px": 2,
+        "grid_clr": jnp.array([0.4, 0.4, 0.4]),
+        # parameters for rendering score
+        "sc_t_l": (43, 1),
+        "sc_b_r": (85, 15),
+        "sc_clr": jnp.array([0.0, 1.0, 0.5]),
+        # parameters for rendering envName
+        "env_t_l": (0, 115),
+        "env_b_r": (128, 128),
+        "env_clr": jnp.array([0.29, 0.84, 0.97]),
     }
     render_mode = {
         256: render_256x,
@@ -320,31 +343,32 @@ class MineSweeper(environment.Environment):
     @functools.partial(jax.jit, static_argnums=(0,))
     def render(self, state) -> chex.Array:
         # Define board and square sizes
+        render_config = self.render_mode[self.obs_size]
         board_size = self.board_size
         square_size = (
-                self.render_canvas["sub_size"][board_size] - (board_size + 1) * self.render_grid["grid_px"]
+                render_config["sub_size"][board_size] - (board_size + 1) * render_config["grid_px"]
         ) // board_size
 
         # Generate grid coordinates
         x_coords, y_coords = jnp.arange(board_size), jnp.arange(board_size)
         xx, yy = jnp.meshgrid(x_coords, y_coords, indexing='ij')
-        top_left_x = self.render_grid["grid_px"] + xx * (square_size + self.render_grid["grid_px"])
-        top_left_y = self.render_grid["grid_px"] + yy * (square_size + self.render_grid["grid_px"])
+        top_left_x = render_config["grid_px"] + xx * (square_size + render_config["grid_px"])
+        top_left_y = render_config["grid_px"] + yy * (square_size + render_config["grid_px"])
         bottom_right_x = top_left_x + square_size
         bottom_right_y = top_left_y + square_size
 
         # Initialize canvas and sub-canvas
         canvas = jnp.full(
-            (self.render_canvas["size"], self.render_canvas["size"], 3),
-            self.render_canvas["clr"]
+            (render_config["size"], render_config["size"], 3),
+            render_config["clr"]
         )
         sub_canvas = jnp.full(
             (
-                self.render_canvas["sub_size"][board_size],
-                self.render_canvas["sub_size"][board_size],
+                render_config["sub_size"][board_size],
+                render_config["sub_size"][board_size],
                 3,
             ),
-            self.render_canvas["sub_clr"]
+            render_config["sub_clr"]
         )
 
         # Extract action coordinates
@@ -356,7 +380,7 @@ class MineSweeper(environment.Environment):
         sub_canvas = draw_rectangle(
             (tl_x, tl_y),
             (br_x, br_y),
-            self.render_action["action_clr"],
+            render_config["action_clr"],
             sub_canvas
         )
 
@@ -370,7 +394,7 @@ class MineSweeper(environment.Environment):
                 lambda: draw_number(
                     (tl_x, tl_y),
                     (br_x, br_y),
-                    self.render_number["num_clr"],
+                    render_config["num_clr"],
                     _sub_canvas,
                     state.neighbor_grid[action_x, action_y]
                 ),
@@ -388,7 +412,7 @@ class MineSweeper(environment.Environment):
                     lambda: draw_single_digit(
                         (top_left_x[x, y], top_left_y[x, y]),
                         (bottom_right_x[x, y], bottom_right_y[x, y]),
-                        self.render_number["num_clr"], canvas,
+                        render_config["num_clr"], canvas,
                         state.neighbor_grid[x, y]
                     ),
                     lambda: canvas
@@ -402,8 +426,8 @@ class MineSweeper(environment.Environment):
 
         # Draw score on the canvas
         canvas = draw_number(
-            self.render_score["sc_t_l"], self.render_score["sc_b_r"],
-            self.render_score["sc_clr"], canvas, state.score
+            render_config["sc_t_l"], render_config["sc_b_r"],
+            render_config["sc_clr"], canvas, state.score
         )
 
         # Conditionally render partial or full sub-canvas
@@ -417,16 +441,16 @@ class MineSweeper(environment.Environment):
         # Draw grid on the sub-canvas
         sub_canvas = draw_grid(
             square_size,
-            self.render_grid["grid_px"],
-            self.render_grid["grid_clr"],
+            render_config["grid_px"],
+            render_config["grid_clr"],
             sub_canvas
         )
 
         # Draw environment name on the canvas
         canvas = draw_str(
-            self.render_envName["env_t_l"],
-            self.render_envName["env_b_r"],
-            self.render_envName["env_clr"],
+            render_config["env_t_l"],
+            render_config["env_b_r"],
+            render_config["env_clr"],
             canvas,
             self.name
         )

@@ -177,28 +177,8 @@ class Navigator(environment.Environment):
 
     """
 
-    color = {
-        "yellow": jnp.array([1, 1, 0]),
-        "red": jnp.array([1, 0, 0]),
-        "green": jnp.array([0, 1, 0]),
-        "blue": jnp.array([0, 0, 1]),
-        "navy": jnp.array([0, 0, 0.5]),
-        "white": jnp.array([1, 1, 1]),
-        "black": jnp.array([0, 0, 0]),
-        "treasure": jnp.array([0.29, 0.84, 0.97]),
-        "logo": jnp.array([0.545, 0.0, 0.545]),
-        "score": jnp.array([0.545, 0.0, 0.545]),
-        "action": jnp.array([1, 1, 0]), 
-    }
-    draw_score = {
-        "top_left": (86, 2),
-        "bottom_right": (171, 30),
-    }
-    name_pos = {
-        "top_left": (0, 256-25),
-        "bottom_right": (256, 256),
-    }
-    render_canvas = {
+    render_256x = {
+        # parameters for rendering (256, 256, 3) canvas
         "size": 256,
         "clr": jnp.array([0.47, 0.48, 0.5]),
         "sub_size": {
@@ -207,17 +187,87 @@ class Navigator(environment.Environment):
             12: 182,
         },
         "sub_clr": jnp.array([0.47, 0.48, 0.5]),
-    }
-    render_grid = {
+        # parameters for current action position
+        "action_clr": jnp.array([1, 1, 0]),
+        # parameters for rendering treasure
+        "trea_clr": jnp.array([0.29, 0.84, 0.97]),
+        # parameters for rendering grids
         "grid_px": 2,
         "grid_clr": jnp.array([1, 1, 1]),
+        # parameters for rendering score
+        "sc_t_l": (86, 2),
+        "sc_b_r": (171, 30),
+        "sc_clr": jnp.array([0, 0, 0.5]),
+        # parameters for rendering env name
+        "env_t_l": (0, 231),
+        "env_b_r": (256, 256),
+        "env_clr": jnp.array([0.545, 0.0, 0.545]),
     }
+
+    render_128x = {
+        # parameters for rendering (128, 128, 3) canvas
+        "size": 128,
+        "clr": jnp.array([0.47, 0.48, 0.5]),
+        "sub_size": {
+            8: 90,
+            10: 92,
+            12: 98,
+        },
+        "sub_clr": jnp.array([0.47, 0.48, 0.5]),
+        # parameters for current action position
+        "action_clr": jnp.array([1, 1, 0]),
+        # parameters for rendering treasure
+        "trea_clr": jnp.array([0.29, 0.84, 0.97]),
+        # parameters for rendering grids
+        "grid_px": 2,
+        "grid_clr": jnp.array([1, 1, 1]),
+        # parameters for rendering score
+        "sc_t_l": (43, 1),
+        "sc_b_r": (85, 15),
+        "sc_clr": jnp.array([0.0, 1.0, 0.5]),
+        # parameters for rendering envName
+        "env_t_l": (0, 115),
+        "env_b_r": (128, 128),
+        "env_clr": jnp.array([0.29, 0.84, 0.97]),
+    }
+    render_mode = {
+        256: render_256x,
+        128: render_128x,
+    }
+    # color = {
+    #     "yellow": jnp.array([1, 1, 0]),
+    #     "red": jnp.array([1, 0, 0]),
+    #     "green": jnp.array([0, 1, 0]),
+    #     "blue": jnp.array([0, 0, 1]),
+    #     "navy": jnp.array([0, 0, 0.5]),
+    #     "white": jnp.array([1, 1, 1]),
+    #     "black": jnp.array([0, 0, 0]),
+    #     "treasure": jnp.array([0.29, 0.84, 0.97]),
+    #     "logo": jnp.array([0.545, 0.0, 0.545]),
+    #     "score": jnp.array([0.545, 0.0, 0.545]),
+    #     "action": jnp.array([1, 1, 0]),
+    # }
+    # draw_score = {
+    #     "top_left": (86, 2),
+    #     "bottom_right": (171, 30),
+    # }
+    # name_pos = {
+    #     "top_left": (0, 256-25),
+    #     "bottom_right": (256, 256),
+    # }
+    # render_grid = {
+    #     "grid_px": 2,
+    #     "grid_clr": jnp.array([1, 1, 1]),
+    # }
+
     def __init__(
         self,
-        board_size=8,
+        obs_size: int,
+        board_size: int ,
         partial_obs=False,
     ):
         super().__init__()
+        self.obs_size = obs_size
         self.board_size = board_size
         self.barrier_sizes = [1, 1, 1, 1, 1, 1, 1]
         self.max_steps_in_episode = self.board_size * self.board_size
@@ -426,16 +476,17 @@ class Navigator(environment.Environment):
     def get_obs(self, state, params=None, key=None) -> chex.Array:
         return self.render(state)
 
-
-
     @functools.partial(jax.jit, static_argnums=(0,))
     def render(self, state) -> chex.Array:
         """Render the current state of the environment."""
 
+        # Render mode setup
+        render_config = self.render_mode[self.obs_size]
+        print(render_config)
         # Board and grid setup
         board_size = self.board_size
-        grid_px = self.render_grid["grid_px"]
-        sub_size = self.render_canvas["sub_size"][board_size]
+        grid_px = render_config["grid_px"]
+        sub_size = render_config["sub_size"][board_size]
         square_size = (sub_size - (board_size + 1) * grid_px) // board_size
 
         # Generate grid coordinates using meshgrid
@@ -448,12 +499,12 @@ class Navigator(environment.Environment):
 
         # Initialize canvases
         canvas = jnp.full(
-            (self.render_canvas["size"],) * 2 + (3,), 
-            self.render_canvas["clr"]
+            (render_config["size"],) * 2 + (3,),
+            render_config["clr"]
         )
         sub_canvas = jnp.full(
             (sub_size, sub_size, 3), 
-            self.render_canvas["sub_clr"]
+            render_config["sub_clr"]
         )
 
         # Extract action coordinates
@@ -479,7 +530,7 @@ class Navigator(environment.Environment):
             # Draw treasure hexagon if cell_val is 2
             return lax.cond(
                 cell_val == 2,
-                lambda: draw_hexagon(tl, br, self.color["treasure"], canvas),
+                lambda: draw_hexagon(tl, br, render_config["trea_clr"], canvas),
                 lambda: canvas
             )
 
@@ -511,7 +562,7 @@ class Navigator(environment.Environment):
         sub_canvas = draw_matchstick_man(
             action_tl, 
             action_br, 
-            self.color["action"], 
+            render_config["action_clr"],
             sub_canvas
         )
 
@@ -519,24 +570,24 @@ class Navigator(environment.Environment):
         sub_canvas = draw_grid(
             square_size, 
             grid_px, 
-            self.render_grid["grid_clr"], 
+            render_config["grid_clr"],
             sub_canvas
         )
 
         # Draw score on canvas
         canvas = draw_number(
-            self.draw_score["top_left"],
-            self.draw_score["bottom_right"],
-            self.color["navy"], 
+            render_config["sc_t_l"],
+            render_config["sc_b_r"],
+            render_config["sc_clr"],
             canvas, 
             state.score
         )
 
         # Draw environment name
         canvas = draw_str(
-            self.name_pos["top_left"], 
-            self.name_pos["bottom_right"],
-            self.color["logo"], 
+            render_config["env_t_l"],
+            render_config["env_b_r"],
+            render_config["env_clr"],
             canvas, 
             self.name
         )
@@ -550,7 +601,8 @@ class Navigator(environment.Environment):
 
     def observation_space(self, params: EnvParams) -> spaces.Box:
         """Observation space of the environment."""
-        return spaces.Box(jnp.zeros((0,)), jnp.ones((1,)), (256, 256, 3), dtype=jnp.float32)
+        return spaces.Box(jnp.zeros((0,)), jnp.ones((1,)), (self.obs_size, self.obs_size, 3), dtype=jnp.float32)
+
 
 class NavigatorEasy(Navigator):
     def __init__(self, **kwargs):
