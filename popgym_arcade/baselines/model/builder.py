@@ -208,40 +208,32 @@ class QNetwork(eqx.Module):
                 nn.Lambda(jax.nn.leaky_relu),
                 nn.MaxPool2d(kernel_size=2, stride=2),
                 nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, stride=2, key=keys[3]),
+                nn.Lambda(jax.nn.leaky_relu),
             ])
         else:
             self.cnn = nn.Sequential([
-                nn.Conv2d(in_channels=3, out_channels=64, kernel_size=5, stride=2, padding=2, key=keys[0]),
+                nn.Conv2d(in_channels=3, out_channels=64, kernel_size=5, stride=2, key=keys[0]),
                 nn.Lambda(jax.nn.leaky_relu),
                 nn.MaxPool2d(kernel_size=2, stride=2),
-                nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=2, padding=1, key=keys[1]),
+                nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=2, key=keys[1]),
                 nn.Lambda(jax.nn.leaky_relu),
                 nn.MaxPool2d(kernel_size=2, stride=2),
-                nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=2, padding=1, key=keys[2]),
+                nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=2, key=keys[2]),
                 nn.Lambda(jax.nn.leaky_relu),
-                nn.MaxPool2d(kernel_size=2, stride=2),
-                nn.Conv2d(256, 256, 1, stride=2, padding=0, key=keys[3])
+                nn.MaxPool2d(kernel_size=3, stride=1),
+                nn.Conv2d(in_channels=256, out_channels=512, kernel_size=1, stride=1, key=keys[3]),
+                nn.Lambda(jax.nn.leaky_relu),
                 ])
-        if obs_size == 256:
-            self.trunk = nn.Sequential([
-                nn.Linear(in_features=512, out_features=256, key=keys[4]),
-                nn.LayerNorm(shape=256),
-                nn.Lambda(jax.nn.leaky_relu),
-                nn.Linear(in_features=256, out_features=256, key=keys[5]),
-                nn.LayerNorm(shape=256),
-                nn.Lambda(jax.nn.leaky_relu),
-                nn.Linear(in_features=256, out_features=self.action_dim, key=keys[6])
-            ])
-        else:
-            self.trunk = nn.Sequential([
-                nn.Linear(in_features=256, out_features=128, key=keys[4]),
-                nn.LayerNorm(shape=128),
-                nn.Lambda(jax.nn.leaky_relu),
-                nn.Linear(in_features=128, out_features=128, key=keys[5]),
-                nn.LayerNorm(shape=128),
-                nn.Lambda(jax.nn.leaky_relu),
-                nn.Linear(in_features=128, out_features=self.action_dim, key=keys[6])
-            ])
+
+        self.trunk = nn.Sequential([
+            nn.Linear(in_features=512, out_features=256, key=keys[4]),
+            nn.LayerNorm(shape=256),
+            nn.Lambda(jax.nn.leaky_relu),
+            nn.Linear(in_features=256, out_features=256, key=keys[5]),
+            nn.LayerNorm(shape=256),
+            nn.Lambda(jax.nn.leaky_relu),
+            nn.Linear(in_features=256, out_features=self.action_dim, key=keys[6])
+        ])
 
     def __call__(self, x: jax.Array):
         x = x.transpose((0, 3, 1, 2))
@@ -249,7 +241,6 @@ class QNetwork(eqx.Module):
         x = x.reshape(x.shape[0], -1)
         x = eqx.filter_vmap(self.trunk)(x)
         return x
-
 
 class QNetworkRNN(eqx.Module):
     """CNN + MLP"""
