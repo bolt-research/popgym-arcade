@@ -5,7 +5,7 @@ import numpy as np
 
 # Change these to play other games
 ENV_NAME = "BattleShipEasy"
-IS_POMDP = False
+IS_POMDP = True
 OBS_SIZE = 128
 
 def to_surf(arr):
