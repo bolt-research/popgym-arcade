@@ -245,8 +245,11 @@ class BattleShip(environment.Environment):
         self.needed_hits = sum(self.ship_sizes)
         self.reward_hit = 1.0 / self.needed_hits
         self.reward_repeated_hit = -1.0 / (
-                self.board_size * self.board_size * 3
+                self.board_size * self.board_size - self.needed_hits
         )
+        # self.reward_repeated_hit = -1.0 / (
+        #     self.board_size * self.board_size * 3
+        # )
         self.reward_miss = 0.0
 
     @property
