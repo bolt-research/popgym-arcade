@@ -195,7 +195,7 @@ class QNetwork(eqx.Module):
     trunk: nn.Sequential
 
     def __init__(self, key: PRNGKeyArray, obs_size: int):
-        keys = jax.random.split(key, 7)
+        keys = jax.random.split(key, 9)
         if obs_size == 256:
             self.cnn = nn.Sequential([
                 nn.Conv2d(in_channels=3, out_channels=64, kernel_size=7, stride=2, key=keys[0]),
@@ -226,10 +226,16 @@ class QNetwork(eqx.Module):
                 ])
 
         self.trunk = nn.Sequential([
-            nn.Linear(in_features=512, out_features=256, key=keys[4]),
-            nn.LayerNorm(shape=256),
+            nn.Linear(in_features=512, out_features=1024, key=keys[7]),
+            nn.LayerNorm(shape=1024),
             nn.Lambda(jax.nn.leaky_relu),
-            nn.Linear(in_features=256, out_features=256, key=keys[5]),
+            nn.Linear(in_features=1024, out_features=1024, key=keys[8]),
+            nn.LayerNorm(shape=1024),
+            nn.Lambda(jax.nn.leaky_relu),
+            nn.Linear(in_features=1024, out_features=512, key=keys[4]),
+            nn.LayerNorm(shape=512),
+            nn.Lambda(jax.nn.leaky_relu),
+            nn.Linear(in_features=512, out_features=256, key=keys[5]),
             nn.LayerNorm(shape=256),
             nn.Lambda(jax.nn.leaky_relu),
             nn.Linear(in_features=256, out_features=self.action_dim, key=keys[6])
@@ -288,9 +294,6 @@ class QNetworkRNN(eqx.Module):
             key=keys[4],
         )
         self.trunk = nn.Sequential([
-            nn.Linear(in_features=256, out_features=256, key=keys[5]),
-            nn.LayerNorm(shape=256),
-            nn.Lambda(jax.nn.leaky_relu),
             nn.Linear(in_features=256, out_features=self.action_dim, key=keys[7])
         ])
 

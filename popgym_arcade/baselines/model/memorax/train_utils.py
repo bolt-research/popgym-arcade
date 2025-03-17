@@ -27,25 +27,25 @@ def add_batch_dim(h, batch_size: int, axis: int = 0) -> Shaped[Array, "Batch ...
 
 
 def cross_entropy(
-    y_hat: Shaped[Array, "Batch ... Classes"], y: Shaped[Array, "Batch ... Classes"]
+        y_hat: Shaped[Array, "Batch ... Classes"], y: Shaped[Array, "Batch ... Classes"]
 ) -> Shaped[Array, "1"]:
     return -jnp.mean(jnp.sum(y * jax.nn.log_softmax(y_hat, axis=-1), axis=-1))
 
 
 def accuracy(
-    y_hat: Shaped[Array, "Batch ... Classes"], y: Shaped[Array, "Batch ... Classes"]
+        y_hat: Shaped[Array, "Batch ... Classes"], y: Shaped[Array, "Batch ... Classes"]
 ) -> Shaped[Array, "1"]:
     return jnp.mean(jnp.argmax(y, axis=-1) == jnp.argmax(y_hat, axis=-1))
 
 
 def update_model(
-    model: groups.Module,
-    loss_fn: Callable,
-    opt: optax.GradientTransformation,
-    opt_state: optax.OptState,
-    x: Shaped[Array, "Batch ..."],
-    y: Shaped[Array, "Batch ..."],
-    key=None,
+        model: groups.Module,
+        loss_fn: Callable,
+        opt: optax.GradientTransformation,
+        opt_state: optax.OptState,
+        x: Shaped[Array, "Batch ..."],
+        y: Shaped[Array, "Batch ..."],
+        key=None,
 ) -> Tuple[groups.Module, optax.OptState, Dict[str, Array]]:
     """Update the model using the given loss function and optimizer."""
     grads, loss_info = eqx.filter_grad(loss_fn, has_aux=True)(model, x, y, key)
@@ -58,20 +58,20 @@ def update_model(
 
 @eqx.filter_jit
 def scan_one_epoch(
-    model: groups.Module,
-    opt: optax.GradientTransformation,
-    opt_state: optax.OptState,
-    loss_fn: Callable,
-    xs: Shaped[Array, "Datapoint ..."],
-    ys: Shaped[Array, "Datapoint ..."],
-    batch_size: int,
-    batch_index: Shaped[Array, "Batch ..."],
-    *,
-    key: jax.random.PRNGKey,
+        model: groups.Module,
+        opt: optax.GradientTransformation,
+        opt_state: optax.OptState,
+        loss_fn: Callable,
+        xs: Shaped[Array, "Datapoint ..."],
+        ys: Shaped[Array, "Datapoint ..."],
+        batch_size: int,
+        batch_index: Shaped[Array, "Batch ..."],
+        *,
+        key: jax.random.PRNGKey,
 ) -> Tuple[groups.Module, optax.OptState, Dict[str, Array]]:
     """Train a single epoch using the scan operator. Functions as a dataloader and train loop."""
     assert (
-        xs.shape[0] == ys.shape[0]
+            xs.shape[0] == ys.shape[0]
     ), f"batch size mismatch: {xs.shape[0]} != {ys.shape[0]}"
     params, static = eqx.partition(model, eqx.is_array)
 
@@ -102,9 +102,10 @@ def scan_one_epoch(
     model = eqx.combine(params, static)
     return model, opt_state, epoch_metrics
 
+
 def get_monoids(
-    recurrent_size: int,
-    key: jax.random.PRNGKey,
+        recurrent_size: int,
+        key: jax.random.PRNGKey,
 ) -> Dict[str, groups.Module]:
     return {
         # "double": DoubleMonoid(recurrent_size),
@@ -122,16 +123,16 @@ def get_monoids(
         # "log_bayes": LogBayesSemigroup(recurrent_size),
     }
 
-def get_residual_memory_model(
-    input: int,
-    hidden: int,
-    output: int,
-    num_layers: int = 2,
-    rnn_type: str = "lru",
-    *,
-    key: jax.random.PRNGKey
-) -> groups.Module:
 
+def get_residual_memory_model(
+        input: int,
+        hidden: int,
+        output: int,
+        num_layers: int = 2,
+        rnn_type: str = "lru",
+        *,
+        key: jax.random.PRNGKey
+) -> groups.Module:
     layers = {
         "nabs": lambda recurrent_size, key: NAbs(
             recurrent_size=recurrent_size, key=key
@@ -140,7 +141,7 @@ def get_residual_memory_model(
             recurrent_size=recurrent_size, key=key
         ),
         "fart": lambda recurrent_size, key: FART(
-           hidden_size=recurrent_size, recurrent_size=round(recurrent_size ** 0.5), key=key
+            hidden_size=recurrent_size, recurrent_size=round(recurrent_size ** 0.5), key=key
         ),
         "pspherical": lambda recurrent_size, key: PSpherical(
             recurrent_size=round(recurrent_size ** 0.5),
@@ -164,13 +165,13 @@ def get_residual_memory_model(
         # magmas
         "gru": lambda recurrent_size, key: GRU(recurrent_size=recurrent_size, key=key),
         "elman": lambda recurrent_size, key: Elman(
-           hidden_size=recurrent_size, recurrent_size=recurrent_size, key=key
+            hidden_size=recurrent_size, recurrent_size=recurrent_size, key=key
         ),
         "ln_elman": lambda recurrent_size, key: Elman(
-           hidden_size=recurrent_size,
-           recurrent_size=recurrent_size,
-           ln_variant=True,
-           key=key,
+            hidden_size=recurrent_size,
+            recurrent_size=recurrent_size,
+            ln_variant=True,
+            key=key,
         ),
         "spherical": lambda recurrent_size, key: Spherical(
             hidden_size=recurrent_size, recurrent_size=recurrent_size, key=key
