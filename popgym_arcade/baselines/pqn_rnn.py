@@ -225,6 +225,15 @@ def make_train(config):
                 config["NUM_STEPS"],
             )
             train_state, memory_transitions, expl_state, test_metrics, rng = runner_state
+            hs, last_obs, last_done, last_action, env_state = expl_state
+            hs = train_state.model.initialize_carry(key=rng_init)
+            hs = add_batch_dim(hs, config["NUM_ENVS"])
+            last_obs, env_state = vmap_reset(config["NUM_ENVS"])(_rng)
+            last_done = jnp.zeros((config["NUM_ENVS"]), dtype=bool)
+            last_action = jnp.zeros((config["NUM_ENVS"]), dtype=int)
+
+            expl_state = (hs, last_obs, last_done, last_action, env_state)
+
             expl_state = tuple(expl_state)
 
             train_state = train_state.replace(
@@ -510,8 +519,6 @@ def make_train(config):
         obs, env_state = vmap_reset(config["NUM_ENVS"])(_rng)
         init_dones = jnp.zeros((config["NUM_ENVS"]), dtype=bool)
         init_action = jnp.zeros((config["NUM_ENVS"]), dtype=int)
-        # initialise_carry_fn = partial(network.apply, method="initialize_carry", mutable=["batch_stats"])
-        # init_hs = initialise_carry_fn({"params":train_state.params})
 
         # init_hs = init_hs[0]
         expl_state = (hidden_state, obs, init_dones, init_action, env_state)
