@@ -241,11 +241,11 @@ class BattleShip(environment.Environment):
         self.partial_obs = partial_obs
         self.board_size = board_size
         self.ship_sizes = [2, 3, 3, 4]
-        self.max_episode_length = self.board_size * self.board_size * 2
+        self.max_episode_length = self.board_size * self.board_size * 3
         self.needed_hits = sum(self.ship_sizes)
         self.reward_hit = 1.0 / self.needed_hits
         self.reward_repeated_hit = -1.0 / (
-            self.board_size * self.board_size * 2
+            self.board_size * self.board_size * 3
         )
         self.reward_miss = 0.0
 
