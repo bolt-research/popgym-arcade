@@ -199,10 +199,10 @@ class MineSweeper(environment.Environment):
         self.board_size = board_size
         self.num_mines = num_mines
         self.partial_obs = partial_obs
-        self.max_episode_length = self.board_size * self.board_size * 2
+        self.max_episode_length = self.board_size * self.board_size * 3
         self.success_reward_scale = 1 / (self.board_size * self.board_size - self.num_mines)
         self.fail_reward_scale = 0.0
-        self.bad_action_reward_scale = - 1.0 / (self.board_size * self.board_size * 2)
+        self.bad_action_reward_scale = - 1.0 / (self.board_size * self.board_size * 3)
 
     @property
     def default_params(self) -> EnvParams:

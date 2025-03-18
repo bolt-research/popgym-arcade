@@ -226,16 +226,10 @@ class QNetwork(eqx.Module):
                 ])
 
         self.trunk = nn.Sequential([
-            nn.Linear(in_features=512, out_features=1024, key=keys[7]),
-            nn.LayerNorm(shape=1024),
+            nn.Linear(in_features=512, out_features=256, key=keys[4]),
+            nn.LayerNorm(shape=256),
             nn.Lambda(jax.nn.leaky_relu),
-            nn.Linear(in_features=1024, out_features=1024, key=keys[8]),
-            nn.LayerNorm(shape=1024),
-            nn.Lambda(jax.nn.leaky_relu),
-            nn.Linear(in_features=1024, out_features=512, key=keys[4]),
-            nn.LayerNorm(shape=512),
-            nn.Lambda(jax.nn.leaky_relu),
-            nn.Linear(in_features=512, out_features=256, key=keys[5]),
+            nn.Linear(in_features=256, out_features=256, key=keys[5]),
             nn.LayerNorm(shape=256),
             nn.Lambda(jax.nn.leaky_relu),
             nn.Linear(in_features=256, out_features=self.action_dim, key=keys[6])
