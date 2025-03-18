@@ -225,14 +225,14 @@ def make_train(config):
                 config["NUM_STEPS"],
             )
             train_state, memory_transitions, expl_state, test_metrics, rng = runner_state
-            hs, last_obs, last_done, last_action, env_state = expl_state
-            hs = train_state.model.initialize_carry(key=rng_init)
-            hs = add_batch_dim(hs, config["NUM_ENVS"])
-            last_obs, env_state = vmap_reset(config["NUM_ENVS"])(_rng)
-            last_done = jnp.zeros((config["NUM_ENVS"]), dtype=bool)
-            last_action = jnp.zeros((config["NUM_ENVS"]), dtype=int)
+            # hs, last_obs, last_done, last_action, env_state = expl_state
+            # hs = train_state.model.initialize_carry(key=rng_init)
+            # hs = add_batch_dim(hs, config["NUM_ENVS"])
+            # last_obs, env_state = vmap_reset(config["NUM_ENVS"])(_rng)
+            # last_done = jnp.zeros((config["NUM_ENVS"]), dtype=bool)
+            # last_action = jnp.zeros((config["NUM_ENVS"]), dtype=int)
 
-            expl_state = (hs, last_obs, last_done, last_action, env_state)
+            # expl_state = (hs, last_obs, last_done, last_action, env_state)
 
             expl_state = tuple(expl_state)
 
