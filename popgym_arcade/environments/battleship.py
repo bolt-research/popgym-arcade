@@ -100,6 +100,7 @@ class EnvState:
     guesses: chex.Array
     hits: int
     score: int
+    repeat_count: int
     timestep: int
 
 
@@ -241,11 +242,14 @@ class BattleShip(environment.Environment):
         self.partial_obs = partial_obs
         self.board_size = board_size
         self.ship_sizes = [2, 3, 3, 4]
-        self.max_episode_length = self.board_size * self.board_size * 3
+        self.max_episode_length = self.board_size * self.board_size * 5
         self.needed_hits = sum(self.ship_sizes)
         self.reward_hit = 1.0 / self.needed_hits
+        # self.reward_repeated_hit = -1.0 / (
+        #         self.board_size * self.board_size - self.needed_hits
+        # )
         self.reward_repeated_hit = -1.0 / (
-            self.board_size * self.board_size * 3
+            self.board_size
         )
         self.reward_miss = 0.0
 
@@ -321,6 +325,8 @@ class BattleShip(environment.Environment):
                 new_hits >= self.needed_hits,
                 new_timestep >= self.max_episode_length,
             )
+            terminated = jnp.logical_or(terminated, state.repeat_count >= self.board_size)
+            repeat_count = state.repeat_count + jnp.where(guessed_before, 1, 0) 
             reward = lax.cond(
                 guessed_before,
                 lambda _: self.reward_repeated_hit,
@@ -340,6 +346,7 @@ class BattleShip(environment.Environment):
                 guesses=new_guesses,
                 hits=new_hits,
                 score=new_score,
+                repeat_count=repeat_count,
             )
             return self.get_obs(new_state), new_state, reward, terminated, {}
 
@@ -364,6 +371,7 @@ class BattleShip(environment.Environment):
         state = EnvState(
             action_x=init_action_x,
             action_y=init_action_y,
+            repeat_count=0,
             timestep=0,
             board=board,
             guesses=guesses,
