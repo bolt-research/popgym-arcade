@@ -81,9 +81,12 @@ We also provide tools to visualize how policies use memory.
 See [below](#Memory-Introspection-Tools) for further instructions.
 
 ## Throughput
-You can expect millions of frames per second on a consumer-grade GPU
+You can expect millions of frames per second on a consumer-grade GPU. With `obs_size=128`, most policies converge within 30-60 minutes of training. 
 
-<img src="imgs/fps.png" height="192" /> 
+<img src="imgs/fps.png" height="192" />  
+<img src="imgs/wandb.png" height="192" /> 
+
+
 
 ## Getting Started
 
