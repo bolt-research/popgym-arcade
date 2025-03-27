@@ -86,8 +86,6 @@ You can expect millions of frames per second on a consumer-grade GPU. With `obs_
 <img src="imgs/fps.png" height="192" />  
 <img src="imgs/wandb.png" height="192" /> 
 
-
-
 ## Getting Started
 
 
