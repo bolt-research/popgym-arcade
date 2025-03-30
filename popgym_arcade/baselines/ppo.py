@@ -287,6 +287,6 @@ def ppo_run(config: Dict[str, Any]):
     )
     eqx.tree_serialise_leaves('{}_{}_model_Partial={}_SEED={}.pkl'.format(config["TRAIN_TYPE"], config["ENV_NAME"], config["PARTIAL"], config["SEED"]), network_squeezed)
     rng, _rng = jax.random.split(rng)
-    network = ActorCritic(key=_rng)
+    network = ActorCritic(key=_rng, obs_size=config["OBS_SIZE"])
     model = eqx.tree_deserialise_leaves('{}_{}_model_Partial={}_SEED={}.pkl'.format(config["TRAIN_TYPE"], config["ENV_NAME"], config["PARTIAL"], config["SEED"]), network)
     evaluate(model, config)

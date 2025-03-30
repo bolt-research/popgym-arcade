@@ -53,7 +53,7 @@ def make_train(config):
     def train(rng):
         # INIT NETWORK
         rng, _rng, rng_init = jax.random.split(rng, 3)
-        network = ActorCriticRNN(key=_rng, rnn_type=config["MEMORY_TYPE"])
+        network = ActorCriticRNN(key=_rng, obs_size=config["OBS_SIZE"], rnn_type=config["MEMORY_TYPE"])
         actor_init_hstate, critic_init_hstate = network.initialize_carry(key=rng_init)
         actor_init_hstate = add_batch_dim(actor_init_hstate, config["NUM_ENVS"])
         critic_init_hstate = add_batch_dim(critic_init_hstate, config["NUM_ENVS"])
@@ -385,7 +385,7 @@ def ppo_rnn_run(config):
         '{}_{}_{}_model_Partial={}_SEED={}.pkl'.format(config["TRAIN_TYPE"], config["MEMORY_TYPE"], config["ENV_NAME"],
                                                        config["PARTIAL"], config["SEED"]), network_squeezed)
     rng, _rng = jax.random.split(rng)
-    network = ActorCriticRNN(_rng, config["MEMORY_TYPE"])
+    network = ActorCriticRNN(_rng, config["OBS_SIZE"], config["MEMORY_TYPE"])
     model = eqx.tree_deserialise_leaves(
         '{}_{}_{}_model_Partial={}_SEED={}.pkl'.format(config["TRAIN_TYPE"], config["MEMORY_TYPE"], config["ENV_NAME"],
                                                        config["PARTIAL"], config["SEED"]), network)
