@@ -43,7 +43,7 @@ def make_train(config):
     def train(rng):
         rng, _rng = jax.random.split(rng)
 
-        network = ActorCritic(key=_rng)
+        network = ActorCritic(key=_rng, obs_size=config["OBS_SIZE"])
         if config["ANNEAL_LR"]:
             tx = optax.chain(
                 optax.clip_by_global_norm(config["MAX_GRAD_NORM"]),
