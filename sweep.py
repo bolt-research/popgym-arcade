@@ -5,14 +5,14 @@ from wandb.apis.public import Api
 from typing import Dict, Any
 
 # Configuration - customize these mappings
-WANDB_PROJECT = "Arcade-RLC"
+WANDB_PROJECT = "Arcade-NIPS"
 WANDB_ENTITY = "bolt-um"  # Optional, unless you're in a team
 MAX_JOBS = 500 # Maximum number of jobs to run before terminating (useful for HPC/SLURM)
 TRAIN_PATH = "/home/smorad/code/popgym_arcade/popgym_arcade/train.py"
 
 algorithm_families = ['PQN', 'PPO']
 models = ['lru', 'mingru', 'mlp']
-seeds = [0, 1, 2]
+seeds = [0, 1, 2, 3, 4]
 environments_config = {
     "CartPoleEasy": {
         "PPO": int(1e7),
