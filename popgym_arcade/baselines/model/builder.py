@@ -194,7 +194,7 @@ class ActorCriticRNN(eqx.Module):
             input=512,
             hidden=512,
             output=256,
-            num_layers=1,
+            num_layers=2,
             rnn_type=rnn_type,
             key=key_array[4],
         )
