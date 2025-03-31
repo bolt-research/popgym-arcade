@@ -13,6 +13,7 @@ setup(
     install_requires=[
         "gymnax",
         "dm_pix",
+        "jaxtyping",
     ],
     extras_require = {
         "baselines": [
