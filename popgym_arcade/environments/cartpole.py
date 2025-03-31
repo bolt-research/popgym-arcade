@@ -164,10 +164,10 @@ class CartPole(environment.Environment[EnvState, EnvParams]):
 
     def __init__(
             self,
-            obs_size: int,
             n_sigma: float = 0.0,
             max_steps_in_episode: int = 200,
             partial_obs: bool = False,
+            obs_size: int = 128,
     ):
         """
         Initialize the environment.

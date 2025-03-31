@@ -12,7 +12,6 @@ from popgym_arcade.environments.draw_utils import (draw_str,
                                             draw_hexagon,
                                             draw_grid,
                                             draw_number,
-                                            draw_matchstick_man,
                                             draw_tnt_block,
                                             draw_sub_canvas,
                                             draw_rectangle)
@@ -235,37 +234,12 @@ class Navigator(environment.Environment):
         256: render_256x,
         128: render_128x,
     }
-    # color = {
-    #     "yellow": jnp.array([1, 1, 0]),
-    #     "red": jnp.array([1, 0, 0]),
-    #     "green": jnp.array([0, 1, 0]),
-    #     "blue": jnp.array([0, 0, 1]),
-    #     "navy": jnp.array([0, 0, 0.5]),
-    #     "white": jnp.array([1, 1, 1]),
-    #     "black": jnp.array([0, 0, 0]),
-    #     "treasure": jnp.array([0.29, 0.84, 0.97]),
-    #     "logo": jnp.array([0.545, 0.0, 0.545]),
-    #     "score": jnp.array([0.545, 0.0, 0.545]),
-    #     "action": jnp.array([1, 1, 0]),
-    # }
-    # draw_score = {
-    #     "top_left": (86, 2),
-    #     "bottom_right": (171, 30),
-    # }
-    # name_pos = {
-    #     "top_left": (0, 256-25),
-    #     "bottom_right": (256, 256),
-    # }
-    # render_grid = {
-    #     "grid_px": 2,
-    #     "grid_clr": jnp.array([1, 1, 1]),
-    # }
 
     def __init__(
         self,
-        obs_size: int,
         board_size: int ,
-        partial_obs=False,
+        partial_obs = False,
+        obs_size: int = 128,
     ):
         super().__init__()
         self.obs_size = obs_size

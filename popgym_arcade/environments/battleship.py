@@ -233,9 +233,9 @@ class BattleShip(environment.Environment):
 
     def __init__(
             self,
-            obs_size: int,
             board_size: int,
             partial_obs: bool = False,
+            obs_size: int = 128,
     ):
         """Initialize the Battleship environment."""
         self.obs_size = obs_size
