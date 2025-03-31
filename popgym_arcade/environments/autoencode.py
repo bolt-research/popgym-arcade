@@ -198,7 +198,7 @@ class AutoEncode(environment.Environment):
             self,
             num_decks=1,
             partial_obs=False,
-            obs_size=128
+            obs_size: int = 128,
     ):
         super().__init__()
         self.partial_obs = partial_obs
@@ -418,15 +418,15 @@ class AutoEncode(environment.Environment):
 
 
 class AutoEncodeEasy(AutoEncode):
-    def __init__(self, partial_obs=False, **kwargs):
-        super().__init__(num_decks=1, partial_obs=partial_obs, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(num_decks=1, **kwargs)
 
 
 class AutoEncodeMedium(AutoEncode):
-    def __init__(self, partial_obs=False, **kwargs):
-        super().__init__(num_decks=2, partial_obs=partial_obs, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(num_decks=2, **kwargs)
 
 
 class AutoEncodeHard(AutoEncode):
-    def __init__(self, partial_obs=False, **kwargs):
-        super().__init__(num_decks=3, partial_obs=partial_obs, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(num_decks=3, **kwargs)
