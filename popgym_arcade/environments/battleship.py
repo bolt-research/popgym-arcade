@@ -249,7 +249,7 @@ class BattleShip(environment.Environment):
         #         self.board_size * self.board_size - self.needed_hits
         # )
         self.reward_repeated_hit = -1.0 / (
-            self.board_size
+            self.board_size * self.ship_sizes / 2
         )
         self.reward_miss = 0.0
 
@@ -325,7 +325,7 @@ class BattleShip(environment.Environment):
                 new_hits >= self.needed_hits,
                 new_timestep >= self.max_episode_length,
             )
-            terminated = jnp.logical_or(terminated, state.repeat_count >= self.board_size)
+            terminated = jnp.logical_or(terminated, state.repeat_count >= self.board_size * self.board_size / 2)
             repeat_count = state.repeat_count + jnp.where(guessed_before, 1, 0) 
             reward = lax.cond(
                 guessed_before,
