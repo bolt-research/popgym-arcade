@@ -233,23 +233,23 @@ class BattleShip(environment.Environment):
 
     def __init__(
             self,
+            obs_size: int,
             board_size: int,
             partial_obs: bool = False,
-            obs_size: int = 128,
     ):
         """Initialize the Battleship environment."""
         self.obs_size = obs_size
         self.partial_obs = partial_obs
         self.board_size = board_size
         self.ship_sizes = [2, 3, 3, 4]
-        self.max_episode_length = self.board_size * self.board_size * 5
+        self.max_episode_length = self.board_size * self.board_size * 2
         self.needed_hits = sum(self.ship_sizes)
         self.reward_hit = 1.0 / self.needed_hits
         # self.reward_repeated_hit = -1.0 / (
         #         self.board_size * self.board_size - self.needed_hits
         # )
         self.reward_repeated_hit = -1.0 / (
-            self.board_size * self.ship_sizes / 2
+            self.board_size * self.board_size / 2
         )
         self.reward_miss = 0.0
 
@@ -326,7 +326,7 @@ class BattleShip(environment.Environment):
                 new_timestep >= self.max_episode_length,
             )
             terminated = jnp.logical_or(terminated, state.repeat_count >= self.board_size * self.board_size / 2)
-            repeat_count = state.repeat_count + jnp.where(guessed_before, 1, 0) 
+            repeat_count = state.repeat_count + jnp.where(guessed_before, 1, 0)
             reward = lax.cond(
                 guessed_before,
                 lambda _: self.reward_repeated_hit,
