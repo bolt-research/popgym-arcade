@@ -31,6 +31,7 @@ class EnvState:
     score: int
     mine_grid: chex.Array
     neighbor_grid: chex.Array
+    viewed_count: int
 
 
 @struct.dataclass
@@ -189,20 +190,20 @@ class MineSweeper(environment.Environment):
 
     def __init__(
             self,
+            obs_size: int,
             board_size: int,
             num_mines: int = 2,
             partial_obs: bool = False,
-            obs_size: int = 128,
     ):
         super().__init__()
         self.obs_size = obs_size
         self.board_size = board_size
         self.num_mines = num_mines
         self.partial_obs = partial_obs
-        self.max_episode_length = self.board_size * self.board_size * 3
+        self.max_episode_length = self.board_size * self.board_size * 2
         self.success_reward_scale = 1 / (self.board_size * self.board_size - self.num_mines)
         self.fail_reward_scale = 0.0
-        self.bad_action_reward_scale = - 1.0 / (self.board_size * self.board_size * 3)
+        self.bad_action_reward_scale = - 1.0 / (self.board_size * self.board_size / 2)
 
     @property
     def default_params(self) -> EnvParams:
@@ -279,6 +280,7 @@ class MineSweeper(environment.Environment):
                 lambda _: 0,
                 operand=None
             )
+            viewed_count = state.viewed_count + jnp.where(viewed, 1, 0)
 
             terminated = state.timestep >= self.max_episode_length
             terminated = jnp.where(mine, True, terminated)
@@ -286,12 +288,17 @@ class MineSweeper(environment.Environment):
                 terminated,
                 jnp.sum(new_grid == 2) == (self.board_size ** 2 - self.num_mines)
             )
+            terminated = jnp.logical_or(
+                terminated,
+                state.viewed_count >= (self.board_size * self.board_size / 2)
+            )
 
             new_state = state.replace(
                 score=new_score,
                 timestep=state.timestep + 1,
                 mine_grid=new_grid,
                 neighbor_grid=state.neighbor_grid,
+                viewed_count=viewed_count,
             )
             obs = self.get_obs(new_state)
             return obs, new_state, reward, terminated, {}
@@ -334,6 +341,7 @@ class MineSweeper(environment.Environment):
             score=0,
             mine_grid=hidden_grid,
             neighbor_grid=neighbor_grid,
+            viewed_count=0,
         )
         return self.get_obs(state), state
 
