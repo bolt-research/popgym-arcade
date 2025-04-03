@@ -190,10 +190,10 @@ class MineSweeper(environment.Environment):
 
     def __init__(
             self,
-            obs_size: int,
             board_size: int,
             num_mines: int = 2,
             partial_obs: bool = False,
+            obs_size: int = 128,
     ):
         super().__init__()
         self.obs_size = obs_size
