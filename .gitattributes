@@ -1,1 +1,11 @@
 imgs/* filter=lfs diff=lfs merge=lfs -text
+sweep.py filter=lfs diff=lfs merge=lfs -text
+requirements.txt filter=lfs diff=lfs merge=lfs -text
+LICENSE filter=lfs diff=lfs merge=lfs -text
+README.md filter=lfs diff=lfs merge=lfs -text
+imgs filter=lfs diff=lfs merge=lfs -text
+play.py filter=lfs diff=lfs merge=lfs -text
+plotting filter=lfs diff=lfs merge=lfs -text
+popgym_arcade filter=lfs diff=lfs merge=lfs -text
+query_sweep.py filter=lfs diff=lfs merge=lfs -text
+setup.py filter=lfs diff=lfs merge=lfs -text
