@@ -121,7 +121,8 @@ def vis_fn(
     obs_seq: chex.Array,
     config: dict,
     cmap: str = 'hot',
-    mode: str = 'line'
+    mode: str = 'line',
+    use_latex: bool = True,
 ) -> None:
     """
     Generates visualizations of model attention patterns using saliency mapping techniques.
@@ -136,6 +137,8 @@ def vis_fn(
         mode: Layout configuration selector:
               - 'line': Sequential horizontal display for time series analysis
               - 'grid': Matrix layout comparing observation-attention relationships
+        use_latex: Boolean flag to enable LaTeX rendering for titles and labels
+                If you don't have latex installed, you will get an error unless this is false
 
     Visualizes:
         Dual-channel displays showing original observations (top) with corresponding
@@ -144,7 +147,8 @@ def vis_fn(
     """
 
     sns.set(style="whitegrid", palette="pastel", font_scale=1.2)
-    plt.rc('text', usetex=True)
+    if use_latex:
+        plt.rc('text', usetex=True)
     plt.rc('font', family='serif')
 
     length = len(maps)
@@ -155,14 +159,20 @@ def vis_fn(
             # Top row: Original observations
             obs = axs[0][i]
             obs.imshow(obs_seq[i].squeeze(axis=0), cmap='gray')
-            obs.set_title(rf"$o_{{{i}}}$", fontsize=25, pad=20)
+            if use_latex:
+                obs.set_title(rf"$o_{{{i}}}$", fontsize=25, pad=20)
+            else:
+                obs.set_title(f"o{i}", fontsize=25, pad=20)
             obs.axis('off')
 
             # Bottom row: Saliency map
             map_ax = axs[1][i]
             saliency_map = maps_last[i].squeeze(axis=0).mean(axis=-1)
             im = map_ax.imshow(saliency_map, cmap='hot')
-            map_ax.set_title(rf"$\sum\limits_{{a \in A}}\left|\frac{{\partial Q(\hat{{s}}_{{{length-1}}}, a_{{{length-1}}})}}{{\partial o_{{{i}}}}}\right|$", fontsize=25, pad=30)
+            if use_latex:
+                map_ax.set_title(rf"$\sum\limits_{{a \in A}}\left|\frac{{\partial Q(\hat{{s}}_{{{length-1}}}, a_{{{length-1}}})}}{{\partial o_{{{i}}}}}\right|$", fontsize=25, pad=30)
+            else:
+                map_ax.set_title(f"dQ(s{length-1}, a{length-1})", fontsize=25, pad=30)
             map_ax.axis('off')
 
         cbar_ax = fig.add_axes([0.92, 0.15, 0.02, 0.7])  # [left, bottom, width, height]
@@ -178,16 +188,24 @@ def vis_fn(
         for i in range(length):
             obs_ax = axs[i][0]
             obs_ax.imshow(obs_seq[i].squeeze(axis=0), cmap='gray')
-            obs_ax.set_title(rf"$o_{{{i}}}$", fontsize=100, pad=90)
+            if use_latex:
+                obs_ax.set_title(rf"$o_{{{i}}}$", fontsize=100, pad=90)
+            else:
+                obs_ax.set_title(f"$o{i}", fontsize=100, pad=90)
             obs_ax.axis('off')
             for j in range(length):
                 # print(maps[i].shape)
                 if j < maps[i].shape[0]:
                     map_ax = axs[i][j+1]
                     im = map_ax.imshow(maps[i][j].squeeze(axis=0).mean(axis=-1), cmap=cmap)
-                    map_ax.set_title(
-                        rf"$\sum\limits_{{a \in A}}\left|\frac{{\partial Q(\hat{{s}}_{{{length - 1}}}, a_{{{length - 1}}})}}{{\partial o_{{{j}}}}}\right|$",
-                        fontsize=100, pad=110)
+                    if use_latex:
+                        map_ax.set_title(
+                            rf"$\sum\limits_{{a \in A}}\left|\frac{{\partial Q(\hat{{s}}_{{{length - 1}}}, a_{{{length - 1}}})}}{{\partial o_{{{j}}}}}\right|$",
+                            fontsize=100, pad=110)
+                    else:
+                        map_ax.set_title(
+                            f"$dQ(s{length - 1}, a{length - 1}) / do{j} $",
+                            fontsize=100, pad=110)
                     map_ax.axis('off')
                 else:
                     map_ax = axs[i][j+1]

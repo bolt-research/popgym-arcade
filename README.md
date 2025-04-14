@@ -190,22 +190,24 @@ import jax
 
 config = {
     "ENV_NAME": "NavigatorEasy",
-    "PARTIAL": False,
+    "PARTIAL": True,
     "MEMORY_TYPE": "lru",
     "SEED": 0,
+    "OBS_SIZE": 128,
 }
 
 # Initialize the random key
 rng = jax.random.PRNGKey(config["SEED"])
 
 # Initialize the model
-network = QNetworkRNN(5, rng, config["MEMORY_TYPE"])
+network = QNetworkRNN(rng, rnn_type=config["MEMORY_TYPE"], obs_size=config["OBS_SIZE"])
 # Load the model
-model = eqx.tree_deserialise_leaves("directory of your pkl file", network)
+model = eqx.tree_deserialise_leaves("PATH_TO_YOUR_MODEL_WEIGHTS.pkl", network)
 # Compute the saliency maps
 grads, obs_seq, grad_accumulator = get_saliency_maps(rng, model, config)
 # Visualize the saliency maps
-vis_fn(grads, obs_seq, config)
+# If you have latex installed, set use_latex=True
+vis_fn(grads, obs_seq, config, use_latex=False)
 ```
 ## Other Useful Libraries
 - [`gymnax`](https://github.com/RobertTLange/gymnax) - The `jax`-capable `gymnasium` API we built upon
