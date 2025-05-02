@@ -1,7 +1,7 @@
 import chex
 import equinox as eqx
 from jax import lax
-from typing import Tuple, Dict
+from typing import Any, Optional, Tuple, Dict
 import jax
 import jax.numpy as jnp
 import seaborn as sns
@@ -31,7 +31,8 @@ def get_saliency_maps(
         seed: jax.random.PRNGKey,
         model: eqx.Module,
         config: Dict,
-        num_steps=5
+        max_steps: int=5,
+        initial_state_and_obs: Optional[Tuple[Any, Any]]=None,
 ) -> Tuple[list, chex.Array, list]:
     """
     Computes saliency maps for visualizing model attention patterns in given environments.
@@ -40,7 +41,10 @@ def get_saliency_maps(
         seed: JAX PRNG key for reproducible randomization
         model: Pre-trained model containing parameter weights to analyze
         config: Configuration dictionary containing model and environment settings
-        num_steps: Number of sequential steps to generate visualization for
+        max_steps: Max number of sequential steps to generate visualization for.
+                The total number may be less, if the episode resets before reaching max_steps.
+        initial_state: Optional tuple (initial_state, initial_obs) for the env, otherwise will 
+                use the reset function to get the initial state.
 
     Returns:
         grads: List of gradient-based saliency maps. The i-th element contains i saliency maps
@@ -67,7 +71,10 @@ def get_saliency_maps(
     vmap_step = lambda n_envs: lambda rng, env_state, action: jax.vmap(env.step, in_axes=(0, 0, 0, None))(
         jax.random.split(rng, n_envs), env_state, action, env_params
     )
-    obs_seq, env_state = vmap_reset(n_envs)(_rng)
+    if initial_state_and_obs is None:
+        obs_seq, env_state = vmap_reset(n_envs)(_rng)
+    else:
+        env_state, obs_seq = initial_state_and_obs
     done_seq = jnp.zeros(n_envs, dtype=bool)
     action_seq = jnp.zeros(n_envs, dtype=int)
     obs_seq = obs_seq[jnp.newaxis, :]
@@ -79,6 +86,7 @@ def get_saliency_maps(
     grad_accumulator = []
 
     def step_env_and_compute_grads(env_state, obs_seq, action_seq, done_seq, key):
+
 
         def q_val_fn(obs_batch, action_batch, done_batch):
 
@@ -100,9 +108,9 @@ def get_saliency_maps(
         done_seq = jnp.concatenate([done_seq, new_done[jnp.newaxis, :]])
         return grads_obs, new_state, obs_seq, action_seq, done_seq
 
-    for _ in range(num_steps):
+    for _ in range(max_steps):
         rng, _rng = jax.random.split(seed, 2)
-        grads_obs, env_state, obs_seq, action_seq, done_seq = step_env_and_compute_grads(
+        grads_obs, env_state, obs_seq, action_seq, done_seq = jax.jit(step_env_and_compute_grads)(
             env_state,
             obs_seq,
             action_seq,
@@ -111,6 +119,8 @@ def get_saliency_maps(
         )
         grads.append(grads_obs)
         grad_accumulator.append(jnp.sum(grads_obs, axis=0))
+        if done_seq[-1].any():
+            break
 
     return grads, obs_seq, grad_accumulator
 
