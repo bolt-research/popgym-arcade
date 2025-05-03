@@ -21,7 +21,6 @@ from popgym_arcade.environments.draw_utils import (draw_crooked_arrow,
 
 
 @dataclass(frozen=True)
-
 class EnvState(environment.EnvState):
     x: chex.Array
     x_dot: chex.Array
