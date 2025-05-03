@@ -1,7 +1,7 @@
 from typing import Any, Dict, Optional, Tuple, Union
 
 import chex
-from flax import struct
+from chex import dataclass
 import jax
 from jax import lax
 import jax.numpy as jnp
@@ -9,6 +9,7 @@ import functools
 import time
 from gymnax.environments import environment
 from gymnax.environments import spaces
+from chex import dataclass
 
 from popgym_arcade.environments.draw_utils import (draw_crooked_arrow,
                                             draw_horizontal_arrow,
@@ -19,7 +20,8 @@ from popgym_arcade.environments.draw_utils import (draw_crooked_arrow,
                                             draw_str)
 
 
-@struct.dataclass
+@dataclass(frozen=True)
+
 class EnvState(environment.EnvState):
     x: chex.Array
     x_dot: chex.Array
@@ -29,7 +31,7 @@ class EnvState(environment.EnvState):
     time: int
 
 
-@struct.dataclass
+@dataclass(frozen=True)
 class EnvParams(environment.EnvParams):
     gravity: float = 9.8
     masscart: float = 1.0

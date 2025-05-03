@@ -2,7 +2,6 @@ import jax
 import jax.numpy as jnp
 import chex
 import numpy as np
-from flax import struct
 from functools import partial
 from typing import Optional, Tuple, Union, Any
 from gymnax.environments import environment, spaces
@@ -19,7 +18,7 @@ class GymnaxWrapper(object):
         return getattr(self._env, name)
 
 
-@struct.dataclass
+@dataclass(frozen=True)
 class LogEnvState:
     env_state: environment.EnvState
     episode_returns: float

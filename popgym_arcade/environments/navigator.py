@@ -6,7 +6,7 @@ import jax
 from jax import lax
 import jax.numpy as jnp
 import numpy as np
-from flax import struct
+from chex import dataclass
 from gymnax.environments import environment, spaces
 from popgym_arcade.environments.draw_utils import (draw_str,
                                             draw_hexagon,
@@ -104,7 +104,7 @@ def generate_random_tnt_board(
     return board
 
 
-@struct.dataclass
+@dataclass(frozen=True)
 class EnvState:
     action_x: chex.Array
     action_y: chex.Array
@@ -113,7 +113,7 @@ class EnvState:
     score: int
 
 
-@struct.dataclass
+@dataclass(frozen=True)
 class EnvParams:
     pass
 

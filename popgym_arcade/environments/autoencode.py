@@ -3,7 +3,7 @@ from typing import Optional, Tuple
 import chex
 import jax
 import jax.numpy as jnp
-from flax import struct
+from chex import dataclass
 from jax import lax
 import functools
 from gymnax.environments import environment, spaces
@@ -16,7 +16,7 @@ from popgym_arcade.environments.draw_utils import (draw_heart,
                                             draw_sub_canvas)
 
 
-@struct.dataclass
+@dataclass(frozen=True)
 class EnvState:
     timestep: int
     cards: chex.Array
@@ -25,7 +25,7 @@ class EnvState:
     default_action: int
 
 
-@struct.dataclass
+@dataclass(frozen=True)
 class EnvParams:
     pass
 

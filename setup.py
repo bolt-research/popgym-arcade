@@ -11,7 +11,9 @@ setup(
     url="",
     packages=find_packages(),
     install_requires=[
-        "gymnax",
+        # gymnax does not work with newest version of jax
+        # use stable-gymnax alternative
+        "gymnax @ git+ssh://git@github.com/smorad/stable-gymnax.git",
         "dm_pix",
         "jaxtyping",
     ],
