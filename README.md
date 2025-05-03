@@ -210,7 +210,8 @@ grads, obs_seq, grad_accumulator = get_saliency_maps(rng, model, config)
 vis_fn(grads, obs_seq, config, use_latex=False)
 ```
 ## Other Useful Libraries
-- [`gymnax`](https://github.com/RobertTLange/gymnax) - The `jax`-capable `gymnasium` API we built upon
+- [`gymnax`](https://github.com/RobertTLange/gymnax) - The (deprecated) `jax`-capable `gymnasium` API
+- [`stable-gymnax`](https://github.com/smorad/stable-gymnax) - A maintained and patched version of `gymnax`
 - [`popgym`](https://github.com/proroklab/popgym) - The original collection of POMDPs, implemented in `numpy`
 - [`popjaxrl`](https://github.com/luchris429/popjaxrl) - A `jax` version of `popgym`
 - [`popjym`](https://github.com/EdanToledo/popjym) - A more readable version of `popjaxrl` environments that served as a basis for our work

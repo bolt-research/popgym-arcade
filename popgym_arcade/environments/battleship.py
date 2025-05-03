@@ -7,7 +7,7 @@ from jax import lax
 from jax import random
 import jax.numpy as jnp
 import numpy as np
-from flax import struct
+from chex import dataclass
 from gymnax.environments import environment, spaces
 from popgym_arcade.environments.draw_utils import (draw_rectangle,
                                             draw_x,
@@ -92,7 +92,7 @@ def generate_random_board(rng, board_size, ship_sizes):
     return board
 
 
-@struct.dataclass
+@dataclass(frozen=True)
 class EnvState:
     action_x: chex.Array
     action_y: chex.Array
@@ -104,7 +104,7 @@ class EnvState:
     timestep: int
 
 
-@struct.dataclass
+@dataclass(frozen=True)
 class EnvParams:
     pass
 
