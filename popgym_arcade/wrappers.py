@@ -1,6 +1,7 @@
 import jax
 import jax.numpy as jnp
 import chex
+from chex import dataclass
 import numpy as np
 from functools import partial
 from typing import Optional, Tuple, Union, Any
@@ -39,7 +40,14 @@ class LogWrapper(GymnaxWrapper):
             self, key: chex.PRNGKey, params: Optional[environment.EnvParams] = None
     ) -> Tuple[chex.Array, environment.EnvState]:
         obs, env_state = self._env.reset(key, params)
-        state = LogEnvState(env_state, 0.0, 0, 0.0, 0, 0)
+        state = LogEnvState(
+            env_state=env_state, 
+            episode_returns=0.0, 
+            episode_lengths=0, 
+            returned_episode_returns=0.0, 
+            returned_episode_lengths=0, 
+            timestep=0
+        )
         return obs, state
 
     @partial(jax.jit, static_argnums=(0,))
