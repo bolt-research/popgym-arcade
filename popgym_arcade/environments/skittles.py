@@ -104,9 +104,9 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
         "orange": jnp.array([1.0, 0.5, 0.0]),
         "yellow": jnp.array([1.0, 1.0, 0.0]),
         "green": jnp.array([0.0, 1.0, 0.0]),
-        "blue": jnp.array([0.0, 0.68, 0.94]),
-        "indigo": jnp.array([0.031, 0.44, 0.73]),
-        "violet": jnp.array([0.4, 0.19, 0.56]),
+        "blue": jnp.array([0.0, 0.0, 1.0]),
+        "indigo": jnp.array([0.29, 0.84, 0.97]),
+        "violet": jnp.array([0.49, 0.0, 0.92]),
 
         # parameters for rendering grids
         "grid_px": 2,
@@ -136,7 +136,7 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
         "sub_clr": jnp.array([0.0, 0.0, 0.0]),
         
         # parameters for current action position
-        "action_clr": jnp.array([0.93, 0.53, 0.18]),
+        "action_clr": jnp.array([1.0, 1.0, 1.0]),
         
         # parameters for rendering enemy
         # "enemy_clr": jnp.array([0.29, 0.84, 0.97]),
@@ -146,8 +146,8 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
         "yellow": jnp.array([1.0, 1.0, 0.0]),
         "green": jnp.array([0.0, 1.0, 0.0]),
         "blue": jnp.array([0.0, 0.0, 1.0]),
-        "indigo": jnp.array([0.29, 0.0, 0.51]),
-        "violet": jnp.array([0.56, 0.0, 1.0]),
+        "indigo": jnp.array([0.29, 0.84, 0.97]),
+        "violet": jnp.array([0.49, 0.0, 0.92]),
 
         # parameters for rendering grids
         "grid_px": 2,
