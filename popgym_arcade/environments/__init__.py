@@ -30,3 +30,8 @@ from popgym_arcade.environments.navigator import (NavigatorEasy,
                                            NavigatorMedium,
                                            NavigatorHard,
                                            )
+
+from popgym_arcade.environments.skittles import (SkittlesEasy,
+                                           SkittlesMedium,
+                                           SkittlesHard,
+                                           )
