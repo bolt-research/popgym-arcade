@@ -35,12 +35,12 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
     Jax compilable environment for the Swimming Dragon.
     
     ### Description
-    In Swimming Dragon, the agent is tasked with avoiding enemies that are moving down the screen. 
+    In Swimming Dragon, the agent is tasked with avoiding enemies that fall from the top of the screen.
     The agent can move left or right to dodge the enemies. The goal is to survive as long as possible without being hit by an enemy.
     There are three difficulties: easy, medium, and hard. Each difficulty has a different grid size and maximum steps in an episode.
-    Easy: 8x8 grid, 200 steps
-    Medium: 10x10 grid, 400 steps
-    Hard: 12x12 grid, 600 steps
+    Easy: 8x8 grid, agent's goal is to survive 200 steps, have 1 enemy in each row
+    Medium: 10x10 grid, agent's goal is to survive 400 steps, have 2 enemies in each row
+    Hard: 12x12 grid, agent's goal is to survive 600 steps, have 2 enemies in each row
     The episode ends when the agent is hit by an enemy or the maximum number of steps is reached.
 
     ### Board Elements
@@ -58,6 +58,13 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
     | 4      | Fire (No-op)                        |
     
     ### Observation Space
+    OBS_SIZE can be either 128 or 256. The observation is a rendered image of the state with shape (OBS_SIZE, OBS_SIZE, 3).
+    The image contains:
+        - The current action position (only move on the last row of the matrix), with white color.
+        - The enemies falling down from the top of the screen, with rainbow colors.
+        - The grid lines, with white color.
+        - The score, with green color.
+        - The environment name, with yellow color.
 
     ### Reward
     - Reward Scale: 1.0 / max_steps_in_episode
@@ -69,10 +76,9 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
     ### Args
     - max_steps_in_episode: Maximum number of steps in an episode.
     - grid_size: Size of the grid (number of rows and columns).
-    
-    TODO:
-        - obs_size: Size of the observation space.
-        - partial_obs: Whether to use partial observation or not.
+    - obs_size: Size of the observation space, choose between 128 and 256.
+    - partial_obs: Whether to use partial observation or not.
+    - enemy_num: Number of enemies in the difficulty level.
 
     """
 
