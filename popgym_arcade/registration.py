@@ -19,6 +19,9 @@ from popgym_arcade.environments import (CartPoleEasy,
                                  NavigatorEasy,
                                  NavigatorMedium,
                                  NavigatorHard,
+                                 SkittlesEasy,
+                                 SkittlesMedium,
+                                 SkittlesHard,
                                  )
 
 
@@ -65,6 +68,12 @@ def make(env_id: str, **env_kwargs):
         env = NavigatorMedium(**env_kwargs)
     elif env_id == "NavigatorHard":
         env = NavigatorHard(**env_kwargs)
+    elif env_id == "SkittlesEasy":
+        env = SkittlesEasy(**env_kwargs)
+    elif env_id == "SkittlesMedium":
+        env = SkittlesMedium(**env_kwargs)
+    elif env_id == "SkittlesHard":
+        env = SkittlesHard(**env_kwargs)
     else:
         raise ValueError("Environment ID is not registered")
 
@@ -92,5 +101,8 @@ REGISTERED_ENVIRONMENTS = [
     "NavigatorHard",
     "MineSweeperEasy",
     "MineSweeperMedium",
-    "MineSweeperHard"
+    "MineSweeperHard",
+    "SkittlesEasy",
+    "SkittlesMedium",
+    "SkittlesHard",
 ]

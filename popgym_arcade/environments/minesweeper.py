@@ -5,7 +5,7 @@ import chex
 import jax
 import jax.numpy as jnp
 from jax import lax
-from flax import struct
+from chex import dataclass
 from gymnax.environments import environment, spaces
 
 from popgym_arcade.environments.draw_utils import (draw_rectangle,
@@ -16,7 +16,7 @@ from popgym_arcade.environments.draw_utils import (draw_rectangle,
                                             draw_single_digit)
 
 
-@struct.dataclass
+@dataclass(frozen=True)
 class EnvState:
     """
     - mine_grid:
@@ -34,7 +34,7 @@ class EnvState:
     viewed_count: int
 
 
-@struct.dataclass
+@dataclass(frozen=True)
 class EnvParams:
     pass
 
