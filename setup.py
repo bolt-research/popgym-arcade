@@ -13,7 +13,7 @@ setup(
     install_requires=[
         # gymnax does not work with newest version of jax
         # use stable-gymnax alternative
-        "gymnax @ git+ssh://git@github.com/smorad/stable-gymnax.git",
+        "gymnax @ git+https://github.com/smorad/stable-gymnax",
         "dm_pix",
         "jaxtyping",
     ],
