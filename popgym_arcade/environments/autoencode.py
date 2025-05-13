@@ -261,12 +261,12 @@ class AutoEncode(environment.Environment):
             0,
         )
 
-        new_state = EnvState(
-            new_state.timestep + 1,
-            new_state.cards,
-            new_state.score + lax.cond(reward > 0, lambda _: 1, lambda _: 0, None),
-            new_state.count + jnp.where(jnp.logical_and(fire_action, play), 1, 0),
-            new_state.default_action,
+        new_state = new_state.replace(
+            timestep=new_state.timestep + 1,
+            cards=new_state.cards,
+            score=new_state.score + lax.cond(reward > 0, lambda _: 1, lambda _: 0, None),
+            count=new_state.count + jnp.where(jnp.logical_and(fire_action, play), 1, 0),
+            default_action=new_state.default_action,
         )
         obs = self.get_obs(new_state)
 
