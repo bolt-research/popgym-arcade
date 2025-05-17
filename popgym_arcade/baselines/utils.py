@@ -1,7 +1,7 @@
 import chex
 import equinox as eqx
 from jax import lax
-from typing import Any, Optional, Tuple, Dict
+from typing import Any, Optional, Tuple, Dict, List, Union
 import jax
 import jax.numpy as jnp
 import seaborn as sns
@@ -10,6 +10,10 @@ import matplotlib.ticker as ticker
 from popgym_arcade.baselines.model.memorax import add_batch_dim
 from popgym_arcade.wrappers import LogWrapper
 import popgym_arcade
+import numpy as np
+import os  # Import os for path manipulation
+import pandas as pd  # Import pandas for CSV handling
+import csv  # Import csv for direct CSV writing if needed
 
 
 @eqx.filter_jit
@@ -31,8 +35,8 @@ def get_saliency_maps(
         seed: jax.random.PRNGKey,
         model: eqx.Module,
         config: Dict,
-        max_steps: int=5,
-        initial_state_and_obs: Optional[Tuple[Any, Any]]=None,
+        max_steps: int = 5,
+        initial_state_and_obs: Optional[Tuple[Any, Any]] = None,
 ) -> Tuple[list, chex.Array, list]:
     """
     Computes saliency maps for visualizing model attention patterns in given environments.
@@ -66,8 +70,8 @@ def get_saliency_maps(
     env = LogWrapper(env)
     n_envs = 1
     vmap_reset = lambda n_envs: lambda rng: jax.vmap(env.reset, in_axes=(0, None))(
-                jax.random.split(rng, n_envs), env_params
-            )
+        jax.random.split(rng, n_envs), env_params
+    )
     vmap_step = lambda n_envs: lambda rng, env_state, action: jax.vmap(env.step, in_axes=(0, 0, 0, None))(
         jax.random.split(rng, n_envs), env_state, action, env_params
     )
@@ -87,9 +91,7 @@ def get_saliency_maps(
 
     def step_env_and_compute_grads(env_state, obs_seq, action_seq, done_seq, key):
 
-
         def q_val_fn(obs_batch, action_batch, done_batch):
-
             hs = model.initialize_carry(key=key)
             hs = add_batch_dim(hs, n_envs)
             _, q_val = model(hs, obs_batch, done_batch, action_batch)
@@ -125,14 +127,76 @@ def get_saliency_maps(
     return grads, obs_seq, grad_accumulator
 
 
+def get_terminal_saliency_maps(
+        seed: jax.random.PRNGKey,
+        model: eqx.Module,
+        config: Dict,
+        initial_state_and_obs: Optional[Tuple[Any, Any]] = None,
+) -> Tuple[list, chex.Array, list]:
+    env, env_params = popgym_arcade.make(config["ENV_NAME"], partial_obs=config["PARTIAL"], obs_size=config["OBS_SIZE"])
+    env = LogWrapper(env)
+    reset = lambda rng: env.reset(rng, env_params)
+    step = lambda rng, env_state, action: env.step(rng, env_state, action, env_params)
+    if initial_state_and_obs is None:
+        seed, _rng = jax.random.split(seed)
+        obs, env_state = reset(_rng)
+    else:
+        env_state, obs = initial_state_and_obs
+
+    # Step 1: Compute rollout until terminal state
+
+    def step_env(hs, env_state, obs, done, action, seed):
+        seed, step_key = jax.random.split(seed)
+        # Add time and batch dim for model
+        inputs = [
+            add_batch_dim(add_batch_dim(x, 1), 1)
+            for x in [obs, done, action]
+        ]
+
+        hs, q_val = model(hs, *inputs)
+        # Remove batch dim
+        q_val = jnp.squeeze(q_val, (0, 1))
+        action = jnp.argmax(q_val, axis=-1)
+        obs, env_state, reward, done, info = step(step_key, env_state, action)
+        return (hs, env_state, obs, done, action, seed)
+
+    seed, rng = jax.random.split(seed)
+    hs = model.initialize_carry(key=rng)
+    hs = add_batch_dim(hs, 1)
+    done = jnp.zeros((), dtype=bool)
+    action = jnp.zeros((), dtype=int)
+    observations, dones, actions = [obs], [done], [action]
+    while not jnp.any(done):
+        hs, env_state, obs, done, action, seed = jax.jit(step_env)(hs, env_state, obs, done, action, seed)
+        observations.append(obs)
+        dones.append(done)
+        actions.append(action)
+
+    observations = jnp.stack(observations, axis=0)
+    dones = jnp.stack(dones, axis=0)
+    actions = jnp.stack(actions, axis=0)
+
+    # Step 2: Compute gradients at terminal state
+    def compute_q(obs_batch, action_batch, done_batch):
+        hs = model.initialize_carry(key=seed)
+        hs = add_batch_dim(hs, 1)
+        inputs = [
+            add_batch_dim(x, 1, axis=1) for x in [obs_batch, done_batch, action_batch]
+        ]
+        _, q_val = model(hs, *inputs)
+        return jnp.abs(q_val[-1].sum())
+
+    # Use -2 because if done == true, obs is next episode
+    return jax.grad(compute_q)(observations[:-2], actions[:-2], dones[:-2])
+
 
 def vis_fn(
-    maps: list,
-    obs_seq: chex.Array,
-    config: dict,
-    cmap: str = 'hot',
-    mode: str = 'line',
-    use_latex: bool = True,
+        maps: list,
+        obs_seq: chex.Array,
+        config: dict,
+        cmap: str = 'hot',
+        mode: str = 'line',
+        use_latex: bool = True,
 ) -> None:
     """
     Generates visualizations of model attention patterns using saliency mapping techniques.
@@ -180,9 +244,11 @@ def vis_fn(
             saliency_map = maps_last[i].squeeze(axis=0).mean(axis=-1)
             im = map_ax.imshow(saliency_map, cmap='hot')
             if use_latex:
-                map_ax.set_title(rf"$\sum\limits_{{a \in A}}\left|\frac{{\partial Q(\hat{{s}}_{{{length-1}}}, a_{{{length-1}}})}}{{\partial o_{{{i}}}}}\right|$", fontsize=25, pad=30)
+                map_ax.set_title(
+                    rf"$\sum\limits_{{a \in A}}\left|\frac{{\partial Q(\hat{{s}}_{{{length - 1}}}, a_{{{length - 1}}})}}{{\partial o_{{{i}}}}}\right|$",
+                    fontsize=25, pad=30)
             else:
-                map_ax.set_title(f"dQ(s{length-1}, a{length-1})", fontsize=25, pad=30)
+                map_ax.set_title(f"dQ(s{length - 1}, a{length - 1})", fontsize=25, pad=30)
             map_ax.axis('off')
 
         cbar_ax = fig.add_axes([0.92, 0.15, 0.02, 0.7])  # [left, bottom, width, height]
@@ -190,7 +256,8 @@ def vis_fn(
         formatter = ticker.FormatStrFormatter('%.4f')
         cbar.ax.yaxis.set_major_formatter(formatter)
         plt.subplots_adjust(hspace=0.1, right=0.9)  # Adjust the main plot to the left to make room for the colorbar
-        plt.savefig(f'{config["ENV_NAME"]}_PARTIAL={config["PARTIAL"]}_SEED={config["SEED"]}.pdf', format='pdf', dpi=300, bbox_inches='tight')
+        plt.savefig(f'{config["ENV_NAME"]}_PARTIAL={config["PARTIAL"]}_SEED={config["SEED"]}.pdf', format='pdf',
+                    dpi=300, bbox_inches='tight')
         plt.show()
     elif mode == 'grid':
         maps = [jnp.abs(m) for m in maps]
@@ -206,7 +273,7 @@ def vis_fn(
             for j in range(length):
                 # print(maps[i].shape)
                 if j < maps[i].shape[0]:
-                    map_ax = axs[i][j+1]
+                    map_ax = axs[i][j + 1]
                     im = map_ax.imshow(maps[i][j].squeeze(axis=0).mean(axis=-1), cmap=cmap)
                     if use_latex:
                         map_ax.set_title(
@@ -218,7 +285,7 @@ def vis_fn(
                             fontsize=100, pad=110)
                     map_ax.axis('off')
                 else:
-                    map_ax = axs[i][j+1]
+                    map_ax = axs[i][j + 1]
                     map_ax.axis('off')
 
         cbar_ax = fig.add_axes([0.92, 0.15, 0.02, 0.7])  # [left, bottom, width, height]
@@ -228,8 +295,18 @@ def vis_fn(
         cbar.ax.tick_params(axis='y', labelsize=80)
         cbar.set_label("Gradient Magnitude", fontsize=100)
         plt.subplots_adjust(hspace=0.1, right=0.9)  # Adjust the main plot to the left to make room for the colorbar
-        plt.savefig(f'{mode}_{config["ENV_NAME"]}_PARTIAL={config["PARTIAL"]}_SEED={config["SEED"]}.pdf', format='pdf', dpi=300, bbox_inches='tight')
+        plt.savefig(
+            f'{config["MEMORY_TYPE"]}_{config["ENV_NAME"]}_PARTIAL={config["PARTIAL"]}_SEED={config["SEED"]}.pdf',
+            format='pdf', dpi=300, bbox_inches='tight')
         plt.show()
+
+
+
+
+
+
+
+
 
 
 
