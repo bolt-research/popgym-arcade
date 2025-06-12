@@ -1,7 +1,4 @@
 # POPGym Arcade - GPU-Accelerated POMDPs 
-![tests](https://github.com/smorad/popgym/actions/workflows/python-app.yml/badge.svg)
-
-
 
 <div style="display: flex; flex-direction: column; align-items: center; gap: 20px;">
     <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between;
