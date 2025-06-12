@@ -1,7 +1,7 @@
 from setuptools import find_packages, setup
 
 setup(
-    name="POPGym Arcade",
+    name="popgym-arcade",
     version="0.0.1",
     author="Wang Zekang, He Zhe, Steven Morad",
     author_email="",
@@ -11,8 +11,6 @@ setup(
     url="",
     packages=find_packages(),
     install_requires=[
-        # gymnax does not work with newest version of jax
-        # use stable-gymnax alternative
         "gymnax",
         "dm_pix",
         "jaxtyping",
