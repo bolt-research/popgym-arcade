@@ -1,4 +1,6 @@
 # POPGym Arcade - GPU-Accelerated POMDPs 
+![tests](https://github.com/smorad/popgym/actions/workflows/python-app.yml/badge.svg)
+
 
 
 <div style="display: flex; flex-direction: column; align-items: center; gap: 20px;">
@@ -94,13 +96,13 @@ You can expect millions of frames per second on a consumer-grade GPU. With `obs_
 To install the environments, run
 
 ```bash
-pip install git+https://www.github.com/bolt-research/popgym_arcade
+pip install git+https://www.github.com/bolt-research/popgym-arcade
 ```
 
 Or from source
 
 ```bash
-git clone https://www.github.com/bolt-research/popgym_arcade
+git clone https://www.github.com/bolt-research/popgym-arcade
 cd popgym_arcade
 pip install -e .
 ```
@@ -108,13 +110,13 @@ pip install -e .
 If you plan to use our training scripts, install the baselines as well
 
 ```bash
-pip install popgym_arcade[baselines] @ git+https://www.github.com/bolt-research/popgym_arcade.git
+pip install popgym_arcade[baselines] @ git+https://www.github.com/bolt-research/popgym-arcade.git
 ```
 
 Or from source
 
 ```bash
-git clone https://www.github.com/bolt-research/popgym_arcade
+git clone https://www.github.com/bolt-research/popgym-arcade
 cd popgym_arcade
 pip install -e '.[baselines]'
 ```
