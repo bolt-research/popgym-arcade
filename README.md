@@ -1,4 +1,5 @@
 # POPGym Arcade - GPU-Accelerated POMDPs 
+
 [![Tests](https://github.com/bolt-research/popgym-arcade/actions/workflows/python_app.yaml/badge.svg)](https://github.com/bolt-research/popgym-arcade/actions/workflows/python_app.yaml)
 
 <div style="display: flex; flex-direction: column; align-items: center; gap: 20px;">
@@ -94,29 +95,25 @@ You can expect millions of frames per second on a consumer-grade GPU. With `obs_
 To install the environments, run
 
 ```bash
-pip install git+https://www.github.com/bolt-research/popgym-arcade
+pip install popgym-arcade
 ```
 
 Or from source
 
 ```bash
-git clone https://www.github.com/bolt-research/popgym-arcade
-cd popgym_arcade
-pip install -e .
+pip install git+https://www.github.com/bolt-research/popgym-arcade
 ```
 
 If you plan to use our training scripts, install the baselines as well
 
 ```bash
-pip install popgym_arcade[baselines] @ git+https://www.github.com/bolt-research/popgym-arcade.git
+pip install 'popgym-arcade[baselines]'
 ```
 
 Or from source
 
 ```bash
-git clone https://www.github.com/bolt-research/popgym-arcade
-cd popgym_arcade
-pip install -e '.[baselines]'
+pip install 'popgym-arcade[baselines] @ git+https://www.github.com/bolt-research/popgym-arcade.git'
 ```
 
 ### Creating and Stepping Environments
@@ -189,10 +186,15 @@ import equinox as eqx
 import jax
 
 config = {
+    # Env string
     "ENV_NAME": "NavigatorEasy",
+    # Whether to use full or partial observability
     "PARTIAL": True,
+    # Memory model type (see models directory)
     "MEMORY_TYPE": "lru",
+    # Evaluation episode seed
     "SEED": 0,
+    # Observation size in pixels (128 or 256)
     "OBS_SIZE": 128,
 }
 
@@ -220,7 +222,7 @@ vis_fn(grads, obs_seq, config, use_latex=False)
 ```
 @article{wang2025popgym,
   title={POPGym Arcade: Parallel Pixelated POMDPs},
-  author={Wang, Zekang and He, Zhe and Toledo, Edan and Morad, Steven},
+  author={Wang, Zekang and He, Zhe and Zhang, Borong and Toledo, Edan and Morad, Steven},
   journal={arXiv preprint arXiv:2503.01450},
   year={2025}
 }
