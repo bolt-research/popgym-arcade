@@ -97,36 +97,22 @@ To install the environments, run
 ```bash
 pip install popgym-arcade
 ```
-
-Or from source
-
-```bash
-pip install git+https://www.github.com/bolt-research/popgym-arcade
-```
-
 If you plan to use our training scripts, install the baselines as well
 
 ```bash
 pip install 'popgym-arcade[baselines]'
 ```
 
-Or from source
+### Human Play
+To best understand the environments, you should try and play them yourself. The [play script](popgym_arcade/play.py) lets you play the games yourself using the arrow keys and spacebar.
 
 ```bash
-pip install 'popgym-arcade[baselines] @ git+https://www.github.com/bolt-research/popgym-arcade.git'
-```
-
-## Human Play
-To best understand the environments, you should try and play them yourself. You can easily integrate with `popgym-arcade` with `pygame`.
-
-Try the [play script](popgym_arcade/play.py) to play the games yourself! All games accept arrow key input and spacebar.
-
-```bash
-popgym-arcade-play NoisyCartPoleEasy # play MDP 256 pixel version
+popgym-arcade-play NoisyCartPoleEasy        # play MDP 256 pixel version
 popgym-arcade-play BattleShipEasy -p -o 128 # play POMDP 128 pixel version
 ```
 
 ### Creating and Stepping Environments
+Our envs are `gymnax` envs, so you can use your wrappers and code designed to work with `gymnax`. The following example demonstrates how to integrate POPGym Arcade into your code. 
 
 ```python
 import popgym_arcade
@@ -171,7 +157,6 @@ step_keys = jax.random.split(jax.random.key(t + 2), n_envs)
 markov_state, env_state, reward, done, info = mdp_step(step_keys, env_state, actions, mdp_params)
 ```
 
-
 ## Memory Introspection Tools 
 We implement visualization tools to probe which pixels persist in agent memory, and their
 impact on Q value predictions. Try code below or [vis example](plotting/plot_grads.ipynb) to visualize the memory your agent uses
@@ -208,6 +193,7 @@ grads, obs_seq, grad_accumulator = get_saliency_maps(rng, model, config)
 # If you have latex installed, set use_latex=True
 vis_fn(grads, obs_seq, config, use_latex=False)
 ```
+
 ## Other Useful Libraries
 - [`gymnax`](https://github.com/RobertTLange/gymnax) - The (deprecated) `jax`-capable `gymnasium` API
 - [`stable-gymnax`](https://github.com/smorad/stable-gymnax) - A maintained and patched version of `gymnax`
