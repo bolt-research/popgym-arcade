@@ -116,6 +116,16 @@ Or from source
 pip install 'popgym-arcade[baselines] @ git+https://www.github.com/bolt-research/popgym-arcade.git'
 ```
 
+## Human Play
+To best understand the environments, you should try and play them yourself. You can easily integrate with `popgym-arcade` with `pygame`.
+
+Try the [play script](popgym_arcade/play.py) to play the games yourself! All games accept arrow key input and spacebar.
+
+```bash
+popgym-arcade-play NoisyCartPoleEasy # play MDP 256 pixel version
+popgym-arcade-play BattleShipEasy -p -o 128 # play POMDP 128 pixel version
+```
+
 ### Creating and Stepping Environments
 
 ```python
@@ -161,20 +171,7 @@ step_keys = jax.random.split(jax.random.key(t + 2), n_envs)
 markov_state, env_state, reward, done, info = mdp_step(step_keys, env_state, actions, mdp_params)
 ```
 
-## Human Play
-To best understand the environments, you should try and play them yourself. You can easily integrate with `popgym-arcade` with `pygame`.
 
-First, you'll need to install `pygame`
-
-```bash
-pip install pygame
-```
-
-Try the [play script](play.py) to play the games yourself! All games accept arrow key input and spacebar.
-
-```bash
-python play.py
-```
 ## Memory Introspection Tools 
 We implement visualization tools to probe which pixels persist in agent memory, and their
 impact on Q value predictions. Try code below or [vis example](plotting/plot_grads.ipynb) to visualize the memory your agent uses

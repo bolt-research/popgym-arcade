@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="popgym-arcade",
-    version="0.0.1",
+    version="0.0.2",
     author="Wang Zekang, He Zhe, Steven Morad",
     author_email="",
     description="POMDP Arcade Environments on the GPU",
@@ -10,10 +10,16 @@ setup(
     long_description_content_type="text/markdown",
     url="",
     packages=find_packages(),
+    entry_points={
+        "console_scripts": [
+            "popgym-arcade-play = popgym_arcade.play:main",
+        ],
+    },
     install_requires=[
         "gymnax",
         "dm_pix",
         "jaxtyping",
+        "pygame"
     ],
     extras_require = {
         "baselines": [
@@ -24,7 +30,7 @@ setup(
             "beartype",
             "jaxtyping",
             "imageio"
-        ]
+        ],
     },
     classifiers=[
         "Programming Language :: Python :: 3",
