@@ -1,32 +1,48 @@
 #!/usr/bin/env python3
 
-import popgym_arcade
-import jax
-import popgym_arcade.registration
-import pygame
 import argparse
+
+import jax
 import numpy as np
+import pygame
+
+import popgym_arcade
+import popgym_arcade.registration
 
 # Change these to play other games
 
+
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("env", help="The env you want to play, for example BattleShipEasy")
-    parser.add_argument("--partial", '-p', help="Play the POMDP variant, else MDP", action='store_true')
-    parser.add_argument("--obs-size", '-o', help="Pixel size of observations, can be 128 or 256", type=int, default=256)
+    parser.add_argument(
+        "env", help="The env you want to play, for example BattleShipEasy"
+    )
+    parser.add_argument(
+        "--partial", "-p", help="Play the POMDP variant, else MDP", action="store_true"
+    )
+    parser.add_argument(
+        "--obs-size",
+        "-o",
+        help="Pixel size of observations, can be 128 or 256",
+        type=int,
+        default=256,
+    )
     args = parser.parse_args()
 
-    assert args.env in popgym_arcade.registration.REGISTERED_ENVIRONMENTS, (
-        f"Invalid env: {args.env}, must be in {popgym_arcade.registration.REGISTERED_ENVIRONMENTS}"
-    )
-    assert args.obs_size in [128, 256], (
-        f"Invalid obs-size: {args.obs_size}, must be in [128, 256]"
-    )
+    assert (
+        args.env in popgym_arcade.registration.REGISTERED_ENVIRONMENTS
+    ), f"Invalid env: {args.env}, must be in {popgym_arcade.registration.REGISTERED_ENVIRONMENTS}"
+    assert args.obs_size in [
+        128,
+        256,
+    ], f"Invalid obs-size: {args.obs_size}, must be in [128, 256]"
     return args
+
 
 def to_surf(arr):
     # Convert jax arry to pygame surface
     return np.transpose(arr, (1, 0, 2))
+
 
 def play(args):
     # Create env env variant
@@ -82,7 +98,9 @@ def play(args):
         # Take action if key pressed
         if action is not None:
             key, step_key = jax.random.split(key)
-            observation, env_state, reward, done, info = env_step(step_key, env_state, action, env_params)
+            observation, env_state, reward, done, info = env_step(
+                step_key, env_state, action, env_params
+            )
             surface = pygame.surfarray.make_surface(to_surf(observation))
 
             # Render to screen
@@ -94,9 +112,11 @@ def play(args):
 
     pygame.quit()
 
+
 def main():
     args = parse_args()
     play(args)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

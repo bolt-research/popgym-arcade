@@ -6,12 +6,17 @@ import jax
 from jaxtyping import PRNGKeyArray, Shaped
 
 from popgym_arcade.baselines.model.memorax.groups import BinaryAlgebra, Module
-from popgym_arcade.baselines.model.memorax.mtypes import Input, OutputEmbedding, RecurrentState, SingleRecurrentState
-from popgym_arcade.baselines.model.memorax.scans import set_action_scan, semigroup_scan
+from popgym_arcade.baselines.model.memorax.mtypes import (
+    Input,
+    OutputEmbedding,
+    RecurrentState,
+    SingleRecurrentState,
+)
+from popgym_arcade.baselines.model.memorax.scans import semigroup_scan, set_action_scan
 
 
 class GRAS(Module):
-    r"""A Generalized Recurrent Algebraic Structure (GRAS) 
+    r"""A Generalized Recurrent Algebraic Structure (GRAS)
 
     Given a recurrent state and inputs, returns the corresponding recurrent states and outputs
 
@@ -83,7 +88,7 @@ class GRAS(Module):
         else:
             in_key, scan_key, out_key = jax.random.split(key, 3)
             in_key = jax.random.split(in_key, T)
-            #scan_key = jax.random.split(scan_key, T + 1)
+            # scan_key = jax.random.split(scan_key, T + 1)
             out_key = jax.random.split(out_key, T)
         scan_input = eqx.filter_vmap(self.forward_map)(x, in_key)
         next_h = self.scan(self.algebra, h, scan_input)

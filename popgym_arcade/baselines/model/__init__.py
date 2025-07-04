@@ -1,10 +1,10 @@
 from popgym_arcade.baselines.model.builder import (
+    ActorCritic,
+    ActorCriticRNN,
     QNetwork,
     QNetworkRNN,
-    ActorCritic,
-    ActorCriticRNN
 )
 from popgym_arcade.baselines.model.memorax import (
-    get_residual_memory_model,
     add_batch_dim,
+    get_residual_memory_model,
 )

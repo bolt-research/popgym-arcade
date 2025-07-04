@@ -3,19 +3,21 @@ from typing import Optional, Tuple, Union
 
 import chex
 import jax
-from jax import lax
-from jax import random
 import jax.numpy as jnp
 import numpy as np
 from chex import dataclass
 from gymnax.environments import environment, spaces
-from popgym_arcade.environments.draw_utils import (draw_rectangle,
-                                            draw_x,
-                                            draw_o,
-                                            draw_grid,
-                                            draw_number,
-                                            draw_sub_canvas,
-                                            draw_str)
+from jax import lax, random
+
+from popgym_arcade.environments.draw_utils import (
+    draw_grid,
+    draw_number,
+    draw_o,
+    draw_rectangle,
+    draw_str,
+    draw_sub_canvas,
+    draw_x,
+)
 
 
 def is_valid_placement(board, row, col, direction, ship_size):
@@ -181,7 +183,6 @@ class BattleShip(environment.Environment):
         "sc_clr": jnp.array([255, 128, 0], dtype=jnp.uint8),
         # parameters for render env name
         "env_clr": jnp.array([74, 214, 247], dtype=jnp.uint8),
-        
     }
 
     render_256x = {
@@ -235,10 +236,10 @@ class BattleShip(environment.Environment):
     }
 
     def __init__(
-            self,
-            board_size: int,
-            partial_obs: bool = False,
-            obs_size: int = 128,
+        self,
+        board_size: int,
+        partial_obs: bool = False,
+        obs_size: int = 128,
     ):
         """Initialize the Battleship environment."""
         self.obs_size = obs_size
@@ -251,9 +252,7 @@ class BattleShip(environment.Environment):
         # self.reward_repeated_hit = -1.0 / (
         #         self.board_size * self.board_size - self.needed_hits
         # )
-        self.reward_repeated_hit = -1.0 / (
-            self.board_size * self.board_size / 2
-        )
+        self.reward_repeated_hit = -1.0 / (self.board_size * self.board_size / 2)
         self.reward_miss = 0.0
 
     @property
@@ -262,11 +261,11 @@ class BattleShip(environment.Environment):
         return EnvParams()
 
     def step_env(
-            self,
-            key: chex.PRNGKey,
-            state: EnvState,
-            action: Union[int, float, chex.Array],
-            params: EnvParams,
+        self,
+        key: chex.PRNGKey,
+        state: EnvState,
+        action: Union[int, float, chex.Array],
+        params: EnvParams,
     ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
         """Perform a step in the environment."""
 
@@ -280,8 +279,8 @@ class BattleShip(environment.Environment):
             )
             done = new_timestep >= self.max_episode_length
             infos = {
-                'terminated': False,
-                'truncated': new_timestep >= self.max_episode_length,
+                "terminated": False,
+                "truncated": new_timestep >= self.max_episode_length,
             }
             return self.get_obs(new_state), new_state, 0.0, done, infos
 
@@ -295,8 +294,8 @@ class BattleShip(environment.Environment):
             )
             done = new_timestep >= self.max_episode_length
             infos = {
-                'terminated': False,
-                'truncated': new_timestep >= self.max_episode_length,
+                "terminated": False,
+                "truncated": new_timestep >= self.max_episode_length,
             }
             return self.get_obs(new_state), new_state, 0.0, done, infos
 
@@ -310,8 +309,8 @@ class BattleShip(environment.Environment):
             )
             done = new_timestep >= self.max_episode_length
             infos = {
-                'terminated': False,
-                'truncated': new_timestep >= self.max_episode_length,
+                "terminated": False,
+                "truncated": new_timestep >= self.max_episode_length,
             }
             return self.get_obs(new_state), new_state, 0.0, done, infos
 
@@ -325,8 +324,8 @@ class BattleShip(environment.Environment):
             )
             done = new_timestep >= self.max_episode_length
             infos = {
-                'terminated': False,
-                'truncated': new_timestep >= self.max_episode_length,
+                "terminated": False,
+                "truncated": new_timestep >= self.max_episode_length,
             }
             return self.get_obs(new_state), new_state, 0.0, done, infos
 
@@ -344,7 +343,9 @@ class BattleShip(environment.Environment):
                 new_hits >= self.needed_hits,
                 new_timestep >= self.max_episode_length,
             )
-            terminated = jnp.logical_or(terminated, state.repeat_count >= self.board_size * self.board_size / 2)
+            terminated = jnp.logical_or(
+                terminated, state.repeat_count >= self.board_size * self.board_size / 2
+            )
             repeat_count = state.repeat_count + jnp.where(guessed_before, 1, 0)
             reward = lax.cond(
                 guessed_before,
@@ -368,11 +369,11 @@ class BattleShip(environment.Environment):
                 repeat_count=repeat_count,
             )
             infos = {
-                'terminated': jnp.logical_or(
+                "terminated": jnp.logical_or(
                     new_state.hits >= self.needed_hits,
-                    state.repeat_count >= self.board_size * self.board_size / 2
+                    state.repeat_count >= self.board_size * self.board_size / 2,
                 ),
-                'truncated': new_timestep >= self.max_episode_length,
+                "truncated": new_timestep >= self.max_episode_length,
             }
             return self.get_obs(new_state), new_state, reward, terminated, infos
 
@@ -386,7 +387,7 @@ class BattleShip(environment.Environment):
         return info
 
     def reset_env(
-            self, key: chex.PRNGKey, params: EnvParams
+        self, key: chex.PRNGKey, params: EnvParams
     ) -> Tuple[chex.Array, EnvState]:
         """Reset the environment."""
         board = generate_random_board(key, self.board_size, self.ship_sizes)
@@ -418,15 +419,19 @@ class BattleShip(environment.Environment):
         render_config = self.render_mode[self.obs_size]
         board_size = self.board_size
         square_size = (
-                render_config["sub_size"][board_size]
-                - (board_size + 1) * render_config["grid_px"]
+            render_config["sub_size"][board_size]
+            - (board_size + 1) * render_config["grid_px"]
         ) // board_size
 
         # Generate grid coordinates using meshgrid
         x_coords, y_coords = jnp.arange(board_size), jnp.arange(board_size)
-        xx, yy = jnp.meshgrid(x_coords, y_coords, indexing='ij')
-        top_left_x = render_config["grid_px"] + xx * (square_size + render_config["grid_px"])
-        top_left_y = render_config["grid_px"] + yy * (square_size + render_config["grid_px"])
+        xx, yy = jnp.meshgrid(x_coords, y_coords, indexing="ij")
+        top_left_x = render_config["grid_px"] + xx * (
+            square_size + render_config["grid_px"]
+        )
+        top_left_y = render_config["grid_px"] + yy * (
+            square_size + render_config["grid_px"]
+        )
         bottom_right_x = top_left_x + square_size
         bottom_right_y = top_left_y + square_size
 
@@ -451,10 +456,12 @@ class BattleShip(environment.Environment):
 
         # Draw action rectangle
         tl_x, tl_y = top_left_x[action_x, action_y], top_left_y[action_x, action_y]
-        br_x, br_y = bottom_right_x[action_x, action_y], bottom_right_y[action_x, action_y]
+        br_x, br_y = (
+            bottom_right_x[action_x, action_y],
+            bottom_right_y[action_x, action_y],
+        )
         sub_canvas = draw_rectangle(
-            (tl_x, tl_y), (br_x, br_y),
-            render_config["action_clr"], sub_canvas
+            (tl_x, tl_y), (br_x, br_y), render_config["action_clr"], sub_canvas
         )
 
         # Precompute hit conditions
@@ -467,18 +474,24 @@ class BattleShip(environment.Environment):
             _sub_canvas = lax.cond(
                 hit_ship[action_x, action_y],
                 lambda: draw_x(
-                    (tl_x, tl_y), (br_x, br_y),
-                    render_config["x_px"], render_config["x_clr"], _sub_canvas
+                    (tl_x, tl_y),
+                    (br_x, br_y),
+                    render_config["x_px"],
+                    render_config["x_clr"],
+                    _sub_canvas,
                 ),
-                lambda: _sub_canvas
+                lambda: _sub_canvas,
             )
             return lax.cond(
                 hit_empty[action_x, action_y],
                 lambda: draw_o(
-                    (tl_x, tl_y), (br_x, br_y),
-                    render_config["o_px"], render_config["o_clr"], _sub_canvas
+                    (tl_x, tl_y),
+                    (br_x, br_y),
+                    render_config["o_px"],
+                    render_config["o_clr"],
+                    _sub_canvas,
                 ),
-                lambda: _sub_canvas
+                lambda: _sub_canvas,
             )
 
         # Define full rendering function using vmap
@@ -494,20 +507,26 @@ class BattleShip(environment.Environment):
                 # Draw X if hit ship
                 canvas = lax.cond(
                     hit_ship[x, y],
-                    lambda: draw_x(cell_tl, cell_br,
-                                   render_config["x_px"],
-                                   render_config["x_clr"],
-                                   canvas),
-                    lambda: canvas
+                    lambda: draw_x(
+                        cell_tl,
+                        cell_br,
+                        render_config["x_px"],
+                        render_config["x_clr"],
+                        canvas,
+                    ),
+                    lambda: canvas,
                 )
                 # Draw O if hit empty
                 return lax.cond(
                     hit_empty[x, y],
-                    lambda: draw_o(cell_tl, cell_br,
-                                   render_config["o_px"],
-                                   render_config["o_clr"],
-                                   canvas),
-                    lambda: canvas
+                    lambda: draw_o(
+                        cell_tl,
+                        cell_br,
+                        render_config["o_px"],
+                        render_config["o_clr"],
+                        canvas,
+                    ),
+                    lambda: canvas,
                 )
 
             # Batch render all cells
@@ -517,8 +536,11 @@ class BattleShip(environment.Environment):
 
         # Draw score on canvas
         canvas = draw_number(
-            render_config["sc_t_l"], render_config["sc_b_r"],
-            render_config["sc_clr"], canvas, state.score
+            render_config["sc_t_l"],
+            render_config["sc_b_r"],
+            render_config["sc_clr"],
+            canvas,
+            state.score,
         )
 
         # Conditional rendering logic
@@ -530,10 +552,7 @@ class BattleShip(environment.Environment):
 
         # Draw grid lines
         sub_canvas = draw_grid(
-            square_size,
-            render_config["grid_px"],
-            render_config["grid_clr"],
-            sub_canvas
+            square_size, render_config["grid_px"], render_config["grid_clr"], sub_canvas
         )
 
         # Draw environment name
@@ -543,7 +562,7 @@ class BattleShip(environment.Environment):
             render_config["env_clr"],
             canvas,
             self.name,
-            horizontal=True
+            horizontal=True,
         )
 
         # Merge sub-canvas onto main canvas

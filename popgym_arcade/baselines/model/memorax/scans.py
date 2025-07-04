@@ -3,11 +3,10 @@ from typing import Callable, Optional
 import equinox as eqx
 import jax
 import jax.numpy as jnp
-from jaxtyping import Shaped, PRNGKeyArray
+from jaxtyping import PRNGKeyArray, Shaped
 
 from popgym_arcade.baselines.model.memorax.mtypes import RecurrentState
 from popgym_arcade.baselines.model.memorax.utils import debug_shape
-
 
 
 def set_action_scan(

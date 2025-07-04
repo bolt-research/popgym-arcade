@@ -6,8 +6,12 @@ from beartype import beartype as typechecker
 from equinox import nn
 from jaxtyping import Array, Float, PRNGKeyArray, Shaped, jaxtyped
 
-from popgym_arcade.baselines.model.memorax.groups import BinaryAlgebra, SetAction, Resettable
 from popgym_arcade.baselines.model.memorax.gras import GRAS
+from popgym_arcade.baselines.model.memorax.groups import (
+    BinaryAlgebra,
+    Resettable,
+    SetAction,
+)
 from popgym_arcade.baselines.model.memorax.mtypes import Input, StartFlag
 from popgym_arcade.baselines.model.memorax.scans import set_action_scan
 

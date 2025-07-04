@@ -1,13 +1,13 @@
 import multiprocessing
 import time
 
-import popgym
-from popgym.envs.battleship import Battleship
-
 # Test FPS for MinAtar environment
 # Source: https://github.com/kenjyoung/MinAtar/tree/master
 import gymnasium as gym
-TestEnv = gym.make('MinAtar/Asterix-v1')
+import popgym
+from popgym.envs.battleship import Battleship
+
+TestEnv = gym.make("MinAtar/Asterix-v1")
 
 NUM_STEPS = 512
 
@@ -30,11 +30,12 @@ def run_sample(e, num_steps):
     fps = num_steps / elapsed
     return fps
 
+
 def main():
     print(f"Testing environment: {TestEnv}")
     for n in range(1, 10):
         num_workers = 2**n
-        
+
         # Single environment test (for baseline reference)
         fps_single = run_sample(TestEnv, NUM_STEPS)
         print(f"{TestEnv} (1x) FPS: {fps_single:.0f}")
@@ -44,6 +45,7 @@ def main():
             steps = num_workers * [int(NUM_STEPS // num_workers)]
             fps_multi = sum(p.starmap(run_sample, zip(envs, steps)))
             print(f"{TestEnv} ({num_workers}x) FPS: {fps_multi:.0f}")
+
 
 if __name__ == "__main__":
     main()

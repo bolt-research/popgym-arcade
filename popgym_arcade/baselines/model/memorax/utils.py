@@ -1,12 +1,14 @@
 import jax
 import jax.numpy as jnp
-from jaxtyping import Array, Int
 from jax import lax
+from jaxtyping import Array, Int
 
 
 def debug_shape(x):
     import equinox as eqx
+
     return eqx.tree_pprint(jax.tree.map(lambda x: {x.shape: x.dtype}, x))
+
 
 def leaky_hard_sigmoid(x, alpha=0.01):
     return jnp.maximum(jnp.minimum(1.0 + alpha * x, (x + 1) / 2), alpha * x)

@@ -1,17 +1,18 @@
+import time
+from typing import NamedTuple
+
+import equinox as eqx
 import jax
 import jax.numpy as jnp
 import numpy as np
 import optax
-import equinox as eqx
-from typing import NamedTuple
 from jax import lax
-import time
-import wandb
+
 import popgym_arcade
-from popgym_arcade.wrappers import LogWrapper
-from popgym_arcade.baselines.model import add_batch_dim
-from popgym_arcade.baselines.model import ActorCriticRNN
+import wandb
+from popgym_arcade.baselines.model import ActorCriticRNN, add_batch_dim
 from popgym_arcade.baselines.utils import filter_scan
+from popgym_arcade.wrappers import LogWrapper
 
 
 class Transition(NamedTuple):
@@ -31,7 +32,9 @@ def make_train(config):
     config["MINIBATCH_SIZE"] = (
         config["NUM_ENVS"] * config["NUM_STEPS"] // config["NUM_MINIBATCHES"]
     )
-    env, env_params = popgym_arcade.make(config["ENV_NAME"], partial_obs=config["PARTIAL"], obs_size=config["OBS_SIZE"])
+    env, env_params = popgym_arcade.make(
+        config["ENV_NAME"], partial_obs=config["PARTIAL"], obs_size=config["OBS_SIZE"]
+    )
     env = LogWrapper(env)
 
     def linear_schedule(count):
@@ -46,14 +49,16 @@ def make_train(config):
         init_value=config["LR"],
         end_value=1e-10,
         transition_steps=(config["NUM_UPDATES"])
-                         * config["NUM_MINIBATCHES"]
-                         * config["UPDATE_EPOCHS"],
+        * config["NUM_MINIBATCHES"]
+        * config["UPDATE_EPOCHS"],
     )
 
     def train(rng):
         # INIT NETWORK
         rng, _rng, rng_init = jax.random.split(rng, 3)
-        network = ActorCriticRNN(key=_rng, obs_size=config["OBS_SIZE"], rnn_type=config["MEMORY_TYPE"])
+        network = ActorCriticRNN(
+            key=_rng, obs_size=config["OBS_SIZE"], rnn_type=config["MEMORY_TYPE"]
+        )
         actor_init_hstate, critic_init_hstate = network.initialize_carry(key=rng_init)
         actor_init_hstate = add_batch_dim(actor_init_hstate, config["NUM_ENVS"])
         critic_init_hstate = add_batch_dim(critic_init_hstate, config["NUM_ENVS"])
@@ -77,13 +82,25 @@ def make_train(config):
         def _update_step(runner_state, unused):
             # COLLECT TRAJECTORIES
             def _env_step(runner_state, unused):
-                network, opt_state, tx, env_state, last_obs, last_done, actor_hstate, critic_hstate, rng = runner_state
+                (
+                    network,
+                    opt_state,
+                    tx,
+                    env_state,
+                    last_obs,
+                    last_done,
+                    actor_hstate,
+                    critic_hstate,
+                    rng,
+                ) = runner_state
 
                 rng, _rng = jax.random.split(rng)
 
                 # SELECT ACTION
                 ac_in = (last_obs[np.newaxis, :], last_done[np.newaxis, :])
-                actor_hstate, critic_hstate, pi, value = network(actor_hstate, critic_hstate, ac_in)
+                actor_hstate, critic_hstate, pi, value = network(
+                    actor_hstate, critic_hstate, ac_in
+                )
                 action = pi.sample(key=_rng)
                 log_prob = pi.log_prob(action)
 
@@ -101,7 +118,17 @@ def make_train(config):
                 transition = Transition(
                     last_done, action, value, reward, log_prob, last_obs, info
                 )
-                runner_state = (network, opt_state, tx, env_state, obsv, done, actor_hstate, critic_hstate, rng)
+                runner_state = (
+                    network,
+                    opt_state,
+                    tx,
+                    env_state,
+                    obsv,
+                    done,
+                    actor_hstate,
+                    critic_hstate,
+                    rng,
+                )
                 return runner_state, transition
 
             actor_initial_hstate = runner_state[-3]
@@ -111,34 +138,82 @@ def make_train(config):
             )
 
             # CALCULATE ADVANTAGE
-            network, opt_state, tx, env_state, last_obs, last_done, actor_hstate, critic_hstate, rng = runner_state
+            (
+                network,
+                opt_state,
+                tx,
+                env_state,
+                last_obs,
+                last_done,
+                actor_hstate,
+                critic_hstate,
+                rng,
+            ) = runner_state
             ac_in = (last_obs[np.newaxis, :], last_done[np.newaxis, :])
             _, _, _, last_val = network(actor_hstate, critic_hstate, ac_in)
             last_val = last_val.squeeze(0)
+
             def _calculate_gae(traj_batch, last_val, last_done):
                 def _get_advantages(carry, transition):
                     gae, next_value, next_done = carry
-                    done, value, reward = transition.done, transition.value, transition.reward
-                    delta = reward + config["GAMMA"] * next_value * (1 - next_done) - value
-                    gae = delta + config["GAMMA"] * config["GAE_LAMBDA"] * (1 - next_done) * gae
+                    done, value, reward = (
+                        transition.done,
+                        transition.value,
+                        transition.reward,
+                    )
+                    delta = (
+                        reward + config["GAMMA"] * next_value * (1 - next_done) - value
+                    )
+                    gae = (
+                        delta
+                        + config["GAMMA"] * config["GAE_LAMBDA"] * (1 - next_done) * gae
+                    )
                     return (gae, value, done), gae
-                _, advantages = jax.lax.scan(_get_advantages, (jnp.zeros_like(last_val), last_val, last_done), traj_batch, reverse=True, unroll=16)
+
+                _, advantages = jax.lax.scan(
+                    _get_advantages,
+                    (jnp.zeros_like(last_val), last_val, last_done),
+                    traj_batch,
+                    reverse=True,
+                    unroll=16,
+                )
                 return advantages, advantages + traj_batch.value
+
             advantages, targets = _calculate_gae(traj_batch, last_val, last_done)
 
             # UPDATE NETWORK
             def _update_epoch(update_state, unused):
                 def _update_minbatch(train_state, batch_info):
-                    actor_init_hstate, critic_init_hstate, traj_batch, advantages, targets = batch_info
+                    (
+                        actor_init_hstate,
+                        critic_init_hstate,
+                        traj_batch,
+                        advantages,
+                        targets,
+                    ) = batch_info
                     network, opt_state, tx = train_state
-                    def _loss_fn(network, actor_init_hstate, critic_init_hstate, traj_batch, gae, targets):
+
+                    def _loss_fn(
+                        network,
+                        actor_init_hstate,
+                        critic_init_hstate,
+                        traj_batch,
+                        gae,
+                        targets,
+                    ):
                         # RERUN NETWORK
 
-                        actor_hstate_med = jax.tree.map(lambda s: s[0], actor_init_hstate)
-                        critic_hstate_med = jax.tree.map(lambda s: s[0], critic_init_hstate)
+                        actor_hstate_med = jax.tree.map(
+                            lambda s: s[0], actor_init_hstate
+                        )
+                        critic_hstate_med = jax.tree.map(
+                            lambda s: s[0], critic_init_hstate
+                        )
 
                         _, _, pi, value = network(
-                            actor_hstate_med, critic_hstate_med, (traj_batch.obs, traj_batch.done)
+                            actor_hstate_med,
+                            critic_hstate_med,
+                            (traj_batch.obs, traj_batch.done),
                         )
                         log_prob = pi.log_prob(traj_batch.action)
 
@@ -175,8 +250,16 @@ def make_train(config):
                         )
                         return total_loss, (value_loss, loss_actor, entropy)
 
-                    (total_loss, _), grads = eqx.filter_value_and_grad(_loss_fn, has_aux=True)(
-                        network, actor_init_hstate, critic_init_hstate, traj_batch, advantages, targets)
+                    (total_loss, _), grads = eqx.filter_value_and_grad(
+                        _loss_fn, has_aux=True
+                    )(
+                        network,
+                        actor_init_hstate,
+                        critic_init_hstate,
+                        traj_batch,
+                        advantages,
+                        targets,
+                    )
                     updates, new_opt_state = tx.update(
                         grads,
                         opt_state,
@@ -185,6 +268,7 @@ def make_train(config):
                     new_network = eqx.apply_updates(network, updates)
                     new_train_state = (new_network, new_opt_state, tx)
                     return new_train_state, total_loss
+
                 (
                     network,
                     opt_state,
@@ -199,7 +283,13 @@ def make_train(config):
 
                 rng, _rng = jax.random.split(rng)
                 permutation = jax.random.permutation(_rng, config["NUM_ENVS"])
-                batch = (actor_init_hstate, critic_init_hstate, traj_batch, advantages, targets)
+                batch = (
+                    actor_init_hstate,
+                    critic_init_hstate,
+                    traj_batch,
+                    advantages,
+                    targets,
+                )
 
                 shuffled_batch = jax.tree_util.tree_map(
                     lambda x: jnp.take(x, permutation, axis=1), batch
@@ -235,8 +325,12 @@ def make_train(config):
                 )
                 return update_state, total_loss
 
-            actor_init_hstate = jax.tree.map(lambda a: jnp.expand_dims(a, axis=0), actor_initial_hstate)
-            critic_init_hstate = jax.tree.map(lambda a: jnp.expand_dims(a, axis=0), critic_initial_hstate)
+            actor_init_hstate = jax.tree.map(
+                lambda a: jnp.expand_dims(a, axis=0), actor_initial_hstate
+            )
+            critic_init_hstate = jax.tree.map(
+                lambda a: jnp.expand_dims(a, axis=0), critic_initial_hstate
+            )
             # init_hstate = initial_hstate[None, :]  # TBH
             update_state = (
                 network,
@@ -279,7 +373,17 @@ def make_train(config):
 
                 jax.debug.callback(callback, metric)
 
-            runner_state = (network, opt_state, tx, env_state, last_obs, last_done, actor_hstate, critic_hstate, rng)
+            runner_state = (
+                network,
+                opt_state,
+                tx,
+                env_state,
+                last_obs,
+                last_done,
+                actor_hstate,
+                critic_hstate,
+                rng,
+            )
             return runner_state, metric
 
         rng, _rng = jax.random.split(rng)
@@ -305,7 +409,9 @@ def make_train(config):
 def evaluate(model, config):
     seed = jax.random.PRNGKey(10)
     seed, _rng = jax.random.split(seed)
-    env, env_params = popgym_arcade.make(config["ENV_NAME"], partial_obs=config["PARTIAL"], obs_size=config["OBS_SIZE"])
+    env, env_params = popgym_arcade.make(
+        config["ENV_NAME"], partial_obs=config["PARTIAL"], obs_size=config["OBS_SIZE"]
+    )
     env = LogWrapper(env)
     vmap_reset = lambda n_envs: lambda rng: jax.vmap(env.reset, in_axes=(0, None))(
         jax.random.split(rng, n_envs), env_params
@@ -325,7 +431,16 @@ def evaluate(model, config):
     frame_shape = obs[0].shape
     frames = jnp.zeros((500, *frame_shape), dtype=jnp.uint8)
 
-    carry = (actor_hstate, critic_hstate, obs, init_done, init_action, state, frames, _rng)
+    carry = (
+        actor_hstate,
+        critic_hstate,
+        obs,
+        init_done,
+        init_action,
+        state,
+        frames,
+        _rng,
+    )
     wandb.init(project=f'{config["PROJECT"]}')
 
     def evaluate_step(carry, i):
@@ -335,7 +450,9 @@ def evaluate(model, config):
         done_batch = done[jnp.newaxis, :]
         # action_batch = action[jnp.newaxis, :]
         ac_in = (obs_batch, done_batch)
-        actor_hstate, critic_hstate, pi, value = model(actor_hstate, critic_hstate, ac_in)
+        actor_hstate, critic_hstate, pi, value = model(
+            actor_hstate, critic_hstate, ac_in
+        )
         action = pi.sample(_rng)
         action = jnp.squeeze(action, axis=0)
         obs, new_state, reward, done, info = vmap_step(2)(rng_step, state, action)
@@ -378,16 +495,34 @@ def ppo_rnn_run(config):
     runner_state = outs["runner_state"]
     network = runner_state[0]
     network_squeezed = jax.tree.map(
-        lambda x: x.squeeze(0) if (hasattr(x, "ndim") and x.ndim > 1 and x.shape[0] == 1) else x,
+        lambda x: (
+            x.squeeze(0)
+            if (hasattr(x, "ndim") and x.ndim > 1 and x.shape[0] == 1)
+            else x
+        ),
         network,
     )
     eqx.tree_serialise_leaves(
-        '{}_{}_{}_model_Partial={}_SEED={}.pkl'.format(config["TRAIN_TYPE"], config["MEMORY_TYPE"], config["ENV_NAME"],
-                                                       config["PARTIAL"], config["SEED"]), network_squeezed)
+        "{}_{}_{}_model_Partial={}_SEED={}.pkl".format(
+            config["TRAIN_TYPE"],
+            config["MEMORY_TYPE"],
+            config["ENV_NAME"],
+            config["PARTIAL"],
+            config["SEED"],
+        ),
+        network_squeezed,
+    )
     rng, _rng = jax.random.split(rng)
     network = ActorCriticRNN(_rng, config["OBS_SIZE"], config["MEMORY_TYPE"])
     model = eqx.tree_deserialise_leaves(
-        '{}_{}_{}_model_Partial={}_SEED={}.pkl'.format(config["TRAIN_TYPE"], config["MEMORY_TYPE"], config["ENV_NAME"],
-                                                       config["PARTIAL"], config["SEED"]), network)
+        "{}_{}_{}_model_Partial={}_SEED={}.pkl".format(
+            config["TRAIN_TYPE"],
+            config["MEMORY_TYPE"],
+            config["ENV_NAME"],
+            config["PARTIAL"],
+            config["SEED"],
+        ),
+        network,
+    )
     # visualize_grad(model, config)
     evaluate(model, config)

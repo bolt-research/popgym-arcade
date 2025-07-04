@@ -2,17 +2,22 @@
 Compute the average steps per second of the environment.
 
 """
-import sys; sys.path.extend(['/home/ubuntu-user/popjym-main'])
 
+import sys
+
+sys.path.extend(["/home/ubuntu-user/popjym-main"])
+
+import csv
 import os
 import sys
 import time
+
+import gymnax
 import jax
 import jax.numpy as jnp
-import csv
-import popgym_arcade
 from jaxlib.xla_extension import XlaRuntimeError
-import gymnax
+
+import popgym_arcade
 
 env_name = os.getenv("ENV_NAME", "MineSweeperEasy")
 partial_obs = os.getenv("PARTIAL_OBS", "False") == "True"
@@ -30,7 +35,10 @@ env, env_params = gymnax.make(env_name)
 
 # jax.config.update("jax_enable_x64", True)
 
-def test_multi_env_fps(env=env, env_params=env_params, seed=seed, num_envs=n_envs, num_steps=n_steps):
+
+def test_multi_env_fps(
+    env=env, env_params=env_params, seed=seed, num_envs=n_envs, num_steps=n_steps
+):
     """Test FPS for multiple environments."""
     vmap_reset = jax.vmap(env.reset, in_axes=(0, None))
     vmap_step = jax.vmap(env.step, in_axes=(0, 0, 0, None))
@@ -44,12 +52,13 @@ def test_multi_env_fps(env=env, env_params=env_params, seed=seed, num_envs=n_env
 
     return obs
 
+
 fps = jax.jit(test_multi_env_fps)
-carry = fps(seed = jax.random.PRNGKey(1))
+carry = fps(seed=jax.random.PRNGKey(1))
 carry.block_until_ready()
 
 start = time.time()
-carry = fps(seed = jax.random.PRNGKey(2))
+carry = fps(seed=jax.random.PRNGKey(2))
 carry.block_until_ready()
 end = time.time()
 
@@ -58,9 +67,9 @@ fps = n_envs * n_steps / runtime
 print(f"env: {env_name}, partial_obs: {partial_obs}")
 print(f"time: {end - start}s")
 print(f"{env_name} - Multi Env - Envs: {n_envs}, Steps: {n_steps}, FPS: {fps}")
-csv_file = 'gymnaxfpsdata.csv'
+csv_file = "gymnaxfpsdata.csv"
 write_header = not os.path.exists(csv_file)
-with open(csv_file, mode='a', newline='') as file:
+with open(csv_file, mode="a", newline="") as file:
     writer = csv.writer(file)
     if write_header:
         writer.writerow(["Environment", "Partial Obs", "Num Envs", "Num Steps", "FPS"])

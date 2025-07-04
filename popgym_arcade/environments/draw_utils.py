@@ -1,25 +1,23 @@
-from jax import lax
-from typing import Tuple
-import jax
-from jaxtyping import Array
-import jax.numpy as jnp
-import dm_pix as dm
-import chex
 from functools import partial
+from typing import Tuple
+
+import chex
+import dm_pix as dm
+import jax
+import jax.numpy as jnp
+from jax import lax
+from jaxtyping import Array
 
 
-def log_normal(
-        value: chex.Array,
-        minimum: int
-) -> chex.Array:
+def log_normal(value: chex.Array, minimum: int) -> chex.Array:
     return minimum + 2 * jnp.log(value + 1)
 
 
 def draw_rectangle(
-        top_left: Tuple[int | Array, int | Array],
-        bottom_right: Tuple[int | Array, int | Array],
-        color: chex.Array,
-        canvas: chex.Array
+    top_left: Tuple[int | Array, int | Array],
+    bottom_right: Tuple[int | Array, int | Array],
+    color: chex.Array,
+    canvas: chex.Array,
 ) -> chex.Array:
     top_x, top_y = top_left
     bottom_x, bottom_y = bottom_right
@@ -29,8 +27,12 @@ def draw_rectangle(
     x_end = jnp.clip(bottom_x, 0, canvas.shape[0])
     y_end = jnp.clip(bottom_y, 0, canvas.shape[1])
 
-    mask_x = jnp.logical_and(jnp.arange(canvas.shape[0]) >= x_start, jnp.arange(canvas.shape[0]) < x_end)
-    mask_y = jnp.logical_and(jnp.arange(canvas.shape[1]) >= y_start, jnp.arange(canvas.shape[1]) < y_end)
+    mask_x = jnp.logical_and(
+        jnp.arange(canvas.shape[0]) >= x_start, jnp.arange(canvas.shape[0]) < x_end
+    )
+    mask_y = jnp.logical_and(
+        jnp.arange(canvas.shape[1]) >= y_start, jnp.arange(canvas.shape[1]) < y_end
+    )
 
     mask = jnp.outer(mask_y, mask_x)
 
@@ -40,17 +42,17 @@ def draw_rectangle(
 
 
 def draw_circle(
-        top_left: Tuple[int | Array, int | Array],
-        bottom_right: Tuple[int | Array, int | Array],
-        radius: float,
-        color: chex.Array,
-        canvas: chex.Array
+    top_left: Tuple[int | Array, int | Array],
+    bottom_right: Tuple[int | Array, int | Array],
+    radius: float,
+    color: chex.Array,
+    canvas: chex.Array,
 ) -> chex.Array:
     top_x, top_y = top_left
     bottom_x, bottom_y = bottom_right
     center_x = (top_x + bottom_x) // 2
     center_y = (top_y + bottom_y) // 2
-    y, x = jnp.ogrid[:canvas.shape[1], :canvas.shape[0]]
+    y, x = jnp.ogrid[: canvas.shape[1], : canvas.shape[0]]
     dist_from_center = jnp.sqrt((x - center_x) ** 2 + (y - center_y) ** 2)
 
     mask = dist_from_center <= radius
@@ -60,74 +62,26 @@ def draw_circle(
 
 
 def draw_triangle(
-        top_left: Tuple[int | Array, int | Array],
-        bottom_right: Tuple[int | Array, int | Array],
-        color: chex.Array,
-        canvas: chex.Array,
-        direction: int
+    top_left: Tuple[int | Array, int | Array],
+    bottom_right: Tuple[int | Array, int | Array],
+    color: chex.Array,
+    canvas: chex.Array,
+    direction: int,
 ) -> chex.Array:
     top_x, top_y = top_left
     bottom_x, bottom_y = bottom_right
 
-    def upward(
-            top_x,
-            top_y,
-            bottom_x,
-            bottom_y
-    ) -> Tuple:
-        return (
-            (top_x + bottom_x) // 2,
-            top_y,
-            bottom_x,
-            bottom_y,
-            top_x,
-            bottom_y
-        )
+    def upward(top_x, top_y, bottom_x, bottom_y) -> Tuple:
+        return ((top_x + bottom_x) // 2, top_y, bottom_x, bottom_y, top_x, bottom_y)
 
-    def downward(
-            top_x,
-            top_y,
-            bottom_x,
-            bottom_y
-    ) -> Tuple:
-        return (
-            top_x,
-            top_y,
-            bottom_x,
-            top_y,
-            (top_x + bottom_x) // 2,
-            bottom_y
-        )
+    def downward(top_x, top_y, bottom_x, bottom_y) -> Tuple:
+        return (top_x, top_y, bottom_x, top_y, (top_x + bottom_x) // 2, bottom_y)
 
-    def leftward(
-            top_x,
-            top_y,
-            bottom_x,
-            bottom_y
-    ) -> Tuple:
-        return (
-            top_x,
-            (top_y + bottom_y) // 2,
-            bottom_x,
-            top_y,
-            bottom_x,
-            bottom_y
-        )
+    def leftward(top_x, top_y, bottom_x, bottom_y) -> Tuple:
+        return (top_x, (top_y + bottom_y) // 2, bottom_x, top_y, bottom_x, bottom_y)
 
-    def rightward(
-            top_x,
-            top_y,
-            bottom_x,
-            bottom_y
-    ) -> Tuple:
-        return (
-            top_x,
-            top_y,
-            bottom_x,
-            (top_y + bottom_y) // 2,
-            top_x,
-            bottom_y
-        )
+    def rightward(top_x, top_y, bottom_x, bottom_y) -> Tuple:
+        return (top_x, top_y, bottom_x, (top_y + bottom_y) // 2, top_x, bottom_y)
 
     x1, y1, x2, y2, x3, y3 = lax.cond(
         direction == 1,
@@ -139,11 +93,11 @@ def draw_triangle(
                 direction == 3,
                 lambda _: leftward(top_x, top_y, bottom_x, bottom_y),
                 lambda _: rightward(top_x, top_y, bottom_x, bottom_y),
-                operand=None
+                operand=None,
             ),
-            operand=None
+            operand=None,
         ),
-        operand=None
+        operand=None,
     )
 
     def edge_function(x, y, x1, y1, x2, y2):
@@ -162,11 +116,11 @@ def draw_triangle(
 
 
 def draw_o(
-        top_left: Tuple[int | Array, int | Array],
-        bottom_right: Tuple[int | Array, int | Array],
-        thickness: int,
-        color: chex.Array,
-        canvas: chex.Array
+    top_left: Tuple[int | Array, int | Array],
+    bottom_right: Tuple[int | Array, int | Array],
+    thickness: int,
+    color: chex.Array,
+    canvas: chex.Array,
 ) -> chex.Array:
     """Draws a hollow circle (O) using vectorized operations."""
     top_x, top_y = top_left
@@ -177,23 +131,23 @@ def draw_o(
     outer_radius = (bottom_x - top_x) // 2
     inner_radius = outer_radius - thickness
 
-    y, x = jnp.ogrid[:canvas.shape[0], :canvas.shape[1]]
+    y, x = jnp.ogrid[: canvas.shape[0], : canvas.shape[1]]
 
     dx = x - cx
     dy = y - cy
-    squared_dist = dx ** 2 + dy ** 2
+    squared_dist = dx**2 + dy**2
 
-    annulus_mask = (squared_dist <= outer_radius ** 2) & (squared_dist >= inner_radius ** 2)
+    annulus_mask = (squared_dist <= outer_radius**2) & (squared_dist >= inner_radius**2)
 
     return annulus_mask[..., None] * color + (~annulus_mask[..., None]) * canvas
 
 
 def draw_x(
-        top_left: Tuple[int | Array, int | Array],
-        bottom_right: Tuple[int | Array, int | Array],
-        thickness: int,
-        color: chex.Array,
-        canvas: chex.Array
+    top_left: Tuple[int | Array, int | Array],
+    bottom_right: Tuple[int | Array, int | Array],
+    thickness: int,
+    color: chex.Array,
+    canvas: chex.Array,
 ) -> chex.Array:
     """Draws an 'X' inside a rectangle using vectorized operations."""
     top_x, top_y = top_left
@@ -203,31 +157,21 @@ def draw_x(
 
     dx = bottom_x - top_x
     dy = bottom_y - top_y
-    line_length = jnp.sqrt(dx ** 2 + dy ** 2)
+    line_length = jnp.sqrt(dx**2 + dy**2)
     norm_thickness = thickness * line_length / 2  # Normalized thickness
 
     dist_line1 = jnp.abs((y - top_y) * dx - (x - top_x) * dy)
     dist_line2 = jnp.abs((y - bottom_y) * dx - (x - top_x) * (-dy))
 
-    in_rect = (
-            (x >= top_x) & (x <= bottom_x) &
-            (y >= top_y) & (y <= bottom_y)
-    )
+    in_rect = (x >= top_x) & (x <= bottom_x) & (y >= top_y) & (y <= bottom_y)
 
-    mask = (
-            ((dist_line1 <= norm_thickness) |
-             (dist_line2 <= norm_thickness)) &
-            in_rect
-    )
+    mask = ((dist_line1 <= norm_thickness) | (dist_line2 <= norm_thickness)) & in_rect
 
     return mask[..., None] * color + (~mask[..., None]) * canvas
 
 
 def draw_grid(
-        square_size: int,
-        thickness: int,
-        color: chex.Array,
-        canvas: chex.Array
+    square_size: int, thickness: int, color: chex.Array, canvas: chex.Array
 ) -> chex.Array:
     height, width, _ = canvas.shape
 
@@ -238,8 +182,8 @@ def draw_grid(
     period = square_size + thickness
 
     # Create masks for vertical and horizontal lines
-    vertical_mask = (x % period < thickness)
-    horizontal_mask = (y % period < thickness)
+    vertical_mask = x % period < thickness
+    horizontal_mask = y % period < thickness
 
     # Combine masks to create the grid mask
     grid_mask = vertical_mask | horizontal_mask
@@ -250,13 +194,10 @@ def draw_grid(
     return grid_canvas
 
 
-def draw_sub_canvas(
-        sub_canvas: chex.Array,
-        canvas: chex.Array
-) -> chex.Array:
+def draw_sub_canvas(sub_canvas: chex.Array, canvas: chex.Array) -> chex.Array:
     """
     Draws a sub-canvas on a blank (256x256x3) canvas.
-    Examples: 
+    Examples:
     - sub_canvas = jnp.ones((192, 192, 3))
     - large_canvas = jnp.zeros((256, 256, 3))
     """
@@ -267,18 +208,19 @@ def draw_sub_canvas(
     margin_width = (canvas_width - sub_canvas_width) // 2
     margin_height = (canvas_height - sub_canvas_height) // 2
     # print(margin_width, margin_height)
-    merged_canvas = (canvas.at[
-                     margin_width:canvas_width - margin_width,
-                     margin_height:canvas_height - margin_height,
-                     :].set(sub_canvas))
+    merged_canvas = canvas.at[
+        margin_width : canvas_width - margin_width,
+        margin_height : canvas_height - margin_height,
+        :,
+    ].set(sub_canvas)
     return merged_canvas
 
 
 def draw_heart(
-        top_left: Tuple[int | Array, int | Array],
-        bottom_right: Tuple[int | Array, int | Array],
-        color: chex.Array,
-        canvas: chex.Array
+    top_left: Tuple[int | Array, int | Array],
+    bottom_right: Tuple[int | Array, int | Array],
+    color: chex.Array,
+    canvas: chex.Array,
 ) -> chex.Array:
     """
     Draws a heart shape defined by top_left and bottom_right on the canvas.
@@ -304,18 +246,22 @@ def draw_heart(
     scale = size // 2 + adjust
 
     # canvas = jnp.zeros_like(canva)
-    y, x = jnp.ogrid[:canvas.shape[0], :canvas.shape[1]]
+    y, x = jnp.ogrid[: canvas.shape[0], : canvas.shape[1]]
 
     # Normalize coordinates to [-2, 2] range within the specified rectangle
     x = (x - center_x) / scale * 2
     y = -((y - center_y) / scale * 2)  # Note the negative sign for upward orientation
 
     # Heart shape equation (modified for upward orientation)
-    heart_mask = ((x ** 2 + y ** 2 - 1) ** 3 - (x ** 2 * y ** 3)) < 0
+    heart_mask = ((x**2 + y**2 - 1) ** 3 - (x**2 * y**3)) < 0
 
     # Apply the mask only within the specified rectangle
-    within_rect = (x >= (top_x - center_x) / scale * 2) & (x <= (bottom_x - center_x) / scale * 2) & \
-                  (y >= (top_y - center_y) / scale * 2) & (y <= (bottom_y - center_y) / scale * 2)
+    within_rect = (
+        (x >= (top_x - center_x) / scale * 2)
+        & (x <= (bottom_x - center_x) / scale * 2)
+        & (y >= (top_y - center_y) / scale * 2)
+        & (y <= (bottom_y - center_y) / scale * 2)
+    )
 
     heart_mask = heart_mask & within_rect
 
@@ -325,10 +271,10 @@ def draw_heart(
 
 
 def draw_spade(
-        top_left: Tuple[int | Array, int | Array],
-        bottom_right: Tuple[int | Array, int | Array],
-        color: chex.Array,
-        canvas: chex.Array
+    top_left: Tuple[int | Array, int | Array],
+    bottom_right: Tuple[int | Array, int | Array],
+    color: chex.Array,
+    canvas: chex.Array,
 ) -> chex.Array:
     """
     Draws a spade shape (♠) defined by top_left and bottom_right on the canvas.
@@ -344,22 +290,26 @@ def draw_spade(
     # Calculate center and scale
     center_x = (top_x + bottom_x) / 2
 
-    y, x = jnp.ogrid[:canvas.shape[0], :canvas.shape[1]]
+    y, x = jnp.ogrid[: canvas.shape[0], : canvas.shape[1]]
     # Split the height: 2/3 for heart, 1/3 for triangle
     heart_height = height * 0.7
 
     # Heart part
     # Normalize coordinates for heart shape
     x_heart = (x - (top_x + width / 2)) / (width / 2) * 1.404  # Scale x from -1 to 1
-    y_heart = -(y - (top_y + heart_height / 2)) / (heart_height / 2) * 1.404  # Scale y and invert
+    y_heart = (
+        -(y - (top_y + heart_height / 2)) / (heart_height / 2) * 1.404
+    )  # Scale y and invert
 
     # Heart equation
     inverted_heart_mask = (
-                                  (x_heart ** 2 + y_heart ** 2 - 1) ** 3
-                                  - (x_heart ** 2 * (-y_heart) ** 3)
-                          ) < 0
+        (x_heart**2 + y_heart**2 - 1) ** 3 - (x_heart**2 * (-y_heart) ** 3)
+    ) < 0
     # Triangle mask
-    x1, y1 = center_x, bottom_y - height * 0.8  # Top vertex at the center bottom of the heart
+    x1, y1 = (
+        center_x,
+        bottom_y - height * 0.8,
+    )  # Top vertex at the center bottom of the heart
     x2, y2 = center_x + width * 0.4, bottom_y + height * 1.8
     x3, y3 = center_x - width * 0.4, bottom_y + height * 1.8
 
@@ -372,11 +322,7 @@ def draw_spade(
 
     triangle_mask = edge1 & edge2 & edge3
     # Combine masks for spade shape
-    boundary_mask = ((x >= top_x)
-                     & (x <= bottom_x)
-                     & (y >= top_y)
-                     & (y <= bottom_y)
-                     )
+    boundary_mask = (x >= top_x) & (x <= bottom_x) & (y >= top_y) & (y <= bottom_y)
     spade_mask = (inverted_heart_mask | triangle_mask) & boundary_mask
 
     # Color the canvas
@@ -386,10 +332,10 @@ def draw_spade(
 
 
 def draw_club(
-        top_left: Tuple[int | Array, int | Array],
-        bottom_right: Tuple[int | Array, int | Array],
-        color: chex.Array,
-        canvas: chex.Array
+    top_left: Tuple[int | Array, int | Array],
+    bottom_right: Tuple[int | Array, int | Array],
+    color: chex.Array,
+    canvas: chex.Array,
 ) -> chex.Array:
     """
     Draws a club shape (♣) within the specified boundary.
@@ -402,7 +348,7 @@ def draw_club(
     width = bottom_x - top_x
     height = bottom_y - top_y
 
-    y, x = jnp.ogrid[:canvas.shape[0], :canvas.shape[1]]
+    y, x = jnp.ogrid[: canvas.shape[0], : canvas.shape[1]]
     # Calculate center and radius
     center_x = (top_x + bottom_x) // 2
     center_y = (top_y + bottom_y) // 2
@@ -412,35 +358,24 @@ def draw_club(
     # Top circle
     circle1_x = center_x
     circle1_y = center_y - radius * 0.8
-    circle1 = (
-                      (x - circle1_x) ** 2
-                      + (y - circle1_y) ** 2
-              ) <= radius ** 2
+    circle1 = ((x - circle1_x) ** 2 + (y - circle1_y) ** 2) <= radius**2
 
     # Bottom left circle
     circle2_x = center_x - radius * 0.8
     circle2_y = center_y + radius
-    circle2 = (
-                      (x - circle2_x) ** 2
-                      + (y - circle2_y) ** 2
-              ) <= radius ** 2
+    circle2 = ((x - circle2_x) ** 2 + (y - circle2_y) ** 2) <= radius**2
 
     # Bottom right circle
     circle3_x = center_x + radius * 0.8
     circle3_y = center_y + radius
-    circle3 = (
-                      (x - circle3_x) ** 2
-                      + (y - circle3_y) ** 2
-              ) <= radius ** 2
+    circle3 = ((x - circle3_x) ** 2 + (y - circle3_y) ** 2) <= radius**2
 
     # Create stem
     stem_width = radius * 0.8
     stem_height = height * 0.4
     stem_top_y = center_y + radius
     stem = (
-            (jnp.abs(x - center_x) <= stem_width // 2)
-            & (y >= stem_top_y)
-            & (y <= bottom_y)
+        (jnp.abs(x - center_x) <= stem_width // 2) & (y >= stem_top_y) & (y <= bottom_y)
     )
     # Create triangle at the bottom
     triangle_top_y = bottom_y - stem_height * 0.5
@@ -461,17 +396,9 @@ def draw_club(
     triangle = edge1 & edge2 & edge3
 
     # Boundary mask
-    boundary_mask = (
-            (x >= top_x)
-            & (x <= bottom_x)
-            & (y >= top_y)
-            & (y <= bottom_y)
-    )
+    boundary_mask = (x >= top_x) & (x <= bottom_x) & (y >= top_y) & (y <= bottom_y)
     # Combine all shapes
-    club_mask = (
-            (circle1 | circle2 | circle3 | stem | triangle)
-            & boundary_mask
-    )
+    club_mask = (circle1 | circle2 | circle3 | stem | triangle) & boundary_mask
     # Color the canvas
     colored_canvas = jnp.where(club_mask[:, :, None], color, canvas)
 
@@ -479,10 +406,10 @@ def draw_club(
 
 
 def draw_diamond(
-        top_left: Tuple[int | Array, int | Array],
-        bottom_right: Tuple[int | Array, int | Array],
-        color: chex.Array,
-        canvas: chex.Array
+    top_left: Tuple[int | Array, int | Array],
+    bottom_right: Tuple[int | Array, int | Array],
+    color: chex.Array,
+    canvas: chex.Array,
 ) -> chex.Array:
     """
     Draws a diamond shape (♦) within the specified boundary.
@@ -501,7 +428,7 @@ def draw_diamond(
     width = bottom_x - top_x
     height = bottom_y - top_y
 
-    y, x = jnp.ogrid[:canvas.shape[0], :canvas.shape[1]]
+    y, x = jnp.ogrid[: canvas.shape[0], : canvas.shape[1]]
     # Calculate center
     center_x = (top_x + bottom_x) // 2
     center_y = (top_y + bottom_y) // 2
@@ -515,17 +442,10 @@ def draw_diamond(
     y_norm = (y - center_y) / scale_y * adjust
 
     # Create diamond mask using normalized coordinates
-    diamond_mask = (
-            jnp.abs(x_norm) + jnp.abs(y_norm)
-    ) <= 1.0
+    diamond_mask = (jnp.abs(x_norm) + jnp.abs(y_norm)) <= 1.0
 
     # Apply boundary mask
-    boundary_mask = (
-            (x >= top_x)
-            & (x <= bottom_x)
-            & (y >= top_y)
-            & (y <= bottom_y)
-    )
+    boundary_mask = (x >= top_x) & (x <= bottom_x) & (y >= top_y) & (y <= bottom_y)
 
     final_mask = diamond_mask & boundary_mask
 
@@ -535,12 +455,11 @@ def draw_diamond(
     return colored_canvas
 
 
-
 def draw_hexagon(
-        top_left: Tuple[int | Array, int | Array],
-        bottom_right: Tuple[int | Array, int | Array],
-        color: chex.Array,
-        canvas: chex.Array
+    top_left: Tuple[int | Array, int | Array],
+    bottom_right: Tuple[int | Array, int | Array],
+    color: chex.Array,
+    canvas: chex.Array,
 ) -> chex.Array:
     """
     Draws a vertical hexagon shape (⬡) within the specified boundary.
@@ -558,7 +477,7 @@ def draw_hexagon(
     # Create grid
     y_indices = jnp.arange(canvas.shape[0])
     x_indices = jnp.arange(canvas.shape[1])
-    yy, xx = jnp.meshgrid(y_indices, x_indices, indexing='ij')
+    yy, xx = jnp.meshgrid(y_indices, x_indices, indexing="ij")
 
     # Normalize coordinates and rotate
     x = (xx - center_x) / size
@@ -570,9 +489,9 @@ def draw_hexagon(
     sqrt3 = jnp.sqrt(3)
 
     hex_mask = (
-            (jnp.abs(x_rot) <= 1)
-            & (jnp.abs(y_rot) <= sqrt3 / 2)
-            & (sqrt3 * jnp.abs(x_rot) + jnp.abs(y_rot) <= sqrt3)
+        (jnp.abs(x_rot) <= 1)
+        & (jnp.abs(y_rot) <= sqrt3 / 2)
+        & (sqrt3 * jnp.abs(x_rot) + jnp.abs(y_rot) <= sqrt3)
     )
 
     # Apply mask
@@ -582,20 +501,20 @@ def draw_hexagon(
 
 
 def draw_matchstick_man(
-        top_left: Tuple[int | Array, int | Array],
-        bottom_right: Tuple[int | Array, int | Array],
-        color: chex.Array,
-        canvas: chex.Array
+    top_left: Tuple[int | Array, int | Array],
+    bottom_right: Tuple[int | Array, int | Array],
+    color: chex.Array,
+    canvas: chex.Array,
 ) -> chex.Array:
     """
     Draws a simple matchstick man figure within the specified boundary.
-    
+
     Args:
         top_left: Top-left coordinates of the drawing boundary
         bottom_right: Bottom-right coordinates of the drawing boundary
         color: Color array for drawing the matchstick man
         canvas: Input canvas to draw on
-    
+
     Returns:
         Updated canvas with matchstick man drawn
     """
@@ -613,34 +532,33 @@ def draw_matchstick_man(
     # Create grid
     y_indices = jnp.arange(canvas.shape[0])
     x_indices = jnp.arange(canvas.shape[1])
-    yy, xx = jnp.meshgrid(y_indices, x_indices, indexing='ij')
+    yy, xx = jnp.meshgrid(y_indices, x_indices, indexing="ij")
 
     # Head (circular)
     head_radius = size * 0.15
     head_mask = (
-            (xx - center_x) ** 2
-            + (yy - (center_y - size * 0.3)) ** 2
-    ) <= head_radius ** 2
+        (xx - center_x) ** 2 + (yy - (center_y - size * 0.3)) ** 2
+    ) <= head_radius**2
     # Body (vertical line)
     body_width = size * 0.1
     body_mask = (
-            (jnp.abs(xx - center_x) <= body_width / 2)
-            & (yy >= center_y - size * 0.3 + head_radius)
-            & (yy <= center_y + size * 0.2)
+        (jnp.abs(xx - center_x) <= body_width / 2)
+        & (yy >= center_y - size * 0.3 + head_radius)
+        & (yy <= center_y + size * 0.2)
     )
     # Arms (horizontal lines)
     arm_length = size * 0.2
     arm_width = size * 0.05
 
     left_arm_mask = (
-            (jnp.abs(yy - (center_y - size * 0.1)) <= arm_width / 2)
-            & (xx >= center_x - arm_length)
-            & (xx <= center_x)
+        (jnp.abs(yy - (center_y - size * 0.1)) <= arm_width / 2)
+        & (xx >= center_x - arm_length)
+        & (xx <= center_x)
     )
     right_arm_mask = (
-            (jnp.abs(yy - (center_y - size * 0.1)) <= arm_width / 2)
-            & (xx >= center_x)
-            & (xx <= center_x + arm_length)
+        (jnp.abs(yy - (center_y - size * 0.1)) <= arm_width / 2)
+        & (xx >= center_x)
+        & (xx <= center_x + arm_length)
     )
 
     # Legs (two angled lines)
@@ -648,19 +566,32 @@ def draw_matchstick_man(
     leg_width = size * 0.1
     leg_angle = jnp.pi / 4
     left_leg_mask = (
-            (jnp.abs(yy - (center_y + size * 0.2 + (center_x - xx) * jnp.tan(leg_angle))) <= leg_width / 2)
-            & (xx >= center_x - leg_length)
-            & (xx <= center_x)
+        (
+            jnp.abs(yy - (center_y + size * 0.2 + (center_x - xx) * jnp.tan(leg_angle)))
+            <= leg_width / 2
+        )
+        & (xx >= center_x - leg_length)
+        & (xx <= center_x)
     )
 
     right_leg_mask = (
-            (jnp.abs(yy - (center_y + size * 0.2 + (xx - center_x) * jnp.tan(leg_angle))) <= leg_width / 2)
-            & (xx >= center_x)
-            & (xx <= center_x + leg_length)
+        (
+            jnp.abs(yy - (center_y + size * 0.2 + (xx - center_x) * jnp.tan(leg_angle)))
+            <= leg_width / 2
+        )
+        & (xx >= center_x)
+        & (xx <= center_x + leg_length)
     )
 
     # Combine masks
-    matchstick_mask = head_mask | body_mask | left_arm_mask | right_arm_mask | left_leg_mask | right_leg_mask
+    matchstick_mask = (
+        head_mask
+        | body_mask
+        | left_arm_mask
+        | right_arm_mask
+        | left_leg_mask
+        | right_leg_mask
+    )
 
     # Apply mask
     colored_canvas = jnp.where(matchstick_mask[:, :, None], color, canvas)
@@ -669,18 +600,18 @@ def draw_matchstick_man(
 
 
 def draw_tnt_block(
-        top_left: Tuple[int | Array, int | Array],
-        bottom_right: Tuple[int | Array, int | Array],
-        canvas: chex.Array
+    top_left: Tuple[int | Array, int | Array],
+    bottom_right: Tuple[int | Array, int | Array],
+    canvas: chex.Array,
 ) -> chex.Array:
     """
     Draws a Minecraft-style TNT block on a canvas.
-    
+
     Args:
         top_left: Top-left coordinates of the TNT block
         bottom_right: Bottom-right coordinates of the TNT block
         canvas: Input canvas to draw on
-    
+
     Returns:
         Updated canvas with TNT block drawn
     """
@@ -695,46 +626,28 @@ def draw_tnt_block(
 
     # Create masks for different parts of the TNT block
     mask_x = jnp.logical_and(
-        jnp.arange(canvas.shape[0]) >= x_start,
-        jnp.arange(canvas.shape[0]) < x_end
+        jnp.arange(canvas.shape[0]) >= x_start, jnp.arange(canvas.shape[0]) < x_end
     )
     mask_y = jnp.logical_and(
-        jnp.arange(canvas.shape[1]) >= y_start,
-        jnp.arange(canvas.shape[1]) < y_end
+        jnp.arange(canvas.shape[1]) >= y_start, jnp.arange(canvas.shape[1]) < y_end
     )
     # Full block mask
     full_block_mask = jnp.outer(mask_y, mask_x)
 
     # Inner white rectangle (slightly smaller)
 
-    inner_x_start = jnp.clip(
-        top_x + (bottom_x - top_x) // 16,
-        0,
-        canvas.shape[0]
-    )
-    inner_y_start = jnp.clip(
-        top_y + (bottom_y - top_y) // 3,
-        0,
-        canvas.shape[1]
-    )
-    inner_x_end = jnp.clip(
-        bottom_x - (bottom_x - top_x) // 16,
-        0,
-        canvas.shape[0]
-    )
-    inner_y_end = jnp.clip(
-        bottom_y - (bottom_y - top_y) // 3,
-        0,
-        canvas.shape[1]
-    )
+    inner_x_start = jnp.clip(top_x + (bottom_x - top_x) // 16, 0, canvas.shape[0])
+    inner_y_start = jnp.clip(top_y + (bottom_y - top_y) // 3, 0, canvas.shape[1])
+    inner_x_end = jnp.clip(bottom_x - (bottom_x - top_x) // 16, 0, canvas.shape[0])
+    inner_y_end = jnp.clip(bottom_y - (bottom_y - top_y) // 3, 0, canvas.shape[1])
 
     inner_mask_x = jnp.logical_and(
         jnp.arange(canvas.shape[0]) >= inner_x_start,
-        jnp.arange(canvas.shape[0]) < inner_x_end
+        jnp.arange(canvas.shape[0]) < inner_x_end,
     )
     inner_mask_y = jnp.logical_and(
         jnp.arange(canvas.shape[1]) >= inner_y_start,
-        jnp.arange(canvas.shape[1]) < inner_y_end
+        jnp.arange(canvas.shape[1]) < inner_y_end,
     )
     inner_block_mask = jnp.outer(inner_mask_y, inner_mask_x)
 
@@ -758,89 +671,57 @@ def draw_tnt_block(
         # Create text mask for each letter
         y_indices = jnp.arange(canvas.shape[0])
         x_indices = jnp.arange(canvas.shape[1])
-        yy, xx = jnp.meshgrid(y_indices, x_indices, indexing='ij')
+        yy, xx = jnp.meshgrid(y_indices, x_indices, indexing="ij")
 
         # T mask (left part)
-        t_mask_x = (
-                (xx >= top_x + width * 0.13)
-                & (xx < top_x + width * 0.2)
+        t_mask_x = (xx >= top_x + width * 0.13) & (xx < top_x + width * 0.2)
+        t_mask_y = (yy >= top_y + height * 0.35) & (yy < top_y + height * 0.65)
+        t_horizontal_mask_x = (xx >= top_x + width * 0.05) & (xx < top_x + width * 0.3)
+        t_horizontal_mask_y = (yy >= top_y + height * 0.32) & (
+            yy < top_y + height * 0.4
         )
-        t_mask_y = (
-                (yy >= top_y + height * 0.35)
-                & (yy < top_y + height * 0.65)
-        )
-        t_horizontal_mask_x = (
-                (xx >= top_x + width * 0.05)
-                & (xx < top_x + width * 0.3)
-        )
-        t_horizontal_mask_y = (
-                (yy >= top_y + height * 0.32)
-                & (yy < top_y + height * 0.4)
-        )
-        t_mask = (
-                (t_mask_x & t_mask_y)
-                | (t_horizontal_mask_x & t_horizontal_mask_y)
-        )
+        t_mask = (t_mask_x & t_mask_y) | (t_horizontal_mask_x & t_horizontal_mask_y)
 
         # N mask (middle part)
-        n_mask_x1 = (
-                (xx >= top_x + width * 0.325)
-                & (xx < top_x + width * 0.4)
-        )
-        n_mask_x2 = (
-                (xx >= top_x + width * 0.6)
-                & (xx < top_x + width * 0.65)
-        )
-        n_mask_y = (
-                (yy >= top_y + height * 0.34)
-                & (yy < top_y + height * 0.65)
-        )
+        n_mask_x1 = (xx >= top_x + width * 0.325) & (xx < top_x + width * 0.4)
+        n_mask_x2 = (xx >= top_x + width * 0.6) & (xx < top_x + width * 0.65)
+        n_mask_y = (yy >= top_y + height * 0.34) & (yy < top_y + height * 0.65)
 
         n_diag_mask = (
-                jnp.abs(
-                    yy - (top_y + height * 0.35)
-                    - (xx - (top_x + width * 0.35))
-                    * (
-                            (top_y + height * 0.65 - (top_y + height * 0.3))
-                            / ((top_x + width * 0.65) - (top_x + width * 0.35))
-                    )
+            jnp.abs(
+                yy
+                - (top_y + height * 0.35)
+                - (xx - (top_x + width * 0.35))
+                * (
+                    (top_y + height * 0.65 - (top_y + height * 0.3))
+                    / ((top_x + width * 0.65) - (top_x + width * 0.35))
                 )
-                <= height * 0.05
+            )
+            <= height * 0.05
         )
 
         n_diag_mask = (
-                n_diag_mask
-                & (xx >= top_x + width * 0.35)
-                & (xx < top_x + width * 0.6)
-                & (yy >= top_y + height * 0.35)
-                & (yy < top_y + height * 0.65)
+            n_diag_mask
+            & (xx >= top_x + width * 0.35)
+            & (xx < top_x + width * 0.6)
+            & (yy >= top_y + height * 0.35)
+            & (yy < top_y + height * 0.65)
         )
 
-        n_mask = (
-                         (n_mask_x1 | n_mask_x2) & n_mask_y
-                 ) | n_diag_mask
+        n_mask = ((n_mask_x1 | n_mask_x2) & n_mask_y) | n_diag_mask
 
         # T mask (right part)
 
-        t2_mask_x = (
-                (xx >= top_x + width * 0.76)
-                & (xx < top_x + width * 0.83)
+        t2_mask_x = (xx >= top_x + width * 0.76) & (xx < top_x + width * 0.83)
+        t2_mask_y = (yy >= top_y + height * 0.35) & (yy < top_y + height * 0.65)
+        t2_horizontal_mask_x = (xx >= top_x + width * 0.67) & (
+            xx < top_x + width * 0.93
         )
-        t2_mask_y = (
-                (yy >= top_y + height * 0.35)
-                & (yy < top_y + height * 0.65)
+        t2_horizontal_mask_y = (yy >= top_y + height * 0.32) & (
+            yy < top_y + height * 0.4
         )
-        t2_horizontal_mask_x = (
-                (xx >= top_x + width * 0.67)
-                & (xx < top_x + width * 0.93)
-        )
-        t2_horizontal_mask_y = (
-                (yy >= top_y + height * 0.32)
-                & (yy < top_y + height * 0.4)
-        )
-        t2_mask = (
-                (t2_mask_x & t2_mask_y)
-                | (t2_horizontal_mask_x & t2_horizontal_mask_y)
+        t2_mask = (t2_mask_x & t2_mask_y) | (
+            t2_horizontal_mask_x & t2_horizontal_mask_y
         )
 
         # Combine text masks
@@ -856,22 +737,19 @@ def draw_tnt_block(
 
 
 def draw_crooked_tail(
-        top_left: Tuple,
-        bottom_right: Tuple,
-        color: chex.Array,
-        thickness: int,
-        canvas: chex.Array
+    top_left: Tuple,
+    bottom_right: Tuple,
+    color: chex.Array,
+    thickness: int,
+    canvas: chex.Array,
 ) -> chex.Array:
     """Draws a quarter circle ring on a blank (256x256x3) canvas."""
     top_x, top_y = top_left
     bottom_x, bottom_y = bottom_right
     center_x = (top_x + bottom_x) // 2
     center_y = (top_y + bottom_y) // 2
-    y, x = jnp.ogrid[:canvas.shape[0], :canvas.shape[1]]
-    dist_from_center = jnp.sqrt(
-        (x - center_x) ** 2
-        + (y - center_y) ** 2
-    )
+    y, x = jnp.ogrid[: canvas.shape[0], : canvas.shape[1]]
+    dist_from_center = jnp.sqrt((x - center_x) ** 2 + (y - center_y) ** 2)
     radius = (bottom_x - top_x) // 2
 
     # Create masks for the outer and inner circles
@@ -892,12 +770,12 @@ def draw_crooked_tail(
 
 
 def draw_stick(
-        top_left: Tuple,
-        bottom_right: Tuple,
-        angle: float,
-        thickness: int,
-        color: chex.Array,
-        canvas: chex.Array
+    top_left: Tuple,
+    bottom_right: Tuple,
+    angle: float,
+    thickness: int,
+    color: chex.Array,
+    canvas: chex.Array,
 ) -> chex.Array:
     """Draws a vertical stick on a blank (256x256x3) canvas."""
     top_x, top_y = top_left
@@ -908,38 +786,28 @@ def draw_stick(
     length = bottom_x - top_x
 
     # Calculate the top point of the stick
-    top_stick_x = (
-            bottom_stick_x
-            + length * jnp.sin(angle * jnp.pi)
-    )
-    top_stick_y = (
-            bottom_stick_y
-            - length * jnp.cos(angle * jnp.pi)
-    )
+    top_stick_x = bottom_stick_x + length * jnp.sin(angle * jnp.pi)
+    top_stick_y = bottom_stick_y - length * jnp.cos(angle * jnp.pi)
 
-    y, x = jnp.ogrid[:canvas.shape[0], :canvas.shape[1]]
+    y, x = jnp.ogrid[: canvas.shape[0], : canvas.shape[1]]
 
     # Calculate the distance from each point to the line
-    dist_to_line = (
-            jnp.abs(
-                (top_stick_y - bottom_stick_y) * x
-                - (top_stick_x - bottom_stick_x) * y
-                + top_stick_x * bottom_stick_y
-                - top_stick_y * bottom_stick_x
-            )
-            / jnp.sqrt(
-        (top_stick_y - bottom_stick_y) ** 2
-        + (top_stick_x - bottom_stick_x) ** 2
-    )
+    dist_to_line = jnp.abs(
+        (top_stick_y - bottom_stick_y) * x
+        - (top_stick_x - bottom_stick_x) * y
+        + top_stick_x * bottom_stick_y
+        - top_stick_y * bottom_stick_x
+    ) / jnp.sqrt(
+        (top_stick_y - bottom_stick_y) ** 2 + (top_stick_x - bottom_stick_x) ** 2
     )
 
     # Create a mask for the stick
     mask = (
-            (dist_to_line <= thickness / 2)
-            & (x >= jnp.minimum(bottom_x, top_x))
-            & (x <= jnp.maximum(bottom_x, top_x))
-            & (y >= jnp.minimum(bottom_y, top_y))
-            & (y <= jnp.maximum(bottom_y, top_y))
+        (dist_to_line <= thickness / 2)
+        & (x >= jnp.minimum(bottom_x, top_x))
+        & (x <= jnp.maximum(bottom_x, top_x))
+        & (y >= jnp.minimum(bottom_y, top_y))
+        & (y <= jnp.maximum(bottom_y, top_y))
     )
 
     # Apply the color to the canvas
@@ -948,111 +816,101 @@ def draw_stick(
     return colored_canvas
 
 
-def return_digit_patterns(
-        index: int
-) -> chex.Array:
+def return_digit_patterns(index: int) -> chex.Array:
     """According to the number index, return the corresponding digit boolean array."""
-    digit_patterns = jnp.array([
-        # 0
+    digit_patterns = jnp.array(
         [
-            [True, True, True, True, True],
-            [True, False, False, False, True],
-            [True, False, False, False, True],
-            [True, False, False, False, True],
-            [True, True, True, True, True]
-        ],
-
-        # 1
-        [
-            [False, False, True, False, False],
-            [False, True, True, False, False],
-            [False, False, True, False, False],
-            [False, False, True, False, False],
-            [False, True, True, True, False]
-        ],
-
-        # 2
-        [
-            [True, True, True, True, True],
-            [False, False, False, False, True],
-            [True, True, True, True, True],
-            [True, False, False, False, False],
-            [True, True, True, True, True]
-        ],
-
-        # 3
-        [
-            [True, True, True, True, True],
-            [False, False, False, False, True],
-            [True, True, True, True, True],
-            [False, False, False, False, True],
-            [True, True, True, True, True]
-        ],
-
-        # 4
-        [
-            [True, False, False, False, True],
-            [True, False, False, False, True],
-            [True, True, True, True, True],
-            [False, False, False, False, True],
-            [False, False, False, False, True]
-        ],
-
-        # 5
-        [
-            [True, True, True, True, True],
-            [True, False, False, False, False],
-            [True, True, True, True, True],
-            [False, False, False, False, True],
-            [True, True, True, True, True]
-        ],
-
-        # 6
-        [
-            [True, True, True, True, True],
-            [True, False, False, False, False],
-            [True, True, True, True, True],
-            [True, False, False, False, True],
-            [True, True, True, True, True]
-        ],
-
-        # 7
-        [
-            [True, True, True, True, True],
-            [False, False, False, False, True],
-            [False, False, False, False, True],
-            [False, False, False, False, True],
-            [False, False, False, False, True]
-        ],
-
-        # 8
-        [
-            [True, True, True, True, True],
-            [True, False, False, False, True],
-            [True, True, True, True, True],
-            [True, False, False, False, True],
-            [True, True, True, True, True]
-        ],
-
-        # 9
-        [
-            [True, True, True, True, True],
-            [True, False, False, False, True],
-            [True, True, True, True, True],
-            [False, False, False, False, True],
-            [True, True, True, True, True]
-        ],
-
-    ])
+            # 0
+            [
+                [True, True, True, True, True],
+                [True, False, False, False, True],
+                [True, False, False, False, True],
+                [True, False, False, False, True],
+                [True, True, True, True, True],
+            ],
+            # 1
+            [
+                [False, False, True, False, False],
+                [False, True, True, False, False],
+                [False, False, True, False, False],
+                [False, False, True, False, False],
+                [False, True, True, True, False],
+            ],
+            # 2
+            [
+                [True, True, True, True, True],
+                [False, False, False, False, True],
+                [True, True, True, True, True],
+                [True, False, False, False, False],
+                [True, True, True, True, True],
+            ],
+            # 3
+            [
+                [True, True, True, True, True],
+                [False, False, False, False, True],
+                [True, True, True, True, True],
+                [False, False, False, False, True],
+                [True, True, True, True, True],
+            ],
+            # 4
+            [
+                [True, False, False, False, True],
+                [True, False, False, False, True],
+                [True, True, True, True, True],
+                [False, False, False, False, True],
+                [False, False, False, False, True],
+            ],
+            # 5
+            [
+                [True, True, True, True, True],
+                [True, False, False, False, False],
+                [True, True, True, True, True],
+                [False, False, False, False, True],
+                [True, True, True, True, True],
+            ],
+            # 6
+            [
+                [True, True, True, True, True],
+                [True, False, False, False, False],
+                [True, True, True, True, True],
+                [True, False, False, False, True],
+                [True, True, True, True, True],
+            ],
+            # 7
+            [
+                [True, True, True, True, True],
+                [False, False, False, False, True],
+                [False, False, False, False, True],
+                [False, False, False, False, True],
+                [False, False, False, False, True],
+            ],
+            # 8
+            [
+                [True, True, True, True, True],
+                [True, False, False, False, True],
+                [True, True, True, True, True],
+                [True, False, False, False, True],
+                [True, True, True, True, True],
+            ],
+            # 9
+            [
+                [True, True, True, True, True],
+                [True, False, False, False, True],
+                [True, True, True, True, True],
+                [False, False, False, False, True],
+                [True, True, True, True, True],
+            ],
+        ]
+    )
     return digit_patterns[index]
 
 
 def draw_digit(
-        top_left: Tuple[int | Array, int | Array],
-        bottom_right: Tuple[int | Array, int | Array],
-        color: chex.Array,
-        canvas: chex.Array,
-        digit: int
+    top_left: Tuple[int | Array, int | Array],
+    bottom_right: Tuple[int | Array, int | Array],
+    color: chex.Array,
+    canvas: chex.Array,
+    digit: int,
 ) -> chex.Array:
     """
     Draws a specified digit defined by top_left and bottom_right on the canvas.
@@ -1071,19 +929,14 @@ def draw_digit(
     # Create a grid of coordinates
     y_indices = jnp.arange(canvas.shape[0])
     x_indices = jnp.arange(canvas.shape[1])
-    yy, xx = jnp.meshgrid(y_indices, x_indices, indexing='ij')
+    yy, xx = jnp.meshgrid(y_indices, x_indices, indexing="ij")
 
     # Compute the cell indices for each pixel
     cell_x = ((xx - top_x) // width).astype(jnp.uint8)
     cell_y = ((yy - top_y) // height).astype(jnp.uint8)
 
     # Create a mask for valid cells
-    valid_cells = (
-            (cell_x >= 0)
-            & (cell_x < 5)
-            & (cell_y >= 0)
-            & (cell_y < 5)
-    )
+    valid_cells = (cell_x >= 0) & (cell_x < 5) & (cell_y >= 0) & (cell_y < 5)
 
     # Create a mask for where to draw
     mask = valid_cells & digit_pattern[cell_y, cell_x]
@@ -1093,12 +946,13 @@ def draw_digit(
 
     return canvas
 
+
 def draw_number(
-        top_left: Tuple[int | Array, int],
-        bottom_right: Tuple[int | Array, int | Array],
-        color: chex.Array,
-        canvas: chex.Array,
-        number: int
+    top_left: Tuple[int | Array, int],
+    bottom_right: Tuple[int | Array, int | Array],
+    color: chex.Array,
+    canvas: chex.Array,
+    number: int,
 ) -> chex.Array:
     """
     Draws a multi-digit number on the canvas.
@@ -1124,7 +978,7 @@ def draw_number(
     num_digits = jnp.where(
         number == 0,
         1,
-        jnp.floor(jnp.log10(jnp.maximum(1, number)) + 1e-7).astype(int) + 1
+        jnp.floor(jnp.log10(jnp.maximum(1, number)) + 1e-7).astype(int) + 1,
     )
 
     total_width = num_digits * digit_width + (num_digits - 1) * space
@@ -1142,8 +996,10 @@ def draw_number(
         digit_tl = (pos_x, top_y + margin)
         digit_br = (pos_x + digit_width, bottom_y - margin)
 
-        return (draw_digit(digit_tl, digit_br, color, canvas, digit),
-                current_divisor // 10)
+        return (
+            draw_digit(digit_tl, digit_br, color, canvas, digit),
+            current_divisor // 10,
+        )
 
     initial_carry = (canvas, divisor)
 
@@ -1152,13 +1008,13 @@ def draw_number(
 
 
 def draw_single_digit(
-        top_left: Tuple[int | Array, int | Array],
-        bottom_right: Tuple[int | Array, int | Array],
-        color: chex.Array,
-        canvas: chex.Array,
-        digit: int,
-        digit_width: int = 15,
-        margin: int = 1,
+    top_left: Tuple[int | Array, int | Array],
+    bottom_right: Tuple[int | Array, int | Array],
+    color: chex.Array,
+    canvas: chex.Array,
+    digit: int,
+    digit_width: int = 15,
+    margin: int = 1,
 ) -> chex.Array:
     """
     Draws a specified digit defined by top_left and bottom_right on the canvas.
@@ -1192,19 +1048,14 @@ def draw_single_digit(
     # Create a grid of coordinates
     y_indices = jnp.arange(canvas.shape[0])
     x_indices = jnp.arange(canvas.shape[1])
-    yy, xx = jnp.meshgrid(y_indices, x_indices, indexing='ij')
+    yy, xx = jnp.meshgrid(y_indices, x_indices, indexing="ij")
 
     # Compute the cell indices for each pixel
     cell_x = ((xx - real_top_left[0]) // width).astype(int)
     cell_y = ((yy - real_top_left[1]) // height).astype(int)
 
     # Create a mask for valid cells
-    valid_cells = (
-        (cell_x >= 0) &
-        (cell_x < 5) &
-        (cell_y >= 0) &
-        (cell_y < 5)
-    )
+    valid_cells = (cell_x >= 0) & (cell_x < 5) & (cell_y >= 0) & (cell_y < 5)
 
     # Create a mask for where to draw
     mask = valid_cells & digit_pattern[cell_y, cell_x]
@@ -1214,12 +1065,13 @@ def draw_single_digit(
 
     return canvas
 
+
 def draw_horizontal_tail(
-        top_left: Tuple[int | Array, int | Array],
-        bottom_right: Tuple[int | Array, int | Array],
-        thickness: int,
-        color: chex.Array,
-        canvas: chex.Array
+    top_left: Tuple[int | Array, int | Array],
+    bottom_right: Tuple[int | Array, int | Array],
+    thickness: int,
+    color: chex.Array,
+    canvas: chex.Array,
 ) -> chex.Array:
     """Draws a horizontal line on a canvas with specified thickness."""
     top_x, top_y = top_left
@@ -1235,13 +1087,11 @@ def draw_horizontal_tail(
     y_end = jnp.clip(start_y + thickness // 2, 0, canvas.shape[1])
 
     mask_x = jnp.logical_and(
-        jnp.arange(canvas.shape[0]) >= x_start,
-        jnp.arange(canvas.shape[0]) < x_end
+        jnp.arange(canvas.shape[0]) >= x_start, jnp.arange(canvas.shape[0]) < x_end
     )
 
     mask_y = jnp.logical_and(
-        jnp.arange(canvas.shape[1]) >= y_start,
-        jnp.arange(canvas.shape[1]) < y_end
+        jnp.arange(canvas.shape[1]) >= y_start, jnp.arange(canvas.shape[1]) < y_end
     )
     mask = jnp.outer(mask_y, mask_x)
 
@@ -1251,11 +1101,11 @@ def draw_horizontal_tail(
 
 
 def draw_vertical_tail(
-        top_left: Tuple[int | Array, int | Array],
-        bottom_right: Tuple[int | Array, int | Array],
-        thickness: int,
-        color: chex.Array,
-        canvas: chex.Array
+    top_left: Tuple[int | Array, int | Array],
+    bottom_right: Tuple[int | Array, int | Array],
+    thickness: int,
+    color: chex.Array,
+    canvas: chex.Array,
 ) -> chex.Array:
     """Draws a vertical line on a canvas with specified thickness."""
     top_x, top_y = top_left
@@ -1265,33 +1115,15 @@ def draw_vertical_tail(
     end_x = (top_x + bottom_x) // 2
     end_y = bottom_y
 
-    x_start = jnp.clip(
-        start_x - thickness // 2,
-        0,
-        canvas.shape[0]
-    )
-    x_end = jnp.clip(
-        start_x + thickness // 2,
-        0,
-        canvas.shape[0]
-    )
-    y_start = jnp.clip(
-        start_y,
-        0,
-        canvas.shape[1]
-    )
-    y_end = jnp.clip(
-        end_y,
-        0,
-        canvas.shape[1]
-    )
+    x_start = jnp.clip(start_x - thickness // 2, 0, canvas.shape[0])
+    x_end = jnp.clip(start_x + thickness // 2, 0, canvas.shape[0])
+    y_start = jnp.clip(start_y, 0, canvas.shape[1])
+    y_end = jnp.clip(end_y, 0, canvas.shape[1])
     mask_x = jnp.logical_and(
-        jnp.arange(canvas.shape[0]) >= x_start,
-        jnp.arange(canvas.shape[0]) < x_end
+        jnp.arange(canvas.shape[0]) >= x_start, jnp.arange(canvas.shape[0]) < x_end
     )
     mask_y = jnp.logical_and(
-        jnp.arange(canvas.shape[1]) >= y_start,
-        jnp.arange(canvas.shape[1]) < y_end
+        jnp.arange(canvas.shape[1]) >= y_start, jnp.arange(canvas.shape[1]) < y_end
     )
 
     mask = jnp.outer(mask_y, mask_x)
@@ -1302,11 +1134,11 @@ def draw_vertical_tail(
 
 
 def draw_horizontal_arrow(
-        top_left: Tuple[int | Array, int | Array],
-        bottom_right: Tuple[int | Array, int | Array],
-        color: chex.Array,
-        velocity: chex.Array,
-        canvas: chex.Array
+    top_left: Tuple[int | Array, int | Array],
+    bottom_right: Tuple[int | Array, int | Array],
+    color: chex.Array,
+    velocity: chex.Array,
+    canvas: chex.Array,
 ) -> chex.Array:
     """Draws a straight arrow on a blank (256x256x3) canvas."""
 
@@ -1317,29 +1149,17 @@ def draw_horizontal_arrow(
         mini_th = 2
         mini_hmargin = 6
 
-    thickness = log_normal(
-        jnp.abs(velocity),
-        mini_th
-    ).astype(int)
+    thickness = log_normal(jnp.abs(velocity), mini_th).astype(int)
 
     top_x, top_y = top_left
     bottom_x, bottom_y = bottom_right
     mid_y = (top_y + bottom_y) // 2
 
-    head_margin = log_normal(
-        jnp.abs(velocity),
-        mini_hmargin
-    ).astype(int)
+    head_margin = log_normal(jnp.abs(velocity), mini_hmargin).astype(int)
 
     def left_velocity(canvas):
-        tail_top_left = (
-            top_x + head_margin,
-            mid_y - head_margin // 2
-        )
-        tail_bottom_right = (
-            bottom_x,
-            mid_y + head_margin // 2
-        )
+        tail_top_left = (top_x + head_margin, mid_y - head_margin // 2)
+        tail_bottom_right = (bottom_x, mid_y + head_margin // 2)
         canvas = draw_horizontal_tail(
             tail_top_left,
             tail_bottom_right,
@@ -1347,70 +1167,36 @@ def draw_horizontal_arrow(
             color,
             canvas,
         )
-        head_top_left = (
-            top_x,
-            mid_y - head_margin // 2
-        )
-        head_bottom_right = (
-            top_x + head_margin,
-            mid_y + head_margin // 2
-        )
+        head_top_left = (top_x, mid_y - head_margin // 2)
+        head_bottom_right = (top_x + head_margin, mid_y + head_margin // 2)
         canvas = draw_triangle(
-            head_top_left,
-            head_bottom_right,
-            color,
-            canvas,
-            direction=3
+            head_top_left, head_bottom_right, color, canvas, direction=3
         )
         return canvas
 
     def right_velocity(canvas):
-        tail_top_left = (
-            top_x,
-            mid_y - head_margin // 2
-        )
-        tail_bottom_right = (
-            bottom_x - head_margin,
-            mid_y + head_margin // 2
-        )
+        tail_top_left = (top_x, mid_y - head_margin // 2)
+        tail_bottom_right = (bottom_x - head_margin, mid_y + head_margin // 2)
         canvas = draw_horizontal_tail(
-            tail_top_left,
-            tail_bottom_right,
-            thickness,
-            color,
-            canvas
+            tail_top_left, tail_bottom_right, thickness, color, canvas
         )
-        head_top_left = (
-            bottom_x - head_margin,
-            mid_y - head_margin // 2
-        )
-        head_bottom_right = (
-            bottom_x,
-            mid_y + head_margin // 2
-        )
+        head_top_left = (bottom_x - head_margin, mid_y - head_margin // 2)
+        head_bottom_right = (bottom_x, mid_y + head_margin // 2)
         canvas = draw_triangle(
-            head_top_left,
-            head_bottom_right,
-            color,
-            canvas,
-            direction=4
+            head_top_left, head_bottom_right, color, canvas, direction=4
         )
         return canvas
 
-    canvas = lax.select(
-        velocity > 0,
-        right_velocity(canvas),
-        left_velocity(canvas)
-    )
+    canvas = lax.select(velocity > 0, right_velocity(canvas), left_velocity(canvas))
     return canvas
 
 
 def draw_vertical_arrow(
-        top_left: Tuple[int | Array, int | Array],
-        bottom_right: Tuple[int | Array, int | Array],
-        color: chex.Array,
-        velocity: chex.Array,
-        canvas: chex.Array
+    top_left: Tuple[int | Array, int | Array],
+    bottom_right: Tuple[int | Array, int | Array],
+    color: chex.Array,
+    velocity: chex.Array,
+    canvas: chex.Array,
 ) -> chex.Array:
     """Draws a vertical arrow on a blank (256x256x3) canvas."""
 
@@ -1421,107 +1207,57 @@ def draw_vertical_arrow(
         mini_th = 2
         mini_hmargin = 6
 
-    thickness = log_normal(
-        jnp.abs(velocity),
-        mini_th
-    ).astype(int)
+    thickness = log_normal(jnp.abs(velocity), mini_th).astype(int)
     top_x, top_y = top_left
     bottom_x, bottom_y = bottom_right
     mid_x = (top_x + bottom_x) // 2
 
-    head_margin = log_normal(
-        jnp.abs(velocity),
-        mini_hmargin
-    ).astype(int)
+    head_margin = log_normal(jnp.abs(velocity), mini_hmargin).astype(int)
 
     def up_velocity(canvas):
-        tail_top_left = (
-            mid_x - head_margin // 2,
-            top_y + head_margin
-        )
-        tail_bottom_right = (
-            mid_x + head_margin // 2,
-            bottom_y
-        )
+        tail_top_left = (mid_x - head_margin // 2, top_y + head_margin)
+        tail_bottom_right = (mid_x + head_margin // 2, bottom_y)
 
         canvas = draw_vertical_tail(
-            tail_top_left,
-            tail_bottom_right,
-            thickness,
-            color,
-            canvas
+            tail_top_left, tail_bottom_right, thickness, color, canvas
         )
 
-        head_top_left = (
-            mid_x - head_margin // 2,
-            top_y
-        )
-        head_bottom_right = (
-            mid_x + head_margin // 2,
-            top_y + head_margin
-        )
+        head_top_left = (mid_x - head_margin // 2, top_y)
+        head_bottom_right = (mid_x + head_margin // 2, top_y + head_margin)
 
         canvas = draw_triangle(
-            head_top_left,
-            head_bottom_right,
-            color,
-            canvas,
-            direction=1
+            head_top_left, head_bottom_right, color, canvas, direction=1
         )
         return canvas
 
     def down_velocity(canvas):
-        tail_top_left = (
-            mid_x - head_margin // 2,
-            top_y
-        )
-        tail_bottom_right = (
-            mid_x + head_margin // 2,
-            bottom_y - head_margin
-        )
+        tail_top_left = (mid_x - head_margin // 2, top_y)
+        tail_bottom_right = (mid_x + head_margin // 2, bottom_y - head_margin)
 
         canvas = draw_vertical_tail(
-            tail_top_left,
-            tail_bottom_right,
-            thickness,
-            color,
-            canvas
+            tail_top_left, tail_bottom_right, thickness, color, canvas
         )
 
-        head_top_left = (
-            mid_x - head_margin // 2,
-            bottom_y - head_margin
-        )
-        head_bottom_right = (
-            mid_x + head_margin // 2,
-            bottom_y
-        )
+        head_top_left = (mid_x - head_margin // 2, bottom_y - head_margin)
+        head_bottom_right = (mid_x + head_margin // 2, bottom_y)
 
         canvas = draw_triangle(
-            head_top_left,
-            head_bottom_right,
-            color,
-            canvas,
-            direction=2
+            head_top_left, head_bottom_right, color, canvas, direction=2
         )
 
         return canvas
 
-    canvas = lax.select(
-        velocity > 0,
-        down_velocity(canvas),
-        up_velocity(canvas)
-    )
+    canvas = lax.select(velocity > 0, down_velocity(canvas), up_velocity(canvas))
 
     return canvas
 
 
 def draw_crooked_arrow(
-        top_left: Tuple[int | Array, int | Array],
-        bottom_right: Tuple[int | Array, int | Array],
-        color: chex.Array,
-        angular_velocity: chex.Array,
-        canvas: chex.Array
+    top_left: Tuple[int | Array, int | Array],
+    bottom_right: Tuple[int | Array, int | Array],
+    color: chex.Array,
+    angular_velocity: chex.Array,
+    canvas: chex.Array,
 ) -> chex.Array:
     """Draws a crooked arrow on a blank (256x256x3) canvas."""
 
@@ -1532,89 +1268,49 @@ def draw_crooked_arrow(
         mini_th = 2
         mini_hmargin = 6
 
-    thickness = log_normal(
-        jnp.abs(angular_velocity),
-        mini_th
-    ).astype(int)
+    thickness = log_normal(jnp.abs(angular_velocity), mini_th).astype(int)
 
     top_x, top_y = top_left
     bottom_x, bottom_y = bottom_right
-    canvas = draw_crooked_tail(
-        top_left,
-        bottom_right,
-        color,
-        thickness,
-        canvas
-    )
+    canvas = draw_crooked_tail(top_left, bottom_right, color, thickness, canvas)
 
-    head_margin = log_normal(
-        abs(angular_velocity),
-        mini_hmargin
-    ).astype(int)
+    head_margin = log_normal(abs(angular_velocity), mini_hmargin).astype(int)
 
     mid_x = (top_x + bottom_x) // 2
     mid_y = (top_y + bottom_y) // 2
 
     def right_velocity(canvas):
-        mid_ring = (
-            bottom_x - thickness // 2,
-            mid_y
-        )
-        head_top_left = (
-            mid_ring[0] - head_margin // 2,
-            mid_y
-        )
-        head_bottom_right = (
-            mid_ring[0] + head_margin // 2,
-            mid_y + head_margin
-        )
+        mid_ring = (bottom_x - thickness // 2, mid_y)
+        head_top_left = (mid_ring[0] - head_margin // 2, mid_y)
+        head_bottom_right = (mid_ring[0] + head_margin // 2, mid_y + head_margin)
         canvas = draw_triangle(
-            head_top_left,
-            head_bottom_right,
-            color,
-            canvas,
-            direction=2
+            head_top_left, head_bottom_right, color, canvas, direction=2
         )
         return canvas
 
     def left_velocity(canvas):
-        mid_ring = (
-            mid_x,
-            top_y + thickness // 2
-        )
+        mid_ring = (mid_x, top_y + thickness // 2)
 
-        head_top_left = (
-            mid_x - head_margin,
-            mid_ring[1] - head_margin // 2
-        )
-        head_bottom_right = (
-            mid_x,
-            mid_ring[1] + head_margin // 2
-        )
+        head_top_left = (mid_x - head_margin, mid_ring[1] - head_margin // 2)
+        head_bottom_right = (mid_x, mid_ring[1] + head_margin // 2)
         canvas = draw_triangle(
-            head_top_left,
-            head_bottom_right,
-            color,
-            canvas,
-            direction=3
+            head_top_left, head_bottom_right, color, canvas, direction=3
         )
         return canvas
 
     canvas = lax.select(
-        angular_velocity > 0,
-        right_velocity(canvas),
-        left_velocity(canvas)
+        angular_velocity > 0, right_velocity(canvas), left_velocity(canvas)
     )
     return canvas
 
 
 def rotate(
-        image: chex.Array,
-        angle: float,
-        center: Tuple[int | Array, int | Array],
-        order: int = 1,
-        mode: str = "nearest",
-        cval: float = 0.0
+    image: chex.Array,
+    angle: float,
+    center: Tuple[int | Array, int | Array],
+    order: int = 1,
+    mode: str = "nearest",
+    cval: float = 0.0,
 ) -> chex.Array:
     """Rotate an image around a center point."""
     c = jnp.cos(-angle)
@@ -1623,25 +1319,22 @@ def rotate(
 
     # Use the offset to place the rotation at the image center.
     center = jnp.asarray(center)
-    image_center = (jnp.asarray(image.shape) - 1.) / 2.
+    image_center = (jnp.asarray(image.shape) - 1.0) / 2.0
     image_center = image_center.at[:2].set(center)
     offset = image_center - matrix @ image_center
 
-    return dm.affine_transform(image,
-                               matrix,
-                               offset=offset,
-                               order=order,
-                               mode=mode,
-                               cval=cval)
+    return dm.affine_transform(
+        image, matrix, offset=offset, order=order, mode=mode, cval=cval
+    )
 
 
 def draw_pole(
-        start: Tuple[int | Array, int | Array],
-        end: Tuple[int | Array, int | Array],
-        color: chex.Array,
-        angle: float,
-        thickness: int,
-        canvas: chex.Array,
+    start: Tuple[int | Array, int | Array],
+    end: Tuple[int | Array, int | Array],
+    color: chex.Array,
+    angle: float,
+    thickness: int,
+    canvas: chex.Array,
 ) -> chex.Array:
     start = jnp.array(start, dtype=jnp.float32)
     end = jnp.array(end, dtype=jnp.float32)
@@ -1658,7 +1351,13 @@ def draw_pole(
         h, w = canvas.shape[0], canvas.shape[1]
         y_grid, x_grid = jnp.mgrid[:h, :w]
         dist_sq = (x_grid - center[0]) ** 2 + (y_grid - center[1]) ** 2
-        mask = (dist_sq <= radius ** 2) & (x_grid >= 0) & (x_grid < w) & (y_grid >= 0) & (y_grid < h)
+        mask = (
+            (dist_sq <= radius**2)
+            & (x_grid >= 0)
+            & (x_grid < w)
+            & (y_grid >= 0)
+            & (y_grid < h)
+        )
         return canvas + mask[..., None] * color
 
     def vectorized_line(canvas, start, end, thickness):
@@ -1669,7 +1368,7 @@ def draw_pole(
         x1, y1 = end[0], end[1]
         dx = x1 - x0
         dy = y1 - y0
-        line_len_sq = dx ** 2 + dy ** 2 + 1e-8
+        line_len_sq = dx**2 + dy**2 + 1e-8
 
         t = ((x_grid - x0) * dx + (y_grid - y0) * dy) / line_len_sq
         t_clipped = jnp.clip(t, 0.0, 1.0)
@@ -1677,7 +1376,7 @@ def draw_pole(
         proj_y = y0 + t_clipped * dy
 
         dist_sq = (x_grid - proj_x) ** 2 + (y_grid - proj_y) ** 2
-        line_mask = dist_sq <= (thickness ** 2)
+        line_mask = dist_sq <= (thickness**2)
 
         valid = (x_grid >= 0) & (x_grid < w) & (y_grid >= 0) & (y_grid < h)
         return canvas + (line_mask & valid)[..., None] * color
@@ -1690,9 +1389,7 @@ def draw_pole(
     return jnp.clip(canvas, 0, 255)
 
 
-def return_letter_patterns(
-        letter: int
-) -> chex.Array:
+def return_letter_patterns(letter: int) -> chex.Array:
     patterns = {
         65: [
             [False, True, True, True, False],
@@ -1878,68 +1575,45 @@ def return_letter_patterns(
         ],
     }
 
-    patterns_stack = jnp.stack([
-        jnp.array(patterns[65], dtype=bool),
-
-        jnp.array(patterns[66], dtype=bool),
-
-        jnp.array(patterns[67], dtype=bool),
-
-        jnp.array(patterns[68], dtype=bool),
-
-        jnp.array(patterns[69], dtype=bool),
-
-        jnp.array(patterns[70], dtype=bool),
-
-        jnp.array(patterns[71], dtype=bool),
-
-        jnp.array(patterns[72], dtype=bool),
-
-        jnp.array(patterns[73], dtype=bool),
-
-        jnp.array(patterns[74], dtype=bool),
-
-        jnp.array(patterns[75], dtype=bool),
-
-        jnp.array(patterns[76], dtype=bool),
-
-        jnp.array(patterns[77], dtype=bool),
-
-        jnp.array(patterns[78], dtype=bool),
-
-        jnp.array(patterns[79], dtype=bool),
-
-        jnp.array(patterns[80], dtype=bool),
-
-        jnp.array(patterns[81], dtype=bool),
-
-        jnp.array(patterns[82], dtype=bool),
-
-        jnp.array(patterns[83], dtype=bool),
-
-        jnp.array(patterns[84], dtype=bool),
-
-        jnp.array(patterns[85], dtype=bool),
-
-        jnp.array(patterns[86], dtype=bool),
-
-        jnp.array(patterns[87], dtype=bool),
-
-        jnp.array(patterns[88], dtype=bool),
-
-        jnp.array(patterns[89], dtype=bool),
-
-        jnp.array(patterns[90], dtype=bool),
-    ])
+    patterns_stack = jnp.stack(
+        [
+            jnp.array(patterns[65], dtype=bool),
+            jnp.array(patterns[66], dtype=bool),
+            jnp.array(patterns[67], dtype=bool),
+            jnp.array(patterns[68], dtype=bool),
+            jnp.array(patterns[69], dtype=bool),
+            jnp.array(patterns[70], dtype=bool),
+            jnp.array(patterns[71], dtype=bool),
+            jnp.array(patterns[72], dtype=bool),
+            jnp.array(patterns[73], dtype=bool),
+            jnp.array(patterns[74], dtype=bool),
+            jnp.array(patterns[75], dtype=bool),
+            jnp.array(patterns[76], dtype=bool),
+            jnp.array(patterns[77], dtype=bool),
+            jnp.array(patterns[78], dtype=bool),
+            jnp.array(patterns[79], dtype=bool),
+            jnp.array(patterns[80], dtype=bool),
+            jnp.array(patterns[81], dtype=bool),
+            jnp.array(patterns[82], dtype=bool),
+            jnp.array(patterns[83], dtype=bool),
+            jnp.array(patterns[84], dtype=bool),
+            jnp.array(patterns[85], dtype=bool),
+            jnp.array(patterns[86], dtype=bool),
+            jnp.array(patterns[87], dtype=bool),
+            jnp.array(patterns[88], dtype=bool),
+            jnp.array(patterns[89], dtype=bool),
+            jnp.array(patterns[90], dtype=bool),
+        ]
+    )
     return patterns_stack[letter - 65]
 
 
 def draw_letter(
-        top_left: chex.Array,
-        bottom_right: chex.Array,
-        color: chex.Array,
-        canvas: chex.Array,
-        letter_code: int
+    top_left: chex.Array,
+    bottom_right: chex.Array,
+    color: chex.Array,
+    canvas: chex.Array,
+    letter_code: int,
 ) -> chex.Array:
     top_x, top_y = top_left
     bottom_x, bottom_y = bottom_right
@@ -1968,11 +1642,11 @@ def draw_letter(
 
 
 def draw_words_h(
-        top_left: chex.Array,
-        bottom_right: chex.Array,
-        color: chex.Array,
-        canvas: chex.Array,
-        letters: chex.Array
+    top_left: chex.Array,
+    bottom_right: chex.Array,
+    color: chex.Array,
+    canvas: chex.Array,
+    letters: chex.Array,
 ) -> chex.Array:
 
     if canvas.shape[0] == 256:
@@ -1993,35 +1667,34 @@ def draw_words_h(
 
     indices = jnp.arange(num_letters, dtype=jnp.uint8)
     current_cols = start_col + indices * (letter_width + space)
-    top_left_letters = jnp.stack([
-        current_cols,
-        jnp.full(num_letters, top_y + margin, dtype=jnp.uint8)
-    ], axis=1)
-    bottom_right_letters = jnp.stack([
-        current_cols + letter_width,
-        jnp.full(num_letters, bottom_y - margin, dtype=jnp.uint8)
-    ], axis=1)
+    top_left_letters = jnp.stack(
+        [current_cols, jnp.full(num_letters, top_y + margin, dtype=jnp.uint8)], axis=1
+    )
+    bottom_right_letters = jnp.stack(
+        [
+            current_cols + letter_width,
+            jnp.full(num_letters, bottom_y - margin, dtype=jnp.uint8),
+        ],
+        axis=1,
+    )
 
     def compute_delta(letter_code, top_left, bottom_right):
         modified_canvas = draw_letter(
-            top_left,
-            bottom_right,
-            color, canvas,
-            letter_code
+            top_left, bottom_right, color, canvas, letter_code
         )
         return modified_canvas - canvas
-    
+
     deltas = jax.vmap(compute_delta)(letters, top_left_letters, bottom_right_letters)
     final_canvas = canvas + jnp.sum(deltas, axis=0, dtype=jnp.uint8)
     return final_canvas
 
 
 def draw_words_v(
-        top_left: chex.Array,
-        bottom_right: chex.Array,
-        color: chex.Array,
-        canvas: chex.Array,
-        letters: chex.Array
+    top_left: chex.Array,
+    bottom_right: chex.Array,
+    color: chex.Array,
+    canvas: chex.Array,
+    letters: chex.Array,
 ) -> chex.Array:
 
     if canvas.shape[0] == 256:
@@ -2042,22 +1715,20 @@ def draw_words_v(
 
     indices = jnp.arange(num_letters)
     current_rows = start_row + indices * (letter_width + space)
-    top_left_letters = jnp.stack([
-        jnp.full(num_letters, top_x + margin, dtype=jnp.uint8),
-        current_rows
-    ], axis=1)
-    bottom_right_letters = jnp.stack([
-        jnp.full(num_letters, bottom_x - margin, dtype=jnp.uint8),
-        current_rows + letter_width
-    ], axis=1)
+    top_left_letters = jnp.stack(
+        [jnp.full(num_letters, top_x + margin, dtype=jnp.uint8), current_rows], axis=1
+    )
+    bottom_right_letters = jnp.stack(
+        [
+            jnp.full(num_letters, bottom_x - margin, dtype=jnp.uint8),
+            current_rows + letter_width,
+        ],
+        axis=1,
+    )
 
     def compute_delta(letter_code, top_left, bottom_right):
         modified_canvas = draw_letter(
-            top_left,
-            bottom_right,
-            color,
-            canvas,
-            letter_code
+            top_left, bottom_right, color, canvas, letter_code
         )
         return modified_canvas - canvas
 
@@ -2068,23 +1739,23 @@ def draw_words_v(
 
 @partial(jax.jit, static_argnums=(4, 5))
 def draw_str(
-        top_left: Tuple[int | Array, int | Array],
-        bottom_right: Tuple[int | Array, int | Array],
-        color: chex.Array,
-        canvas: chex.Array,
-        word: str,
-        horizontal: bool = True
+    top_left: Tuple[int | Array, int | Array],
+    bottom_right: Tuple[int | Array, int | Array],
+    color: chex.Array,
+    canvas: chex.Array,
+    word: str,
+    horizontal: bool = True,
 ) -> chex.Array:
     """
     Draw a string on the canvas with optimized vectorized operations
     """
     # Convert string to ASCII codes with vectorized uppercase conversion
-    arr = jnp.frombuffer(word.encode('ascii'), dtype=jnp.uint8)
-    mask = (arr >= ord('a')) & (arr <= ord('z'))
+    arr = jnp.frombuffer(word.encode("ascii"), dtype=jnp.uint8)
+    mask = (arr >= ord("a")) & (arr <= ord("z"))
     letter = jnp.where(mask, arr - 32, arr).astype(jnp.uint8)
 
     return lax.cond(
         horizontal,
         lambda: draw_words_h(top_left, bottom_right, color, canvas, letter),
-        lambda: draw_words_v(top_left, bottom_right, color, canvas, letter)
+        lambda: draw_words_v(top_left, bottom_right, color, canvas, letter),
     )

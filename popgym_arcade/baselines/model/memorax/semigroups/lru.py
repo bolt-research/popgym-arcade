@@ -6,8 +6,8 @@ import jax.numpy as jnp
 from beartype import beartype as typechecker
 from jaxtyping import Array, Complex, Float, PRNGKeyArray, Scalar, Shaped, jaxtyped
 
-from ..groups import BinaryAlgebra, Semigroup, Resettable
 from ..gras import GRAS
+from ..groups import BinaryAlgebra, Resettable, Semigroup
 from ..mtypes import Input, StartFlag
 from ..scans import semigroup_scan
 

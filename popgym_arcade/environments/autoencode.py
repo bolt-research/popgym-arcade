@@ -1,19 +1,22 @@
+import functools
 from typing import Optional, Tuple
 
 import chex
 import jax
 import jax.numpy as jnp
 from chex import dataclass
-from jax import lax
-import functools
 from gymnax.environments import environment, spaces
-from popgym_arcade.environments.draw_utils import (draw_heart,
-                                            draw_spade,
-                                            draw_club,
-                                            draw_diamond,
-                                            draw_number,
-                                            draw_str,
-                                            draw_sub_canvas)
+from jax import lax
+
+from popgym_arcade.environments.draw_utils import (
+    draw_club,
+    draw_diamond,
+    draw_heart,
+    draw_number,
+    draw_spade,
+    draw_str,
+    draw_sub_canvas,
+)
 
 
 @dataclass(frozen=True)
@@ -35,20 +38,12 @@ def process_action(state: EnvState, action: int) -> Tuple[EnvState, bool]:
     new_default_action = jnp.where(
         action == 2,
         state.default_action + 1,
-        jnp.where(
-            action == 3,
-            state.default_action - 1,
-            state.default_action
-        )
+        jnp.where(action == 3, state.default_action - 1, state.default_action),
     )
     new_default_action = jnp.where(
         new_default_action < 0,
         3,
-        jnp.where(
-            new_default_action > 3,
-            0,
-            new_default_action
-        )
+        jnp.where(new_default_action > 3, 0, new_default_action),
     )
     return state.replace(default_action=new_default_action), action == 4
 
@@ -59,10 +54,10 @@ class AutoEncode(environment.Environment):
     Source: https://github.com/proroklab/popgym/blob/master/popgym/envs/autoencode.py
 
     ### Description
-    In the AutoEncode environment, the agent is presented with a sequence of cards, 
-    each belonging to one of four suits: Club, Spade, Heart, or Diamond. The agent's 
-    task is to recall and output the sequence of cards it saw, but in reverse order. 
-    For example, if the agent sees the sequence [Club, Spade, Heart], 
+    In the AutoEncode environment, the agent is presented with a sequence of cards,
+    each belonging to one of four suits: Club, Spade, Heart, or Diamond. The agent's
+    task is to recall and output the sequence of cards it saw, but in reverse order.
+    For example, if the agent sees the sequence [Club, Spade, Heart],
     it should output [Heart, Spade, Club]. There are three difficulties: Easy, Medium,
     and Hard. In Easy, the agent is presented with a single deck of cards, in Medium,
     two decks, and in Hard, three decks. The agent is presented with the sequence of
@@ -86,12 +81,12 @@ class AutoEncode(environment.Environment):
     plays the correct card in play stage. In the watch stage, the agent will not receive
     ang reward, so the score will not increase. The current suit is shown in the bottom
     middle of the image.
-    
-    In MDP version, the agent can see the full sequence of history cards, shows in 
-    192x192x3 image embeddings. 
-    
-    In POMDP version, the agent can only see the current card, shows in 256x256x3 
-    image in the top left corner. 
+
+    In MDP version, the agent can see the full sequence of history cards, shows in
+    192x192x3 image embeddings.
+
+    In POMDP version, the agent can only see the current card, shows in 256x256x3
+    image in the top left corner.
 
     Agent can always see the score and the current suit in the image, which is shown
     in the top middle and top left of the image respectively.
@@ -123,10 +118,10 @@ class AutoEncode(environment.Environment):
         "electric_blue": jnp.array([0, 115, 189], dtype=jnp.uint8),
         "neon_pink": jnp.array([255, 105, 186], dtype=jnp.uint8),
     }
-    size={
+    size = {
         256: {
-            "canvas_size" : 256,
-            "small_canvas_size" : 192,
+            "canvas_size": 256,
+            "small_canvas_size": 192,
             "value_cards_pos": {
                 "top_left": (0, 0),
                 "bottom_right": (20, 40),
@@ -154,11 +149,11 @@ class AutoEncode(environment.Environment):
             "score": {
                 "top_left": (86, 2),
                 "bottom_right": (171, 30),
-            }
+            },
         },
         128: {
-            "canvas_size" : 128,
-            "small_canvas_size" : 96,
+            "canvas_size": 128,
+            "small_canvas_size": 96,
             "value_cards_pos": {
                 "top_left": (0, 0),
                 "bottom_right": (10, 20),
@@ -186,19 +181,15 @@ class AutoEncode(environment.Environment):
             "score": {
                 "top_left": (43, 1),
                 "bottom_right": (85, 15),
-            }
-        }
-
+            },
+        },
     }
 
-
-   
-
     def __init__(
-            self,
-            num_decks=1,
-            partial_obs=False,
-            obs_size: int = 128,
+        self,
+        num_decks=1,
+        partial_obs=False,
+        obs_size: int = 128,
     ):
         super().__init__()
         self.partial_obs = partial_obs
@@ -207,10 +198,15 @@ class AutoEncode(environment.Environment):
         self.num_decks = num_decks
         self.canvas_size = self.size[obs_size]["canvas_size"]
         self.canvas_color = self.color["light_blue"]
-        self.large_canvas = jnp.full((self.canvas_size, self.canvas_size, 3), self.canvas_color, dtype=jnp.uint8)
+        self.large_canvas = jnp.full(
+            (self.canvas_size, self.canvas_size, 3), self.canvas_color, dtype=jnp.uint8
+        )
         self.small_canvas_size = self.size[obs_size]["small_canvas_size"]
-        self.small_canvas = jnp.full((self.small_canvas_size, self.small_canvas_size, 3), self.canvas_color, dtype=jnp.uint8)
-
+        self.small_canvas = jnp.full(
+            (self.small_canvas_size, self.small_canvas_size, 3),
+            self.canvas_color,
+            dtype=jnp.uint8,
+        )
 
         self.max_steps_in_episode = 140 + self.decksize * self.num_decks
         self.setup_render_templates()
@@ -224,11 +220,7 @@ class AutoEncode(environment.Environment):
         return "AutoEncode"
 
     def step_env(
-            self,
-            key: chex.PRNGKey,
-            state: EnvState,
-            action: int,
-            params: EnvParams
+        self, key: chex.PRNGKey, state: EnvState, action: int, params: EnvParams
     ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
         """Performs step of the environment."""
         new_state, fire_action = process_action(state, action)
@@ -241,14 +233,15 @@ class AutoEncode(environment.Environment):
 
         terminated = jnp.logical_or(
             new_state.count >= num_cards,  # play all cards
-            new_state.timestep >= self.max_steps_in_episode  # timelimit
+            new_state.timestep >= self.max_steps_in_episode,  # timelimit
         )
         play = new_state.timestep >= num_cards
 
         reward = jnp.where(
             fire_action,
             jnp.where(
-                jnp.flip(new_state.cards, axis=0)[new_state.count] == new_state.default_action,
+                jnp.flip(new_state.cards, axis=0)[new_state.count]
+                == new_state.default_action,
                 reward_scale,
                 0,
             ),
@@ -264,21 +257,20 @@ class AutoEncode(environment.Environment):
         new_state = new_state.replace(
             timestep=new_state.timestep + 1,
             cards=new_state.cards,
-            score=new_state.score + lax.cond(reward > 0, lambda _: 1, lambda _: 0, None),
+            score=new_state.score
+            + lax.cond(reward > 0, lambda _: 1, lambda _: 0, None),
             count=new_state.count + jnp.where(jnp.logical_and(fire_action, play), 1, 0),
             default_action=new_state.default_action,
         )
         obs = self.get_obs(new_state)
         infos = {
-            'terminated': new_state.count >= num_cards,
-            'truncated': new_state.timestep >= self.max_steps_in_episode,
+            "terminated": new_state.count >= num_cards,
+            "truncated": new_state.timestep >= self.max_steps_in_episode,
         }
         return obs, new_state, reward, terminated, infos
 
     def reset_env(
-            self,
-            key: chex.PRNGKey,
-            params: EnvParams
+        self, key: chex.PRNGKey, params: EnvParams
     ) -> Tuple[chex.Array, EnvState]:
         """Performs resetting of environment."""
         cards = jnp.arange(self.decksize * self.num_decks) % self.num_suits
@@ -308,27 +300,73 @@ class AutoEncode(environment.Environment):
         base_small = self.small_canvas.copy()
 
         value_suit_top_left = self.size[self.canvas_size]["value_suit_pos"]["top_left"]
-        value_suit_bottom_right = self.size[self.canvas_size]["value_suit_pos"]["bottom_right"]
+        value_suit_bottom_right = self.size[self.canvas_size]["value_suit_pos"][
+            "bottom_right"
+        ]
 
-        self.value_card_templates = jnp.stack([
-            draw_heart(value_suit_top_left, value_suit_bottom_right, self.color["red"], base_large),
-            draw_spade(value_suit_top_left, (value_suit_bottom_right[0], value_suit_bottom_right[1] - value_suit_adjust), self.color["black"], base_large),
-            draw_club(value_suit_top_left, (value_suit_bottom_right[0], value_suit_bottom_right[1] - value_suit_adjust), self.color["black"], base_large),
-            draw_diamond(value_suit_top_left, value_suit_bottom_right, self.color["red"], base_large)
-        ])
+        self.value_card_templates = jnp.stack(
+            [
+                draw_heart(
+                    value_suit_top_left,
+                    value_suit_bottom_right,
+                    self.color["red"],
+                    base_large,
+                ),
+                draw_spade(
+                    value_suit_top_left,
+                    (
+                        value_suit_bottom_right[0],
+                        value_suit_bottom_right[1] - value_suit_adjust,
+                    ),
+                    self.color["black"],
+                    base_large,
+                ),
+                draw_club(
+                    value_suit_top_left,
+                    (
+                        value_suit_bottom_right[0],
+                        value_suit_bottom_right[1] - value_suit_adjust,
+                    ),
+                    self.color["black"],
+                    base_large,
+                ),
+                draw_diamond(
+                    value_suit_top_left,
+                    value_suit_bottom_right,
+                    self.color["red"],
+                    base_large,
+                ),
+            ]
+        )
 
-        hist_positions = jnp.array([((i%9)*hist_adjust, (i//9)*hist_adjust) for i in range(self.decksize*self.num_decks)])
-        
+        hist_positions = jnp.array(
+            [
+                ((i % 9) * hist_adjust, (i // 9) * hist_adjust)
+                for i in range(self.decksize * self.num_decks)
+            ]
+        )
+
         hist_endings_red = hist_positions + hist_endings_adjust
         hist_endings_black = hist_positions + hist_endings_adjust
-        
+
         vmap_draw = lambda fn: jax.vmap(fn, in_axes=(0, 0, None, None))
-        self.history_card_templates = jnp.stack([
-            vmap_draw(draw_heart)(hist_positions, hist_endings_red, self.color["red"], base_small),
-            vmap_draw(draw_spade)(hist_positions, hist_endings_black, self.color["black"], base_small),
-            vmap_draw(draw_club)(hist_positions, hist_endings_black, self.color["black"], base_small),
-            vmap_draw(draw_diamond)(hist_positions, hist_endings_red, self.color["red"], base_small)
-        ], axis=1)
+        self.history_card_templates = jnp.stack(
+            [
+                vmap_draw(draw_heart)(
+                    hist_positions, hist_endings_red, self.color["red"], base_small
+                ),
+                vmap_draw(draw_spade)(
+                    hist_positions, hist_endings_black, self.color["black"], base_small
+                ),
+                vmap_draw(draw_club)(
+                    hist_positions, hist_endings_black, self.color["black"], base_small
+                ),
+                vmap_draw(draw_diamond)(
+                    hist_positions, hist_endings_red, self.color["red"], base_small
+                ),
+            ],
+            axis=1,
+        )
 
     @functools.partial(jax.jit, static_argnums=(0,))
     def render(self, state: EnvState) -> chex.Array:
@@ -337,14 +375,10 @@ class AutoEncode(environment.Environment):
 
         valid_current_card = state.timestep < self.decksize * self.num_decks
         current_suit = jax.lax.select(
-            valid_current_card,
-            state.cards[state.timestep].astype(int),
-            0
+            valid_current_card, state.cards[state.timestep].astype(int), 0
         )
         large_canvas = jnp.where(
-            valid_current_card,
-            self.value_card_templates[current_suit],
-            large_canvas
+            valid_current_card, self.value_card_templates[current_suit], large_canvas
         )
 
         def render_history(canvas):
@@ -352,58 +386,71 @@ class AutoEncode(environment.Environment):
             valid_mask = jnp.arange(num_cards) < state.timestep
 
             card_indices = state.cards.astype(int)[:, None, None, None, None]
-            
+
             selected = jnp.take_along_axis(
-                self.history_card_templates,
-                card_indices,
-                axis=1
+                self.history_card_templates, card_indices, axis=1
             ).squeeze(1)
 
             bg_color = self.small_canvas[0, 0]
-            valid_symbol = valid_mask[:, None, None] & jnp.any(selected != bg_color, axis=-1)
-            
+            valid_symbol = valid_mask[:, None, None] & jnp.any(
+                selected != bg_color, axis=-1
+            )
+
             card_priority = jnp.arange(num_cards)[:, None, None] * valid_symbol
             last_valid_idx = jnp.argmax(card_priority, axis=0)
             any_valid = jnp.any(valid_symbol, axis=0)
-            
+
             h, w = jnp.indices((self.small_canvas_size, self.small_canvas_size))
             final_colors = selected[last_valid_idx, h, w]
-            
+
             return jnp.where(any_valid[..., None], final_colors, canvas)
-        
+
         small_canvas = lax.cond(
-            self.partial_obs,
-            lambda: small_canvas,
-            lambda: render_history(small_canvas)
+            self.partial_obs, lambda: small_canvas, lambda: render_history(small_canvas)
         )
 
-        a_pos = (self.size[self.canvas_size]["current_suit_pos"]["top_left"], 
-                self.size[self.canvas_size]["current_suit_pos"]["bottom_right"])
-        action_color = jnp.array([
-            self.color["red"], 
-            self.color["black"], 
-            self.color["black"], 
-            self.color["red"]
-        ])[state.default_action]
-        
+        a_pos = (
+            self.size[self.canvas_size]["current_suit_pos"]["top_left"],
+            self.size[self.canvas_size]["current_suit_pos"]["bottom_right"],
+        )
+        action_color = jnp.array(
+            [
+                self.color["red"],
+                self.color["black"],
+                self.color["black"],
+                self.color["red"],
+            ]
+        )[state.default_action]
+
         large_canvas = jax.lax.switch(
             state.default_action,
             [
                 lambda p0, p1, c, cnvs: draw_heart(p0, p1, c, cnvs),
                 lambda p0, p1, c, cnvs: draw_spade(p0, p1, c, cnvs),
                 lambda p0, p1, c, cnvs: draw_club(p0, p1, c, cnvs),
-                lambda p0, p1, c, cnvs: draw_diamond(p0, p1, c, cnvs)
+                lambda p0, p1, c, cnvs: draw_diamond(p0, p1, c, cnvs),
             ],
-            a_pos[0], a_pos[1], action_color, large_canvas
+            a_pos[0],
+            a_pos[1],
+            action_color,
+            large_canvas,
         )
 
-        large_canvas = draw_number(self.size[self.canvas_size]["score"]["top_left"],
-                                self.size[self.canvas_size]["score"]["bottom_right"],
-                                self.color["bright_red"], large_canvas, state.score)
-        large_canvas = draw_str(self.size[self.canvas_size]["name_pos"]["top_left"],
-                                 self.size[self.canvas_size]["name_pos"]["bottom_right"],
-                            self.color["neon_pink"], large_canvas, self.name)
-        
+        large_canvas = draw_number(
+            self.size[self.canvas_size]["score"]["top_left"],
+            self.size[self.canvas_size]["score"]["bottom_right"],
+            self.color["bright_red"],
+            large_canvas,
+            state.score,
+        )
+        large_canvas = draw_str(
+            self.size[self.canvas_size]["name_pos"]["top_left"],
+            self.size[self.canvas_size]["name_pos"]["bottom_right"],
+            self.color["neon_pink"],
+            large_canvas,
+            self.name,
+        )
+
         return draw_sub_canvas(small_canvas, large_canvas)
 
     def get_obs(self, state: EnvState) -> chex.Array:

@@ -1,10 +1,11 @@
+from functools import partial
+from typing import Any, Optional, Tuple, Union
+
+import chex
 import jax
 import jax.numpy as jnp
-import chex
-from chex import dataclass
 import numpy as np
-from functools import partial
-from typing import Optional, Tuple, Union, Any
+from chex import dataclass
 from gymnax.environments import environment, spaces
 
 
@@ -37,7 +38,7 @@ class LogWrapper(GymnaxWrapper):
 
     @partial(jax.jit, static_argnums=(0,))
     def reset(
-            self, key: chex.PRNGKey, params: Optional[environment.EnvParams] = None
+        self, key: chex.PRNGKey, params: Optional[environment.EnvParams] = None
     ) -> Tuple[chex.Array, environment.EnvState]:
         obs, env_state = self._env.reset(key, params)
         state = LogEnvState(
@@ -46,17 +47,17 @@ class LogWrapper(GymnaxWrapper):
             episode_lengths=0,
             returned_episode_returns=0.0,
             returned_episode_lengths=0,
-            timestep=0
+            timestep=0,
         )
         return obs, state
 
     @partial(jax.jit, static_argnums=(0,))
     def step(
-            self,
-            key: chex.PRNGKey,
-            state: environment.EnvState,
-            action: Union[int, float],
-            params: Optional[environment.EnvParams] = None,
+        self,
+        key: chex.PRNGKey,
+        state: environment.EnvState,
+        action: Union[int, float],
+        params: Optional[environment.EnvParams] = None,
     ) -> Tuple[chex.Array, environment.EnvState, float, bool, dict]:
         obs, env_state, reward, done, info = self._env.step(
             key, state.env_state, action, params
@@ -68,9 +69,9 @@ class LogWrapper(GymnaxWrapper):
             episode_returns=new_episode_return * (1 - done),
             episode_lengths=new_episode_length * (1 - done),
             returned_episode_returns=state.returned_episode_returns * (1 - done)
-                                     + new_episode_return * done,
+            + new_episode_return * done,
             returned_episode_lengths=state.returned_episode_lengths * (1 - done)
-                                     + new_episode_length * done,
+            + new_episode_length * done,
             timestep=state.timestep + 1,
         )
         info["returned_episode_returns"] = state.returned_episode_returns

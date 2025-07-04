@@ -1,19 +1,26 @@
-import pytest
 import jax
+import pytest
+
 import popgym_arcade
 from popgym_arcade.registration import REGISTERED_ENVIRONMENTS
+
 
 @pytest.mark.parametrize("env_name", REGISTERED_ENVIRONMENTS)
 @pytest.mark.parametrize("partial", [False, True])
 @pytest.mark.parametrize("obs_size", [128, 256])
 def test_make(env_name, partial, obs_size):
-    env, env_params = popgym_arcade.make(env_name, partial_obs=partial, obs_size=obs_size)
+    env, env_params = popgym_arcade.make(
+        env_name, partial_obs=partial, obs_size=obs_size
+    )
+
 
 @pytest.mark.parametrize("env_name", REGISTERED_ENVIRONMENTS)
 @pytest.mark.parametrize("partial", [False, True])
 @pytest.mark.parametrize("obs_size", [128, 256])
 def test_reset_and_step_short(env_name, partial, obs_size):
-    env, env_params = popgym_arcade.make(env_name, partial_obs=partial, obs_size=obs_size)
+    env, env_params = popgym_arcade.make(
+        env_name, partial_obs=partial, obs_size=obs_size
+    )
     reset = jax.jit(jax.vmap(env.reset, in_axes=(0, None)))
     step = jax.jit(jax.vmap(env.step, in_axes=(0, 0, 0, None)))
 
@@ -22,7 +29,7 @@ def test_reset_and_step_short(env_name, partial, obs_size):
     # Initialize PRNG keys
     key = jax.random.key(0)
     reset_keys = jax.random.split(key, n_envs)
-        
+
     # Reset environments
     observation, env_state = reset(reset_keys, env_params)
 
@@ -36,10 +43,14 @@ def test_reset_and_step_short(env_name, partial, obs_size):
         actions = jax.vmap(env.action_space(env_params).sample)(action_keys)
         # Step the env to the next state
         # No need to reset, gymnax automatically resets when done
-        observation, env_state, reward, done, info = step(step_keys, env_state, actions, env_params)
+        observation, env_state, reward, done, info = step(
+            step_keys, env_state, actions, env_params
+        )
         # Check obs space is correct
-        assert env.observation_space(env_params).contains(observation), "Invalid observation space"
+        assert env.observation_space(env_params).contains(
+            observation
+        ), "Invalid observation space"
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main()
