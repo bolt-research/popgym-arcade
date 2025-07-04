@@ -301,7 +301,6 @@ def evaluate(model, config):
         obs, new_state, reward, term, _ = vmap_step(2)(rng_step, state, action)
         state = new_state
         frame = jnp.asarray(obs[0])
-        frame = (frame * 255).astype(np.uint8)
         frames.append(frame)
 
     frames = np.array(frames, dtype=np.uint8)
