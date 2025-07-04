@@ -112,16 +112,16 @@ class AutoEncode(environment.Environment):
     """
 
     color = {
-        "red": jnp.array([1, 0, 0]),
-        "dark_red": jnp.array([0.75, 0.10, 0.10]),
-        "bright_red": jnp.array([1.0, 0.19, 0.28]),
-        "black": jnp.array([0, 0, 0]),
-        "white": jnp.array([1, 1, 1]),
-        "metallic_gold": jnp.array([0.85, 0.65, 0.13]),
-        "light_gray": jnp.array([0.96, 0.96, 0.96]),
-        "light_blue": jnp.array([0.68, 0.85, 0.90]),
-        "electric_blue": jnp.array([0.0, 0.45, 0.74]),
-        "neon_pink": jnp.array([1.0, 0.41, 0.73]),
+        "red": jnp.array([255, 0, 0], dtype=jnp.uint8),
+        "dark_red": jnp.array([191, 26, 26], dtype=jnp.uint8),
+        "bright_red": jnp.array([255, 48, 71], dtype=jnp.uint8),
+        "black": jnp.array([0, 0, 0], dtype=jnp.uint8),
+        "white": jnp.array([255, 255, 255], dtype=jnp.uint8),
+        "metallic_gold": jnp.array([217, 166, 33], dtype=jnp.uint8),
+        "light_gray": jnp.array([245, 245, 245], dtype=jnp.uint8),
+        "light_blue": jnp.array([173, 217, 230], dtype=jnp.uint8),
+        "electric_blue": jnp.array([0, 115, 189], dtype=jnp.uint8),
+        "neon_pink": jnp.array([255, 105, 186], dtype=jnp.uint8),
     }
     size={
         256: {
@@ -207,9 +207,9 @@ class AutoEncode(environment.Environment):
         self.num_decks = num_decks
         self.canvas_size = self.size[obs_size]["canvas_size"]
         self.canvas_color = self.color["light_blue"]
-        self.large_canvas = jnp.ones((self.canvas_size, self.canvas_size, 3)) * self.canvas_color
+        self.large_canvas = jnp.full((self.canvas_size, self.canvas_size, 3), self.canvas_color, dtype=jnp.uint8)
         self.small_canvas_size = self.size[obs_size]["small_canvas_size"]
-        self.small_canvas = jnp.ones((self.small_canvas_size, self.small_canvas_size, 3)) * self.canvas_color
+        self.small_canvas = jnp.full((self.small_canvas_size, self.small_canvas_size, 3), self.canvas_color, dtype=jnp.uint8)
 
 
         self.max_steps_in_episode = 140 + self.decksize * self.num_decks
@@ -417,7 +417,7 @@ class AutoEncode(environment.Environment):
 
     def observation_space(self, params: EnvParams) -> spaces.Box:
         """Observation space of the environment."""
-        return spaces.Box(jnp.array(0, ), jnp.array(1, ), (256, 256, 3), dtype=jnp.float32)
+        return spaces.Box(0, 255, (256, 256, 3), dtype=jnp.uint8)
 
 
 class AutoEncodeEasy(AutoEncode):

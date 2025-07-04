@@ -739,9 +739,9 @@ def draw_tnt_block(
     inner_block_mask = jnp.outer(inner_mask_y, inner_mask_x)
 
     # Prepare color arrays
-    red_color = jnp.array([1.0, 0.0, 0.0])  # Bright red
-    white_color = jnp.array([1.0, 1.0, 1.0])  # White
-    black_color = jnp.array([0.0, 0.0, 0.0])  # Black
+    red_color = jnp.array([255, 0, 0], dtype=jnp.uint8)  # Bright red
+    white_color = jnp.array([255, 255, 255], dtype=jnp.uint8)  # White
+    black_color = jnp.array([0, 0, 0], dtype=jnp.uint8)  # Black
 
     # Create a preliminary canvas with the red background
     red_canvas = jnp.where(full_block_mask[:, :, None], red_color, canvas)
@@ -1074,8 +1074,8 @@ def draw_digit(
     yy, xx = jnp.meshgrid(y_indices, x_indices, indexing='ij')
 
     # Compute the cell indices for each pixel
-    cell_x = ((xx - top_x) // width).astype(int)
-    cell_y = ((yy - top_y) // height).astype(int)
+    cell_x = ((xx - top_x) // width).astype(jnp.uint8)
+    cell_y = ((yy - top_y) // height).astype(jnp.uint8)
 
     # Create a mask for valid cells
     valid_cells = (
@@ -1991,15 +1991,15 @@ def draw_words_h(
     total_width = num_letters * letter_width + (num_letters - 1) * space
     start_col = top_x + (bottom_x - top_x - total_width) // 2
 
-    indices = jnp.arange(num_letters)
+    indices = jnp.arange(num_letters, dtype=jnp.uint8)
     current_cols = start_col + indices * (letter_width + space)
     top_left_letters = jnp.stack([
         current_cols,
-        jnp.full(num_letters, top_y + margin)
+        jnp.full(num_letters, top_y + margin, dtype=jnp.uint8)
     ], axis=1)
     bottom_right_letters = jnp.stack([
         current_cols + letter_width,
-        jnp.full(num_letters, bottom_y - margin)
+        jnp.full(num_letters, bottom_y - margin, dtype=jnp.uint8)
     ], axis=1)
 
     def compute_delta(letter_code, top_left, bottom_right):
@@ -2010,9 +2010,9 @@ def draw_words_h(
             letter_code
         )
         return modified_canvas - canvas
-
+    
     deltas = jax.vmap(compute_delta)(letters, top_left_letters, bottom_right_letters)
-    final_canvas = canvas + jnp.sum(deltas, axis=0)
+    final_canvas = canvas + jnp.sum(deltas, axis=0, dtype=jnp.uint8)
     return final_canvas
 
 
@@ -2043,11 +2043,11 @@ def draw_words_v(
     indices = jnp.arange(num_letters)
     current_rows = start_row + indices * (letter_width + space)
     top_left_letters = jnp.stack([
-        jnp.full(num_letters, top_x + margin),
+        jnp.full(num_letters, top_x + margin, dtype=jnp.uint8),
         current_rows
     ], axis=1)
     bottom_right_letters = jnp.stack([
-        jnp.full(num_letters, bottom_x - margin),
+        jnp.full(num_letters, bottom_x - margin, dtype=jnp.uint8),
         current_rows + letter_width
     ], axis=1)
 
@@ -2062,7 +2062,7 @@ def draw_words_v(
         return modified_canvas - canvas
 
     deltas = jax.vmap(compute_delta)(letters, top_left_letters, bottom_right_letters)
-    final_canvas = canvas + jnp.sum(deltas, axis=0)
+    final_canvas = canvas + jnp.sum(deltas, axis=0, dtype=jnp.uint8)
     return final_canvas
 
 
@@ -2081,7 +2081,7 @@ def draw_str(
     # Convert string to ASCII codes with vectorized uppercase conversion
     arr = jnp.frombuffer(word.encode('ascii'), dtype=jnp.uint8)
     mask = (arr >= ord('a')) & (arr <= ord('z'))
-    letter = jnp.where(mask, arr - 32, arr).astype(jnp.int32)
+    letter = jnp.where(mask, arr - 32, arr).astype(jnp.uint8)
 
     return lax.cond(
         horizontal,

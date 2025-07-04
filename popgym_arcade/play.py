@@ -26,7 +26,7 @@ def parse_args():
 
 def to_surf(arr):
     # Convert jax arry to pygame surface
-    return np.transpose(np.array(arr* 255).astype(np.uint8), (1, 0, 2))
+    return np.transpose(arr, (1, 0, 2))
 
 def play(args):
     # Create env env variant
@@ -51,6 +51,7 @@ def play(args):
     running = True
 
     # Convert numpy array to Pygame surface
+    print(observation.dtype)
     surface = pygame.surfarray.make_surface(to_surf(observation))
 
     # Action mappings (modify based on your environment's action space)

@@ -37,6 +37,8 @@ def test_reset_and_step_short(env_name, partial, obs_size):
         # Step the env to the next state
         # No need to reset, gymnax automatically resets when done
         observation, env_state, reward, done, info = step(step_keys, env_state, actions, env_params)
+        # Check obs space is correct
+        assert env.observation_space(env_params).contains(observation), "Invalid observation space"
 
 
 if __name__ == '__main__':

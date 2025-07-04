@@ -32,10 +32,10 @@ class EnvParams(environment.EnvParams):
 
 class Skittles(environment.Environment[EnvState, EnvParams]):
     """
-    Jax compilable environment for the Swimming Dragon.
+    Jax compilable environment for Skittles.
     
     ### Description
-    In Swimming Dragon, the agent is tasked with avoiding enemies that fall from the top of the screen.
+    In Skittles, the agent is tasked with avoiding enemies that fall from the top of the screen.
     The agent can move left or right to dodge the enemies. The goal is to survive as long as possible without being hit by an enemy.
     There are three difficulties: easy, medium, and hard. Each difficulty has a different grid size and maximum steps in an episode.
     Easy: 8x8 grid, agent's goal is to survive 200 steps, have 1 enemy in each row
@@ -82,86 +82,64 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
 
     """
 
+    render_common = {
+        # parameters for rendering (256, 256, 3) canvas
+        "clr": jnp.array([0, 0, 0], dtype=jnp.uint8),
+        # parameters for rendering sub canvas
+        "sub_clr": jnp.array([0, 0, 0], dtype=jnp.uint8),
+        # parameters for current action position
+        "action_clr": jnp.array([255, 255, 255], dtype=jnp.uint8),
+        # parameters for rendering enemy
+        "red": jnp.array([255, 0, 0], dtype=jnp.uint8),
+        "orange": jnp.array([255, 128, 0], dtype=jnp.uint8),
+        "yellow": jnp.array([255, 255, 0], dtype=jnp.uint8),
+        "green": jnp.array([0, 255, 0], dtype=jnp.uint8),
+        "blue": jnp.array([0, 0, 255], dtype=jnp.uint8),
+        "indigo": jnp.array([74, 214, 247], dtype=jnp.uint8),
+        "violet": jnp.array([125, 0, 235], dtype=jnp.uint8),
+        # parameters for rendering grids
+        "grid_clr": jnp.array([255, 255, 255], dtype=jnp.uint8),
+        # parameters for rendering score
+        "sc_clr": jnp.array([0, 255, 128], dtype=jnp.uint8),
+        # parameters for rendering env name
+        "env_clr": jnp.array([255, 245, 0], dtype=jnp.uint8),
+    }
     render_256x = {
+        **render_common,
         # parameters for rendering (256, 256, 3) canvas
         "size": 256,
-        "clr": jnp.array([0.0, 0.0, 0.0]),
         "sub_size": {
             8: 186,
             10: 192,
             12: 182,
         },
-        # parameters for rendering sub canvas
-        "sub_clr": jnp.array([0.0, 0.0, 0.0]),
-        
-        # parameters for current action position
-        "action_clr": jnp.array([1.0, 1.0, 1.0]),
-        
-        # parameters for rendering enemy
-        # "enemy_clr": jnp.array([0.29, 0.84, 0.97]),
-        # rainbow color
-        "red": jnp.array([1.0, 0.0, 0.0]),
-        "orange": jnp.array([1.0, 0.5, 0.0]),
-        "yellow": jnp.array([1.0, 1.0, 0.0]),
-        "green": jnp.array([0.0, 1.0, 0.0]),
-        "blue": jnp.array([0.0, 0.0, 1.0]),
-        "indigo": jnp.array([0.29, 0.84, 0.97]),
-        "violet": jnp.array([0.49, 0.0, 0.92]),
-
         # parameters for rendering grids
         "grid_px": 2,
-        "grid_clr": jnp.array([1.0, 1.0, 1.0]),
-
         # parameters for rendering score
         "sc_t_l": (86, 2),
         "sc_b_r": (171, 30),
-        "sc_clr": jnp.array([0.0, 1.0, 0.5]),
-        
         # parameters for rendering env name
         "env_t_l": (0, 231),
         "env_b_r": (256, 256),
-        "env_clr": jnp.array([1.0, 0.96, 0.0]),
     }
 
     render_128x = {
+        **render_common,
         # parameters for rendering (128, 128, 3) canvas
         "size": 128,
-        "clr": jnp.array([0.0, 0.0, 0.0]),
         "sub_size": {
             8: 90,
             10: 92,
             12: 98,
         },
-        # parameters for rendering sub canvas
-        "sub_clr": jnp.array([0.0, 0.0, 0.0]),
-        
-        # parameters for current action position
-        "action_clr": jnp.array([1.0, 1.0, 1.0]),
-        
-        # parameters for rendering enemy
-        # "enemy_clr": jnp.array([0.29, 0.84, 0.97]),
-        # rainbow color
-        "red": jnp.array([1.0, 0.0, 0.0]),
-        "orange": jnp.array([1.0, 0.5, 0.0]),
-        "yellow": jnp.array([1.0, 1.0, 0.0]),
-        "green": jnp.array([0.0, 1.0, 0.0]),
-        "blue": jnp.array([0.0, 0.0, 1.0]),
-        "indigo": jnp.array([0.29, 0.84, 0.97]),
-        "violet": jnp.array([0.49, 0.0, 0.92]),
-
         # parameters for rendering grids
         "grid_px": 2,
-        "grid_clr": jnp.array([1.0, 1.0, 1.0]),
-
         # parameters for rendering score
         "sc_t_l": (43, 1),
         "sc_b_r": (85, 15),
-        "sc_clr": jnp.array([0.0, 1.0, 0.5]),
-        
         # parameters for rendering env name
         "env_t_l": (0, 115),
         "env_b_r": (128, 128),
-        "env_clr": jnp.array([1.0, 0.96, 0.0]),
     }
     render_mode = {
         256: render_256x,
@@ -251,7 +229,7 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
         """Reset the environment to an initial state."""
         key, subkey1 = jax.random.split(key)
         matrix_state = jnp.zeros((self.grid_size, self.grid_size), dtype=jnp.int32)
-        x = jax.random.randint(subkey1, shape=(), minval=0, maxval=self.grid_size).astype(jnp.int32) 
+        x = jax.random.randint(subkey1, shape=(), minval=0, maxval=self.grid_size, dtype=jnp.int32)
 
         state = EnvState(
             matrix_state = matrix_state,
@@ -307,11 +285,13 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
         # Initialize canvases
         canvas = jnp.full(
             (render_config["size"],) * 2 + (3,),
-            render_config["clr"]
+            render_config["clr"],
+            dtype=jnp.uint8
         )
         sub_canvas = jnp.full(
             (sub_size, sub_size, 3), 
-            render_config["sub_clr"]
+            render_config["sub_clr"],
+            dtype=jnp.uint8
         )
 
         action_x, action_y = board_size - 1, state.x
@@ -428,7 +408,7 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
 
     def observation_space(self, params: EnvParams) -> spaces.Box:
         """Observation space of the environment."""
-        return spaces.Box(jnp.zeros((0,)), jnp.ones((1,)), (self.obs_size, self.obs_size, 3), dtype=jnp.float32)
+        return spaces.Box(0, 255, (self.obs_size, self.obs_size, 3), dtype=jnp.uint8)
 
 
 class SkittlesEasy(Skittles):

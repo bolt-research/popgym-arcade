@@ -94,68 +94,72 @@ class CartPole(environment.Environment[EnvState, EnvParams]):
     max_steps_in_episode: max steps agent can play in each episode.
     """
 
+    render_common = {
+        # parameters for rendering (256, 256, 3) canvas
+        "clr": jnp.array([51, 51, 51], dtype=jnp.uint8),
+        "sub_clr": jnp.array([51, 51, 51], dtype=jnp.uint8),
+        # parameters for rendering cart
+        "cart_clr": jnp.array([245, 74, 140], dtype=jnp.uint8),
+        # parameters for rendering pole
+        "pole_clr": jnp.array([140, 69, 18], dtype=jnp.uint8),
+        # parameters for rendering harrow
+        "harrow_clr": jnp.array([204, 204, 204], dtype=jnp.uint8),
+        # parameters for rendering carrow
+        "carrow_clr": jnp.array([204, 204, 204], dtype=jnp.uint8),
+        # parameters for rendering score
+        "sc_clr": jnp.array([0, 255, 128], dtype=jnp.uint8),
+        # parameters for rendering envName
+        "env_clr": jnp.array([74, 214, 247], dtype=jnp.uint8),
+    }
+
     render_256x = {
+        **render_common,
         # parameters for rendering (256, 256, 3) canvas
         "size": 256,
-        "clr": jnp.array([0.2, 0.2, 0.2]),
         "sub_size": 192,
-        "sub_clr": jnp.array([0.2, 0.2, 0.2]),
         # parameters for rendering cart
         "cart_w": 64,
         "cart_h": 32,
         "cart_pos": 96,
-        "cart_clr": jnp.array([0.96, 0.29, 0.55]),
         # parameters for rendering pole
-        "pole_clr": jnp.array([0.55, 0.27, 0.07]),
         "pole_px": 5,
         # parameters for rendering harrow
         "harrow_t_l": (10, 138),
         "harrow_b_r": (54, 182),
-        "harrow_clr": jnp.array([0.8, 0.8, 0.8]),
         # parameters for rendering carrow
         "carrow_t_l": (138, 138),
         "carrow_b_r": (182, 182),
-        "carrow_clr": jnp.array([0.8, 0.8, 0.8]),
         # parameters for rendering score
         "sc_t_l": (86, 2),
         "sc_b_r": (171, 30),
-        "sc_clr": jnp.array([0.0, 1.0, 0.5]),
         # parameters for rendering envName
         "env_t_l": (0, 231),
         "env_b_r": (256, 256),
-        "env_clr": jnp.array([0.29, 0.84, 0.97]),
     }
 
     render_128x = {
+        **render_common,
         # parameters for rendering (128, 128, 3) canvas
         "size": 128,
-        "clr": jnp.array([0.2, 0.2, 0.2]),
         "sub_size": 96,
-        "sub_clr": jnp.array([0.2, 0.2, 0.2]),
         # parameters for rendering cart
         "cart_w": 32,
         "cart_h": 16,
         "cart_pos": 48,
-        "cart_clr": jnp.array([0.96, 0.29, 0.55]),
         # parameters for rendering pole
-        "pole_clr": jnp.array([0.55, 0.27, 0.07]),
         "pole_px": 3,
         # parameters for rendering harrow
         "harrow_t_l": (5, 69),
         "harrow_b_r": (27, 91),
-        "harrow_clr": jnp.array([0.8, 0.8, 0.8]),
         # parameters for rendering carrow
         "carrow_t_l": (69, 69),
         "carrow_b_r": (91, 91),
-        "carrow_clr": jnp.array([0.8, 0.8, 0.8]),
         # parameters for rendering score
         "sc_t_l": (43, 1),
         "sc_b_r": (85, 15),
-        "sc_clr": jnp.array([0.0, 1.0, 0.5]),
         # parameters for rendering envName
         "env_t_l": (0, 115),
         "env_b_r": (128, 128),
-        "env_clr": jnp.array([0.29, 0.84, 0.97]),
     }
     render_mode = {
         256: render_256x,
@@ -366,11 +370,13 @@ class CartPole(environment.Environment[EnvState, EnvParams]):
 
         # Initialize canvas and sub-canvas
         canvas = jnp.zeros(
-            (render_config["size"], render_config["size"], 3)
+            (render_config["size"], render_config["size"], 3),
+            dtype=jnp.uint8
         ) + render_config["clr"]
 
         sub_canvas = jnp.zeros(
-            (render_config["sub_size"], render_config["sub_size"], 3)
+            (render_config["sub_size"], render_config["sub_size"], 3),
+            dtype=jnp.uint8
         ) + render_config["sub_clr"]
 
         # Add noise to the state
@@ -520,7 +526,7 @@ class CartPole(environment.Environment[EnvState, EnvParams]):
 
     def observation_space(self, params: EnvParams) -> spaces.Box:
         """Observation space of the environment."""
-        return spaces.Box(jnp.array(0, ), jnp.array(1, ), (self.obs_size, self.obs_size, 3), dtype=jnp.float32)
+        return spaces.Box(0, 255, (self.obs_size, self.obs_size, 3), dtype=jnp.uint8)
 
     def state_space(self, params: EnvParams) -> spaces.Dict:
         """State space of the environment."""
