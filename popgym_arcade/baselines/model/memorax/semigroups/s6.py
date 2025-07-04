@@ -3,12 +3,12 @@ from typing import Callable, Optional, Tuple
 
 import jax
 import jax.numpy as jnp
-from equinox import nn
 from beartype import beartype as typechecker
+from equinox import nn
 from jaxtyping import Array, Complex, Float, PRNGKeyArray, Scalar, Shaped, jaxtyped
 
-from ..groups import BinaryAlgebra, Semigroup, Resettable
 from ..gras import GRAS
+from ..groups import BinaryAlgebra, Resettable, Semigroup
 from ..mtypes import Input, StartFlag
 from ..scans import semigroup_scan
 
@@ -40,10 +40,7 @@ class S6Monoid(Semigroup):
         self, key: Optional[Shaped[PRNGKeyArray, ""]] = None
     ) -> S6RecurrentState:
         # Represent a diagonal matrix as a vector
-        return (
-            jnp.ones((self.recurrent_size,)),
-            jnp.zeros((self.recurrent_size,))
-        )
+        return (jnp.ones((self.recurrent_size,)), jnp.zeros((self.recurrent_size,)))
 
     @jaxtyped(typechecker=typechecker)
     def __call__(
@@ -95,10 +92,9 @@ class S6(GRAS):
         self.A_log = jax.random.normal(keys[0], (self.recurrent_size,))
         self.B = nn.Linear(self.hidden_size, self.recurrent_size, key=keys[1])
         self.C = nn.Linear(self.recurrent_size, self.hidden_size, key=keys[2])
-        self.dt = nn.Sequential([
-            nn.Linear(self.hidden_size, 1, key=keys[3]),
-            nn.Lambda(jax.nn.softplus)
-        ])
+        self.dt = nn.Sequential(
+            [nn.Linear(self.hidden_size, 1, key=keys[3]), nn.Lambda(jax.nn.softplus)]
+        )
 
     @jaxtyped(typechecker=typechecker)
     def forward_map(self, x: Input, key: Optional[Shaped[PRNGKeyArray, ""]] = None):
@@ -122,7 +118,7 @@ class S6(GRAS):
         emb, start = x
         lambdas, lambda_x_Bu = state
         C = self.C(emb)
-        out = C * lambda_x_Bu 
+        out = C * lambda_x_Bu
         return out
 
     @jaxtyped(typechecker=typechecker)

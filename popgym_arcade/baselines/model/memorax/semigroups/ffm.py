@@ -7,8 +7,8 @@ from beartype import beartype as typechecker
 from equinox import nn
 from jaxtyping import Array, Complex, Float, Int, PRNGKeyArray, Real, Shaped, jaxtyped
 
-from ..groups import BinaryAlgebra, Semigroup, Resettable
 from ..gras import GRAS
+from ..groups import BinaryAlgebra, Resettable, Semigroup
 from ..mtypes import Input, StartFlag
 from ..scans import semigroup_scan
 

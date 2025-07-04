@@ -3,27 +3,24 @@ from typing import Optional, Tuple
 
 import chex
 import jax
-from jax import lax
 import jax.numpy as jnp
 import numpy as np
 from chex import dataclass
 from gymnax.environments import environment, spaces
-from popgym_arcade.environments.draw_utils import (draw_str,
-                                            draw_hexagon,
-                                            draw_grid,
-                                            draw_number,
-                                            draw_tnt_block,
-                                            draw_sub_canvas,
-                                            draw_rectangle)
+from jax import lax
+
+from popgym_arcade.environments.draw_utils import (
+    draw_grid,
+    draw_hexagon,
+    draw_number,
+    draw_rectangle,
+    draw_str,
+    draw_sub_canvas,
+    draw_tnt_block,
+)
 
 
-def is_valid_tnt_placement(
-        board, 
-        row, 
-        col, 
-        direction, 
-        tnt_size
-):
+def is_valid_tnt_placement(board, row, col, direction, tnt_size):
     """Check if a TNT block placement is valid without modifying the board."""
     board_shape = board.shape
 
@@ -50,13 +47,7 @@ vectorized_validity_check = jax.vmap(
 )
 
 
-def place_tnt_on_board(
-        board, 
-        row, 
-        col, 
-        direction, 
-        tnt_size
-):
+def place_tnt_on_board(board, row, col, direction, tnt_size):
     horizontal_tnt = jnp.ones((1, tnt_size))
     vertical_tnt = jnp.ones((tnt_size, 1))
 
@@ -68,11 +59,7 @@ def place_tnt_on_board(
     return updated_board
 
 
-def place_random_tnt_on_board(
-        rng, 
-        board, 
-        tnt_size
-):
+def place_random_tnt_on_board(rng, board, tnt_size):
     size = board.shape[0]
     dirs = jnp.array([0, 1])
     rows = jnp.arange(size)
@@ -92,11 +79,7 @@ def place_random_tnt_on_board(
     return board
 
 
-def generate_random_tnt_board(
-        rng, 
-        board_size, 
-        tnt_sizes
-):
+def generate_random_tnt_board(rng, board_size, tnt_sizes):
     board = jnp.zeros((board_size, board_size))
     for tnt_size in tnt_sizes:
         rng, _rng = jax.random.split(rng)
@@ -124,13 +107,13 @@ class Navigator(environment.Environment):
 
     ### Description
     In Navigator, the agent is tasked with navigating a grid-based environment to collect
-    treasures while avoiding barriers. 
+    treasures while avoiding barriers.
     The agent can move in four directions: Up, Down, Left, and Right. And can also choose to Hit.
     The primary goal is to collect treasures while avoiding barriers, all while maximizing
-    efficiency to receive the highest cumulative reward. There are three different levels 
-    of difficulty: Easy, Medium, and Hard. Easy has a board size of 8x8, Medium has a board 
-    size of 10x10, and Hard has a board size of 12x12. 
-    
+    efficiency to receive the highest cumulative reward. There are three different levels
+    of difficulty: Easy, Medium, and Hard. Easy has a board size of 8x8, Medium has a board
+    size of 10x10, and Hard has a board size of 12x12.
+
     ### Board Elements:
     - Empty Spaces (0): The agent can move freely through these unobstructed areas.
     - Barriers (1): These block the agent's movement and incur a penalty if encountered.
@@ -145,12 +128,12 @@ class Navigator(environment.Environment):
     |---2----|---Move-Left-|
     |---3----|--Move-Right-|
     |---4----|--------Hit--|
-    
+
     ### Observation Space
     The observation space is a chex.Array with shape `(256, 256, 3)`
     Current state is rendered into a matrix using multiple graphical elements to form a visual observation.
     The entire observation consists of a large canvas with a smaller canvas embedded within it.
-    The smaller canvas primarily displays the game interface, while the larger canvas shows additional 
+    The smaller canvas primarily displays the game interface, while the larger canvas shows additional
     information, such as the score.
 
     In Fully Observable space, the agent can see the entire board at all times. In Navigator,
@@ -191,7 +174,6 @@ class Navigator(environment.Environment):
         "sc_clr": jnp.array([0, 0, 127], dtype=jnp.uint8),
         # parameters for rendering env name
         "env_clr": jnp.array([138, 0, 138], dtype=jnp.uint8),
-
     }
     render_256x = {
         **render_common,
@@ -237,8 +219,8 @@ class Navigator(environment.Environment):
 
     def __init__(
         self,
-        board_size: int ,
-        partial_obs = False,
+        board_size: int,
+        partial_obs=False,
         obs_size: int = 128,
     ):
         super().__init__()
@@ -254,17 +236,13 @@ class Navigator(environment.Environment):
     @property
     def default_params(self) -> EnvParams:
         return EnvParams()
-    
+
     @property
     def name(self) -> str:
         return "Navigator"
-    
+
     def step_env(
-        self, 
-        key: chex.PRNGKey, 
-        state: EnvState, 
-        action: int, 
-        params: EnvParams
+        self, key: chex.PRNGKey, state: EnvState, action: int, params: EnvParams
     ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
 
         def move_up(state):
@@ -272,30 +250,22 @@ class Navigator(environment.Environment):
             new_timestep = state.timestep + 1
             new_state = state.replace(action_y=action_y, timestep=new_timestep)
             done = state.board[new_state.action_x, new_state.action_y] == 1
-            truncated = (new_timestep >= self.max_steps_in_episode)
+            truncated = new_timestep >= self.max_steps_in_episode
             terminated = jnp.logical_or(done, truncated)
             reward = lax.cond(
                 done,
                 lambda _: -self.reward_die,
                 lambda _: -self.reward_step,
-                operand=None
+                operand=None,
             )
-            reward = lax.cond(
-                truncated,
-                lambda _: 0.0,
-                lambda _: reward,
-                operand=None
-            )
+            reward = lax.cond(truncated, lambda _: 0.0, lambda _: reward, operand=None)
             new_score = state.score + lax.cond(
-                reward > 0.0,
-                lambda _: 100,
-                lambda _: 0,
-                operand=None
+                reward > 0.0, lambda _: 100, lambda _: 0, operand=None
             )
             new_state = new_state.replace(score=new_score)
             infos = {
-                'terminated': done,
-                'truncated': truncated,
+                "terminated": done,
+                "truncated": truncated,
             }
             return self.get_obs(new_state), new_state, reward, terminated, infos
 
@@ -304,30 +274,22 @@ class Navigator(environment.Environment):
             new_timestep = state.timestep + 1
             new_state = state.replace(action_y=action_y, timestep=new_timestep)
             done = state.board[new_state.action_x, new_state.action_y] == 1
-            truncated = (new_timestep >= self.max_steps_in_episode)
+            truncated = new_timestep >= self.max_steps_in_episode
             terminated = jnp.logical_or(done, truncated)
             reward = lax.cond(
                 done,
                 lambda _: -self.reward_die,
                 lambda _: -self.reward_step,
-                operand=None
+                operand=None,
             )
-            reward = lax.cond(
-                truncated,
-                lambda _: 0.0,
-                lambda _: reward,
-                operand=None
-            )
+            reward = lax.cond(truncated, lambda _: 0.0, lambda _: reward, operand=None)
             new_score = state.score + lax.cond(
-                reward > 0.0,
-                lambda _: 100,
-                lambda _: 0,
-                operand=None
+                reward > 0.0, lambda _: 100, lambda _: 0, operand=None
             )
             new_state = new_state.replace(score=new_score)
             infos = {
-                'terminated': done,
-                'truncated': truncated,
+                "terminated": done,
+                "truncated": truncated,
             }
             return self.get_obs(new_state), new_state, reward, terminated, infos
 
@@ -336,30 +298,22 @@ class Navigator(environment.Environment):
             new_timestep = state.timestep + 1
             new_state = state.replace(action_x=action_x, timestep=new_timestep)
             done = state.board[new_state.action_x, new_state.action_y] == 1
-            truncated = (new_timestep >= self.max_steps_in_episode)
+            truncated = new_timestep >= self.max_steps_in_episode
             terminated = jnp.logical_or(done, truncated)
             reward = lax.cond(
                 done,
                 lambda _: -self.reward_die,
                 lambda _: -self.reward_step,
-                operand=None
+                operand=None,
             )
-            reward = lax.cond(
-                truncated,
-                lambda _: 0.0,
-                lambda _: reward,
-                operand=None
-            )
+            reward = lax.cond(truncated, lambda _: 0.0, lambda _: reward, operand=None)
             new_score = state.score + lax.cond(
-                reward > 0.0,
-                lambda _: 100,
-                lambda _: 0,
-                operand=None
+                reward > 0.0, lambda _: 100, lambda _: 0, operand=None
             )
             new_state = new_state.replace(score=new_score)
             infos = {
-                'terminated': done,
-                'truncated': truncated,
+                "terminated": done,
+                "truncated": truncated,
             }
             return self.get_obs(new_state), new_state, reward, terminated, infos
 
@@ -368,30 +322,22 @@ class Navigator(environment.Environment):
             new_timestep = state.timestep + 1
             new_state = state.replace(action_x=action_x, timestep=new_timestep)
             done = state.board[new_state.action_x, new_state.action_y] == 1
-            truncated = (new_timestep >= self.max_steps_in_episode)
+            truncated = new_timestep >= self.max_steps_in_episode
             terminated = jnp.logical_or(done, truncated)
             reward = lax.cond(
                 done,
                 lambda _: -self.reward_die,
                 lambda _: -self.reward_step,
-                operand=None
+                operand=None,
             )
-            reward = lax.cond(
-                truncated,
-                lambda _: 0.0,
-                lambda _: reward,
-                operand=None
-            )
+            reward = lax.cond(truncated, lambda _: 0.0, lambda _: reward, operand=None)
             new_score = state.score + lax.cond(
-                reward > 0.0,
-                lambda _: 100,
-                lambda _: 0,
-                operand=None
+                reward > 0.0, lambda _: 100, lambda _: 0, operand=None
             )
             new_state = new_state.replace(score=new_score)
             infos = {
-                'terminated': done,
-                'truncated': truncated,
+                "terminated": done,
+                "truncated": truncated,
             }
             return self.get_obs(new_state), new_state, reward, terminated, infos
 
@@ -406,14 +352,11 @@ class Navigator(environment.Environment):
                 terminated,
                 lambda _: self.reward_win,
                 lambda _: -self.reward_step,
-                operand=None
+                operand=None,
             )
             reward = jnp.where((new_timestep >= self.max_steps_in_episode), 0.0, reward)
             new_score = state.score + lax.cond(
-                reward > 0.0,
-                lambda _: 100,
-                lambda _: 0,
-                operand=None
+                reward > 0.0, lambda _: 100, lambda _: 0, operand=None
             )
             new_state = state.replace(
                 timestep=new_timestep,
@@ -422,15 +365,15 @@ class Navigator(environment.Environment):
             )
             obs = self.get_obs(new_state)
             infos = {
-                'terminated': terminated,
-                'truncated': truncated,
+                "terminated": terminated,
+                "truncated": truncated,
             }
             return obs, new_state, reward, done, infos
 
         action_functions = [move_up, move_down, move_left, move_right, hit]
 
         info = lax.switch(
-            action, 
+            action,
             action_functions,
             state,
         )
@@ -438,9 +381,7 @@ class Navigator(environment.Environment):
         return info
 
     def reset_env(
-        self, 
-        key: chex.PRNGKey, 
-        params: EnvParams
+        self, key: chex.PRNGKey, params: EnvParams
     ) -> Tuple[chex.Array, EnvState]:
         """Performs resetting of environment."""
         board = generate_random_tnt_board(key, self.board_size, self.barrier_sizes)
@@ -449,8 +390,10 @@ class Navigator(environment.Environment):
         key_2 = jax.random.PRNGKey(1)
         treasure_x_key, treasure_y_key = jax.random.split(key_2)
 
-        non_zero_positions = jax.jit(jnp.where, static_argnames='size')(board == 0, size=(
-            (self.board_size * self.board_size) - sum(self.barrier_sizes)))
+        non_zero_positions = jax.jit(jnp.where, static_argnames="size")(
+            board == 0,
+            size=((self.board_size * self.board_size) - sum(self.barrier_sizes)),
+        )
 
         treasure_x = jax.random.choice(treasure_x_key, non_zero_positions[0])
         treasure_y = jax.random.choice(treasure_y_key, non_zero_positions[1])
@@ -486,21 +429,15 @@ class Navigator(environment.Environment):
 
         # Generate grid coordinates using meshgrid
         x_coords, y_coords = jnp.arange(board_size), jnp.arange(board_size)
-        xx, yy = jnp.meshgrid(x_coords, y_coords, indexing='ij')
+        xx, yy = jnp.meshgrid(x_coords, y_coords, indexing="ij")
         top_left_x = grid_px + xx * (square_size + grid_px)
         top_left_y = grid_px + yy * (square_size + grid_px)
         all_top_left = jnp.stack([top_left_x, top_left_y], axis=-1)
         all_bottom_right = all_top_left + square_size
 
         # Initialize canvases
-        canvas = jnp.full(
-            (render_config["size"],) * 2 + (3,),
-            render_config["clr"]
-        )
-        sub_canvas = jnp.full(
-            (sub_size, sub_size, 3), 
-            render_config["sub_clr"]
-        )
+        canvas = jnp.full((render_config["size"],) * 2 + (3,), render_config["clr"])
+        sub_canvas = jnp.full((sub_size, sub_size, 3), render_config["sub_clr"])
 
         # Extract action coordinates
         action_x, action_y = state.action_x, state.action_y
@@ -518,15 +455,13 @@ class Navigator(environment.Environment):
 
             # Draw TNT block if cell_val is 1
             canvas = lax.cond(
-                cell_val == 1,
-                lambda: draw_tnt_block(tl, br, canvas),
-                lambda: canvas
+                cell_val == 1, lambda: draw_tnt_block(tl, br, canvas), lambda: canvas
             )
             # Draw treasure hexagon if cell_val is 2
             return lax.cond(
                 cell_val == 2,
                 lambda: draw_hexagon(tl, br, render_config["trea_clr"], canvas),
-                lambda: canvas
+                lambda: canvas,
             )
 
         # Partial rendering: only the current action cell
@@ -548,17 +483,14 @@ class Navigator(environment.Environment):
                 self.partial_obs,
                 lambda: _render_partial(sub_canvas),
                 lambda: _render_full(sub_canvas),
-            )
+            ),
         )
 
         # Draw matchstick man on the current action cell
         action_tl = all_top_left[action_x, action_y]
         action_br = all_bottom_right[action_x, action_y]
         sub_canvas = draw_rectangle(
-            action_tl,
-            action_br,
-            render_config["action_clr"],
-            sub_canvas
+            action_tl, action_br, render_config["action_clr"], sub_canvas
         )
         # sub_canvas = draw_matchstick_man(
         #     action_tl,
@@ -569,10 +501,7 @@ class Navigator(environment.Environment):
 
         # Draw grid lines
         sub_canvas = draw_grid(
-            square_size, 
-            grid_px, 
-            render_config["grid_clr"],
-            sub_canvas
+            square_size, grid_px, render_config["grid_clr"], sub_canvas
         )
 
         # Draw score on canvas
@@ -580,8 +509,8 @@ class Navigator(environment.Environment):
             render_config["sc_t_l"],
             render_config["sc_b_r"],
             render_config["sc_clr"],
-            canvas, 
-            state.score
+            canvas,
+            state.score,
         )
 
         # Draw environment name
@@ -589,8 +518,8 @@ class Navigator(environment.Environment):
             render_config["env_t_l"],
             render_config["env_b_r"],
             render_config["env_clr"],
-            canvas, 
-            self.name
+            canvas,
+            self.name,
         )
 
         # Merge sub-canvas onto main canvas
@@ -609,9 +538,11 @@ class NavigatorEasy(Navigator):
     def __init__(self, **kwargs):
         super().__init__(board_size=8, **kwargs)
 
+
 class NavigatorMedium(Navigator):
     def __init__(self, **kwargs):
         super().__init__(board_size=10, **kwargs)
+
 
 class NavigatorHard(Navigator):
     def __init__(self, **kwargs):

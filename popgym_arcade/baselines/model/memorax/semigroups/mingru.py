@@ -6,8 +6,8 @@ from beartype import beartype as typechecker
 from equinox import nn
 from jaxtyping import Array, Float, PRNGKeyArray, Shaped, jaxtyped
 
-from ..groups import BinaryAlgebra, Semigroup, Resettable
 from ..gras import GRAS
+from ..groups import BinaryAlgebra, Resettable, Semigroup
 from ..mtypes import Input, StartFlag
 from ..scans import semigroup_scan
 
@@ -27,7 +27,7 @@ class MinGRUSemigroup(Semigroup):
     ) -> MinGRURecurrentState:
         return (
             jnp.zeros((self.recurrent_size,)),
-            jnp.zeros((self.recurrent_size,)), 
+            jnp.zeros((self.recurrent_size,)),
         )
 
     @jaxtyped(typechecker=typechecker)

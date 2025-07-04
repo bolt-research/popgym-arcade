@@ -1,10 +1,12 @@
+from typing import Tuple
+
 import equinox as eqx
 import equinox.nn as nn
 import jax
 import jax.numpy as jnp
-from jaxtyping import PRNGKeyArray, Array
-from typing import Tuple
 from distreqx import distributions
+from jaxtyping import Array, PRNGKeyArray
+
 from popgym_arcade.baselines.model.memorax import get_residual_memory_model
 
 
@@ -20,62 +22,158 @@ class ActorCritic(eqx.Module):
         if obs_size == 256:
             self.actor_cnn = nn.Sequential(
                 [
-                    nn.Conv2d(in_channels=3, out_channels=64, kernel_size=7, stride=2, key=key_array[0]),
+                    nn.Conv2d(
+                        in_channels=3,
+                        out_channels=64,
+                        kernel_size=7,
+                        stride=2,
+                        key=key_array[0],
+                    ),
                     nn.Lambda(jax.nn.leaky_relu),
                     nn.MaxPool2d(kernel_size=2, stride=2),
-                    nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=2, key=key_array[1]),
+                    nn.Conv2d(
+                        in_channels=64,
+                        out_channels=128,
+                        kernel_size=3,
+                        stride=2,
+                        key=key_array[1],
+                    ),
                     nn.Lambda(jax.nn.leaky_relu),
                     nn.MaxPool2d(kernel_size=2, stride=2),
-                    nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=2, key=key_array[2]),
+                    nn.Conv2d(
+                        in_channels=128,
+                        out_channels=256,
+                        kernel_size=3,
+                        stride=2,
+                        key=key_array[2],
+                    ),
                     nn.Lambda(jax.nn.leaky_relu),
                     nn.MaxPool2d(kernel_size=2, stride=2),
-                    nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, stride=2, key=key_array[3]),
+                    nn.Conv2d(
+                        in_channels=256,
+                        out_channels=512,
+                        kernel_size=3,
+                        stride=2,
+                        key=key_array[3],
+                    ),
                     nn.Lambda(jax.nn.leaky_relu),
                 ]
             )
             self.critic_cnn = nn.Sequential(
                 [
-                    nn.Conv2d(in_channels=3, out_channels=64, kernel_size=7, stride=2, key=key_array[7]),
+                    nn.Conv2d(
+                        in_channels=3,
+                        out_channels=64,
+                        kernel_size=7,
+                        stride=2,
+                        key=key_array[7],
+                    ),
                     nn.Lambda(jax.nn.leaky_relu),
                     nn.MaxPool2d(kernel_size=2, stride=2),
-                    nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=2, key=key_array[8]),
+                    nn.Conv2d(
+                        in_channels=64,
+                        out_channels=128,
+                        kernel_size=3,
+                        stride=2,
+                        key=key_array[8],
+                    ),
                     nn.Lambda(jax.nn.leaky_relu),
                     nn.MaxPool2d(kernel_size=2, stride=2),
-                    nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=2, key=key_array[9]),
+                    nn.Conv2d(
+                        in_channels=128,
+                        out_channels=256,
+                        kernel_size=3,
+                        stride=2,
+                        key=key_array[9],
+                    ),
                     nn.Lambda(jax.nn.leaky_relu),
                     nn.MaxPool2d(kernel_size=2, stride=2),
-                    nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, stride=2, key=key_array[10]),
+                    nn.Conv2d(
+                        in_channels=256,
+                        out_channels=512,
+                        kernel_size=3,
+                        stride=2,
+                        key=key_array[10],
+                    ),
                     nn.Lambda(jax.nn.leaky_relu),
                 ]
             )
         else:
             self.actor_cnn = nn.Sequential(
                 [
-                    nn.Conv2d(in_channels=3, out_channels=64, kernel_size=5, stride=2, key=key_array[0]),
+                    nn.Conv2d(
+                        in_channels=3,
+                        out_channels=64,
+                        kernel_size=5,
+                        stride=2,
+                        key=key_array[0],
+                    ),
                     nn.Lambda(jax.nn.leaky_relu),
                     nn.MaxPool2d(kernel_size=2, stride=2),
-                    nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=2, key=key_array[1]),
+                    nn.Conv2d(
+                        in_channels=64,
+                        out_channels=128,
+                        kernel_size=3,
+                        stride=2,
+                        key=key_array[1],
+                    ),
                     nn.Lambda(jax.nn.leaky_relu),
                     nn.MaxPool2d(kernel_size=2, stride=2),
-                    nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=2, key=key_array[2]),
+                    nn.Conv2d(
+                        in_channels=128,
+                        out_channels=256,
+                        kernel_size=3,
+                        stride=2,
+                        key=key_array[2],
+                    ),
                     nn.Lambda(jax.nn.leaky_relu),
                     nn.MaxPool2d(kernel_size=3, stride=1),
-                    nn.Conv2d(in_channels=256, out_channels=512, kernel_size=1, stride=1, key=key_array[3]),
+                    nn.Conv2d(
+                        in_channels=256,
+                        out_channels=512,
+                        kernel_size=1,
+                        stride=1,
+                        key=key_array[3],
+                    ),
                     nn.Lambda(jax.nn.leaky_relu),
                 ]
             )
             self.critic_cnn = nn.Sequential(
                 [
-                    nn.Conv2d(in_channels=3, out_channels=64, kernel_size=5, stride=2, key=key_array[0]),
+                    nn.Conv2d(
+                        in_channels=3,
+                        out_channels=64,
+                        kernel_size=5,
+                        stride=2,
+                        key=key_array[0],
+                    ),
                     nn.Lambda(jax.nn.leaky_relu),
                     nn.MaxPool2d(kernel_size=2, stride=2),
-                    nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=2, key=key_array[1]),
+                    nn.Conv2d(
+                        in_channels=64,
+                        out_channels=128,
+                        kernel_size=3,
+                        stride=2,
+                        key=key_array[1],
+                    ),
                     nn.Lambda(jax.nn.leaky_relu),
                     nn.MaxPool2d(kernel_size=2, stride=2),
-                    nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=2, key=key_array[2]),
+                    nn.Conv2d(
+                        in_channels=128,
+                        out_channels=256,
+                        kernel_size=3,
+                        stride=2,
+                        key=key_array[2],
+                    ),
                     nn.Lambda(jax.nn.leaky_relu),
                     nn.MaxPool2d(kernel_size=3, stride=1),
-                    nn.Conv2d(in_channels=256, out_channels=512, kernel_size=1, stride=1, key=key_array[3]),
+                    nn.Conv2d(
+                        in_channels=256,
+                        out_channels=512,
+                        kernel_size=1,
+                        stride=1,
+                        key=key_array[3],
+                    ),
                     nn.Lambda(jax.nn.leaky_relu),
                 ]
             )
@@ -87,7 +185,9 @@ class ActorCritic(eqx.Module):
                 nn.Linear(in_features=256, out_features=256, key=key_array[5]),
                 nn.LayerNorm(shape=256),
                 nn.Lambda(jax.nn.leaky_relu),
-                nn.Linear(in_features=256, out_features=self.action_dim, key=key_array[6])
+                nn.Linear(
+                    in_features=256, out_features=self.action_dim, key=key_array[6]
+                ),
             ]
         )
 
@@ -99,7 +199,7 @@ class ActorCritic(eqx.Module):
                 nn.Linear(in_features=256, out_features=256, key=key_array[12]),
                 nn.LayerNorm(shape=256),
                 nn.Lambda(jax.nn.leaky_relu),
-                nn.Linear(in_features=256, out_features=1, key=key_array[13])
+                nn.Linear(in_features=256, out_features=1, key=key_array[13]),
             ]
         )
 
@@ -131,62 +231,158 @@ class ActorCriticRNN(eqx.Module):
         if obs_size == 256:
             self.actor_cnn = nn.Sequential(
                 [
-                    nn.Conv2d(in_channels=3, out_channels=64, kernel_size=7, stride=2, key=key_array[0]),
+                    nn.Conv2d(
+                        in_channels=3,
+                        out_channels=64,
+                        kernel_size=7,
+                        stride=2,
+                        key=key_array[0],
+                    ),
                     nn.Lambda(jax.nn.leaky_relu),
                     nn.MaxPool2d(kernel_size=2, stride=2),
-                    nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=2, key=key_array[1]),
+                    nn.Conv2d(
+                        in_channels=64,
+                        out_channels=128,
+                        kernel_size=3,
+                        stride=2,
+                        key=key_array[1],
+                    ),
                     nn.Lambda(jax.nn.leaky_relu),
                     nn.MaxPool2d(kernel_size=2, stride=2),
-                    nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=2, key=key_array[2]),
+                    nn.Conv2d(
+                        in_channels=128,
+                        out_channels=256,
+                        kernel_size=3,
+                        stride=2,
+                        key=key_array[2],
+                    ),
                     nn.Lambda(jax.nn.leaky_relu),
                     nn.MaxPool2d(kernel_size=2, stride=2),
-                    nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, stride=2, key=key_array[3]),
+                    nn.Conv2d(
+                        in_channels=256,
+                        out_channels=512,
+                        kernel_size=3,
+                        stride=2,
+                        key=key_array[3],
+                    ),
                     nn.Lambda(jax.nn.leaky_relu),
                 ]
             )
             self.critic_cnn = nn.Sequential(
                 [
-                    nn.Conv2d(in_channels=3, out_channels=64, kernel_size=7, stride=2, key=key_array[6]),
+                    nn.Conv2d(
+                        in_channels=3,
+                        out_channels=64,
+                        kernel_size=7,
+                        stride=2,
+                        key=key_array[6],
+                    ),
                     nn.Lambda(jax.nn.leaky_relu),
                     nn.MaxPool2d(kernel_size=2, stride=2),
-                    nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=2, key=key_array[7]),
+                    nn.Conv2d(
+                        in_channels=64,
+                        out_channels=128,
+                        kernel_size=3,
+                        stride=2,
+                        key=key_array[7],
+                    ),
                     nn.Lambda(jax.nn.leaky_relu),
                     nn.MaxPool2d(kernel_size=2, stride=2),
-                    nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=2, key=key_array[8]),
+                    nn.Conv2d(
+                        in_channels=128,
+                        out_channels=256,
+                        kernel_size=3,
+                        stride=2,
+                        key=key_array[8],
+                    ),
                     nn.Lambda(jax.nn.leaky_relu),
                     nn.MaxPool2d(kernel_size=2, stride=2),
-                    nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, stride=2, key=key_array[9]),
+                    nn.Conv2d(
+                        in_channels=256,
+                        out_channels=512,
+                        kernel_size=3,
+                        stride=2,
+                        key=key_array[9],
+                    ),
                     nn.Lambda(jax.nn.leaky_relu),
                 ]
             )
         else:
             self.actor_cnn = nn.Sequential(
                 [
-                    nn.Conv2d(in_channels=3, out_channels=64, kernel_size=5, stride=2, key=key_array[0]),
+                    nn.Conv2d(
+                        in_channels=3,
+                        out_channels=64,
+                        kernel_size=5,
+                        stride=2,
+                        key=key_array[0],
+                    ),
                     nn.Lambda(jax.nn.leaky_relu),
                     nn.MaxPool2d(kernel_size=2, stride=2),
-                    nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=2, key=key_array[1]),
+                    nn.Conv2d(
+                        in_channels=64,
+                        out_channels=128,
+                        kernel_size=3,
+                        stride=2,
+                        key=key_array[1],
+                    ),
                     nn.Lambda(jax.nn.leaky_relu),
                     nn.MaxPool2d(kernel_size=2, stride=2),
-                    nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=2, key=key_array[2]),
+                    nn.Conv2d(
+                        in_channels=128,
+                        out_channels=256,
+                        kernel_size=3,
+                        stride=2,
+                        key=key_array[2],
+                    ),
                     nn.Lambda(jax.nn.leaky_relu),
                     nn.MaxPool2d(kernel_size=3, stride=1),
-                    nn.Conv2d(in_channels=256, out_channels=512, kernel_size=1, stride=1, key=key_array[3]),
+                    nn.Conv2d(
+                        in_channels=256,
+                        out_channels=512,
+                        kernel_size=1,
+                        stride=1,
+                        key=key_array[3],
+                    ),
                     nn.Lambda(jax.nn.leaky_relu),
                 ]
             )
             self.critic_cnn = nn.Sequential(
                 [
-                    nn.Conv2d(in_channels=3, out_channels=64, kernel_size=5, stride=2, key=key_array[0]),
+                    nn.Conv2d(
+                        in_channels=3,
+                        out_channels=64,
+                        kernel_size=5,
+                        stride=2,
+                        key=key_array[0],
+                    ),
                     nn.Lambda(jax.nn.leaky_relu),
                     nn.MaxPool2d(kernel_size=2, stride=2),
-                    nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=2, key=key_array[1]),
+                    nn.Conv2d(
+                        in_channels=64,
+                        out_channels=128,
+                        kernel_size=3,
+                        stride=2,
+                        key=key_array[1],
+                    ),
                     nn.Lambda(jax.nn.leaky_relu),
                     nn.MaxPool2d(kernel_size=2, stride=2),
-                    nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=2, key=key_array[2]),
+                    nn.Conv2d(
+                        in_channels=128,
+                        out_channels=256,
+                        kernel_size=3,
+                        stride=2,
+                        key=key_array[2],
+                    ),
                     nn.Lambda(jax.nn.leaky_relu),
                     nn.MaxPool2d(kernel_size=3, stride=1),
-                    nn.Conv2d(in_channels=256, out_channels=512, kernel_size=1, stride=1, key=key_array[3]),
+                    nn.Conv2d(
+                        in_channels=256,
+                        out_channels=512,
+                        kernel_size=1,
+                        stride=1,
+                        key=key_array[3],
+                    ),
                     nn.Lambda(jax.nn.leaky_relu),
                 ]
             )
@@ -203,7 +399,9 @@ class ActorCriticRNN(eqx.Module):
                 nn.Linear(in_features=256, out_features=256, key=key_array[5]),
                 nn.LayerNorm(shape=256),
                 nn.Lambda(jax.nn.leaky_relu),
-                nn.Linear(in_features=256, out_features=self.action_dim, key=key_array[12]),
+                nn.Linear(
+                    in_features=256, out_features=self.action_dim, key=key_array[12]
+                ),
             ]
         )
 
@@ -230,16 +428,26 @@ class ActorCriticRNN(eqx.Module):
         actor_embedding = eqx.filter_vmap(eqx.filter_vmap(self.actor_cnn))(inputs)
         critic_embedding = eqx.filter_vmap(eqx.filter_vmap(self.critic_cnn))(inputs)
 
-        actor_embedding = actor_embedding.reshape((actor_embedding.shape[0], actor_embedding.shape[1], -1))
-        critic_embedding = critic_embedding.reshape((critic_embedding.shape[0], critic_embedding.shape[1], -1))
+        actor_embedding = actor_embedding.reshape(
+            (actor_embedding.shape[0], actor_embedding.shape[1], -1)
+        )
+        critic_embedding = critic_embedding.reshape(
+            (critic_embedding.shape[0], critic_embedding.shape[1], -1)
+        )
         actor_rnn_in = (actor_embedding, dones)
         critic_rnn_in = (critic_embedding, dones)
-        actor_state, actor_embedding = eqx.filter_vmap(self.actor_rnn, in_axes=(0, 1), out_axes=(0, 1))(actor_state,
-                                                                                                        actor_rnn_in)
-        actor_state = eqx.filter_vmap(self.actor_rnn.latest_recurrent_state, in_axes=0)(actor_state)
-        critic_state, critic_embedding = eqx.filter_vmap(self.critic_rnn, in_axes=(0, 1), out_axes=(0, 1))(critic_state,
-                                                                                                           critic_rnn_in)
-        critic_state = eqx.filter_vmap(self.critic_rnn.latest_recurrent_state, in_axes=0)(critic_state)
+        actor_state, actor_embedding = eqx.filter_vmap(
+            self.actor_rnn, in_axes=(0, 1), out_axes=(0, 1)
+        )(actor_state, actor_rnn_in)
+        actor_state = eqx.filter_vmap(self.actor_rnn.latest_recurrent_state, in_axes=0)(
+            actor_state
+        )
+        critic_state, critic_embedding = eqx.filter_vmap(
+            self.critic_rnn, in_axes=(0, 1), out_axes=(0, 1)
+        )(critic_state, critic_rnn_in)
+        critic_state = eqx.filter_vmap(
+            self.critic_rnn.latest_recurrent_state, in_axes=0
+        )(critic_state)
         actor_mean = eqx.filter_vmap(eqx.filter_vmap(self.actor_trunk))(actor_embedding)
         pi = distributions.Categorical(logits=actor_mean)
         # pi = distrax.Categorical(logits=actor_mean)
@@ -255,6 +463,7 @@ class ActorCriticRNN(eqx.Module):
 
 class QNetwork(eqx.Module):
     """CNN + MLP"""
+
     action_dim: int = 5
     cnn: nn.Sequential
     trunk: nn.Sequential
@@ -262,43 +471,97 @@ class QNetwork(eqx.Module):
     def __init__(self, key: PRNGKeyArray, obs_size: int):
         keys = jax.random.split(key, 9)
         if obs_size == 256:
-            self.cnn = nn.Sequential([
-                nn.Conv2d(in_channels=3, out_channels=64, kernel_size=7, stride=2, key=keys[0]),
-                nn.Lambda(jax.nn.leaky_relu),
-                nn.MaxPool2d(kernel_size=2, stride=2),
-                nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=2, key=keys[1]),
-                nn.Lambda(jax.nn.leaky_relu),
-                nn.MaxPool2d(kernel_size=2, stride=2),
-                nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=2, key=keys[2]),
-                nn.Lambda(jax.nn.leaky_relu),
-                nn.MaxPool2d(kernel_size=2, stride=2),
-                nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, stride=2, key=keys[3]),
-                nn.Lambda(jax.nn.leaky_relu),
-            ])
+            self.cnn = nn.Sequential(
+                [
+                    nn.Conv2d(
+                        in_channels=3,
+                        out_channels=64,
+                        kernel_size=7,
+                        stride=2,
+                        key=keys[0],
+                    ),
+                    nn.Lambda(jax.nn.leaky_relu),
+                    nn.MaxPool2d(kernel_size=2, stride=2),
+                    nn.Conv2d(
+                        in_channels=64,
+                        out_channels=128,
+                        kernel_size=3,
+                        stride=2,
+                        key=keys[1],
+                    ),
+                    nn.Lambda(jax.nn.leaky_relu),
+                    nn.MaxPool2d(kernel_size=2, stride=2),
+                    nn.Conv2d(
+                        in_channels=128,
+                        out_channels=256,
+                        kernel_size=3,
+                        stride=2,
+                        key=keys[2],
+                    ),
+                    nn.Lambda(jax.nn.leaky_relu),
+                    nn.MaxPool2d(kernel_size=2, stride=2),
+                    nn.Conv2d(
+                        in_channels=256,
+                        out_channels=512,
+                        kernel_size=3,
+                        stride=2,
+                        key=keys[3],
+                    ),
+                    nn.Lambda(jax.nn.leaky_relu),
+                ]
+            )
         else:
-            self.cnn = nn.Sequential([
-                nn.Conv2d(in_channels=3, out_channels=64, kernel_size=5, stride=2, key=keys[0]),
-                nn.Lambda(jax.nn.leaky_relu),
-                nn.MaxPool2d(kernel_size=2, stride=2),
-                nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=2, key=keys[1]),
-                nn.Lambda(jax.nn.leaky_relu),
-                nn.MaxPool2d(kernel_size=2, stride=2),
-                nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=2, key=keys[2]),
-                nn.Lambda(jax.nn.leaky_relu),
-                nn.MaxPool2d(kernel_size=3, stride=1),
-                nn.Conv2d(in_channels=256, out_channels=512, kernel_size=1, stride=1, key=keys[3]),
-                nn.Lambda(jax.nn.leaky_relu),
-                ])
+            self.cnn = nn.Sequential(
+                [
+                    nn.Conv2d(
+                        in_channels=3,
+                        out_channels=64,
+                        kernel_size=5,
+                        stride=2,
+                        key=keys[0],
+                    ),
+                    nn.Lambda(jax.nn.leaky_relu),
+                    nn.MaxPool2d(kernel_size=2, stride=2),
+                    nn.Conv2d(
+                        in_channels=64,
+                        out_channels=128,
+                        kernel_size=3,
+                        stride=2,
+                        key=keys[1],
+                    ),
+                    nn.Lambda(jax.nn.leaky_relu),
+                    nn.MaxPool2d(kernel_size=2, stride=2),
+                    nn.Conv2d(
+                        in_channels=128,
+                        out_channels=256,
+                        kernel_size=3,
+                        stride=2,
+                        key=keys[2],
+                    ),
+                    nn.Lambda(jax.nn.leaky_relu),
+                    nn.MaxPool2d(kernel_size=3, stride=1),
+                    nn.Conv2d(
+                        in_channels=256,
+                        out_channels=512,
+                        kernel_size=1,
+                        stride=1,
+                        key=keys[3],
+                    ),
+                    nn.Lambda(jax.nn.leaky_relu),
+                ]
+            )
 
-        self.trunk = nn.Sequential([
-            nn.Linear(in_features=512, out_features=256, key=keys[4]),
-            nn.LayerNorm(shape=256),
-            nn.Lambda(jax.nn.leaky_relu),
-            nn.Linear(in_features=256, out_features=256, key=keys[5]),
-            nn.LayerNorm(shape=256),
-            nn.Lambda(jax.nn.leaky_relu),
-            nn.Linear(in_features=256, out_features=self.action_dim, key=keys[6])
-        ])
+        self.trunk = nn.Sequential(
+            [
+                nn.Linear(in_features=512, out_features=256, key=keys[4]),
+                nn.LayerNorm(shape=256),
+                nn.Lambda(jax.nn.leaky_relu),
+                nn.Linear(in_features=256, out_features=256, key=keys[5]),
+                nn.LayerNorm(shape=256),
+                nn.Lambda(jax.nn.leaky_relu),
+                nn.Linear(in_features=256, out_features=self.action_dim, key=keys[6]),
+            ]
+        )
 
     def __call__(self, x: jax.Array):
         x = x.transpose((0, 3, 1, 2))
@@ -307,8 +570,10 @@ class QNetwork(eqx.Module):
         x = eqx.filter_vmap(self.trunk)(x)
         return x
 
+
 class QNetworkRNN(eqx.Module):
     """CNN + MLP"""
+
     action_dim: int = 5
     cnn: nn.Sequential
     rnn: eqx.Module
@@ -317,33 +582,85 @@ class QNetworkRNN(eqx.Module):
     def __init__(self, key: PRNGKeyArray, obs_size: int, rnn_type: str = "lru"):
         keys = jax.random.split(key, 8)
         if obs_size == 256:
-            self.cnn = nn.Sequential([
-                nn.Conv2d(in_channels=3, out_channels=64, kernel_size=7, stride=2, key=keys[0]),
-                nn.Lambda(jax.nn.leaky_relu),
-                nn.MaxPool2d(kernel_size=2, stride=2),
-                nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=2, key=keys[1]),
-                nn.Lambda(jax.nn.leaky_relu),
-                nn.MaxPool2d(kernel_size=2, stride=2),
-                nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=2, key=keys[2]),
-                nn.Lambda(jax.nn.leaky_relu),
-                nn.MaxPool2d(kernel_size=2, stride=2),
-                nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, stride=2, key=keys[3]),
-                nn.Lambda(jax.nn.leaky_relu),
-            ])
+            self.cnn = nn.Sequential(
+                [
+                    nn.Conv2d(
+                        in_channels=3,
+                        out_channels=64,
+                        kernel_size=7,
+                        stride=2,
+                        key=keys[0],
+                    ),
+                    nn.Lambda(jax.nn.leaky_relu),
+                    nn.MaxPool2d(kernel_size=2, stride=2),
+                    nn.Conv2d(
+                        in_channels=64,
+                        out_channels=128,
+                        kernel_size=3,
+                        stride=2,
+                        key=keys[1],
+                    ),
+                    nn.Lambda(jax.nn.leaky_relu),
+                    nn.MaxPool2d(kernel_size=2, stride=2),
+                    nn.Conv2d(
+                        in_channels=128,
+                        out_channels=256,
+                        kernel_size=3,
+                        stride=2,
+                        key=keys[2],
+                    ),
+                    nn.Lambda(jax.nn.leaky_relu),
+                    nn.MaxPool2d(kernel_size=2, stride=2),
+                    nn.Conv2d(
+                        in_channels=256,
+                        out_channels=512,
+                        kernel_size=3,
+                        stride=2,
+                        key=keys[3],
+                    ),
+                    nn.Lambda(jax.nn.leaky_relu),
+                ]
+            )
         else:
-            self.cnn = nn.Sequential([
-                nn.Conv2d(in_channels=3, out_channels=64, kernel_size=5, stride=2, key=keys[0]),
-                nn.Lambda(jax.nn.leaky_relu),
-                nn.MaxPool2d(kernel_size=2, stride=2),
-                nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=2, key=keys[1]),
-                nn.Lambda(jax.nn.leaky_relu),
-                nn.MaxPool2d(kernel_size=2, stride=2),
-                nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=2, key=keys[2]),
-                nn.Lambda(jax.nn.leaky_relu),
-                nn.MaxPool2d(kernel_size=3, stride=1),
-                nn.Conv2d(in_channels=256, out_channels=512, kernel_size=1, stride=1, key=keys[3]),
-                nn.Lambda(jax.nn.leaky_relu),
-            ])
+            self.cnn = nn.Sequential(
+                [
+                    nn.Conv2d(
+                        in_channels=3,
+                        out_channels=64,
+                        kernel_size=5,
+                        stride=2,
+                        key=keys[0],
+                    ),
+                    nn.Lambda(jax.nn.leaky_relu),
+                    nn.MaxPool2d(kernel_size=2, stride=2),
+                    nn.Conv2d(
+                        in_channels=64,
+                        out_channels=128,
+                        kernel_size=3,
+                        stride=2,
+                        key=keys[1],
+                    ),
+                    nn.Lambda(jax.nn.leaky_relu),
+                    nn.MaxPool2d(kernel_size=2, stride=2),
+                    nn.Conv2d(
+                        in_channels=128,
+                        out_channels=256,
+                        kernel_size=3,
+                        stride=2,
+                        key=keys[2],
+                    ),
+                    nn.Lambda(jax.nn.leaky_relu),
+                    nn.MaxPool2d(kernel_size=3, stride=1),
+                    nn.Conv2d(
+                        in_channels=256,
+                        out_channels=512,
+                        kernel_size=1,
+                        stride=1,
+                        key=keys[3],
+                    ),
+                    nn.Lambda(jax.nn.leaky_relu),
+                ]
+            )
         self.rnn = get_residual_memory_model(
             input=517,
             hidden=512,
@@ -352,9 +669,9 @@ class QNetworkRNN(eqx.Module):
             rnn_type=rnn_type,
             key=keys[4],
         )
-        self.trunk = nn.Sequential([
-            nn.Linear(in_features=256, out_features=self.action_dim, key=keys[7])
-        ])
+        self.trunk = nn.Sequential(
+            [nn.Linear(in_features=256, out_features=self.action_dim, key=keys[7])]
+        )
 
     def __call__(self, hidden_state, x, done, last_action):
         x = x.transpose((0, 1, 4, 2, 3))
@@ -366,8 +683,12 @@ class QNetworkRNN(eqx.Module):
         x = jnp.concatenate([x, last_action], axis=-1)
         rnn_in = (x, done)
 
-        hidden_state, x = eqx.filter_vmap(self.rnn, in_axes=(0, 1), out_axes=(0, 1))(hidden_state, rnn_in)
-        hidden_state = eqx.filter_vmap(self.rnn.latest_recurrent_state, in_axes=0)(hidden_state)
+        hidden_state, x = eqx.filter_vmap(self.rnn, in_axes=(0, 1), out_axes=(0, 1))(
+            hidden_state, rnn_in
+        )
+        hidden_state = eqx.filter_vmap(self.rnn.latest_recurrent_state, in_axes=0)(
+            hidden_state
+        )
 
         q_vals = eqx.filter_vmap(eqx.filter_vmap(self.trunk))(x)
 

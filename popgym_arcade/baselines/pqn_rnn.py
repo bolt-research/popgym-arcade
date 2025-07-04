@@ -1,23 +1,24 @@
+import copy
+import time
 from typing import NamedTuple
+
+import chex
+import equinox as eqx
 import jax
 import jax.numpy as jnp
-from jax import lax
 import numpy as np
-import chex
-
 import optax
-import equinox as eqx
+from jax import lax
+
 import popgym_arcade
-from popgym_arcade.wrappers import LogWrapper
-from popgym_arcade.baselines.model import add_batch_dim
-from popgym_arcade.baselines.model import QNetworkRNN
 import wandb
-import time
-import copy
+from popgym_arcade.baselines.model import QNetworkRNN, add_batch_dim
+from popgym_arcade.wrappers import LogWrapper
 
 
 def debug_shape(x):
     import equinox as eqx
+
     return eqx.tree_pprint(jax.tree.map(lambda x: {x.shape: x.dtype}, x))
 
 
@@ -38,6 +39,7 @@ def filter_scan(f, init, xs, *args, **kwargs):
 
 class BoltzmannActor(eqx.Module):
     """Actor that follows a boltzmann (softmax) policy based on the Q values"""
+
     model: QNetworkRNN
 
     def __call__(self, x: jax.Array, temperature: jax.Array, key: jax.Array):
@@ -64,7 +66,7 @@ class State(eqx.Module):
 
     def replace(self, **kwargs):
         """Replaces existing fields.
-        
+
         E.g., s = State(bork=1, dork=2)
         s.replace(dork=3)
         print(s)
@@ -92,18 +94,20 @@ class TrainState(State):
 
 def make_train(config):
     config["NUM_UPDATES"] = (
-            config["TOTAL_TIMESTEPS"] // config["NUM_STEPS"] // config["NUM_ENVS"]
+        config["TOTAL_TIMESTEPS"] // config["NUM_STEPS"] // config["NUM_ENVS"]
     )
 
     config["NUM_UPDATES_DECAY"] = (
-            config["TOTAL_TIMESTEPS_DECAY"] // config["NUM_STEPS"] // config["NUM_ENVS"]
+        config["TOTAL_TIMESTEPS_DECAY"] // config["NUM_STEPS"] // config["NUM_ENVS"]
     )
 
     assert (config["NUM_STEPS"] * config["NUM_ENVS"]) % config[
         "NUM_MINIBATCHES"
     ] == 0, "NUM_MINIBATCHES must divide NUM_STEPS*NUM_ENVS"
 
-    env, env_params = popgym_arcade.make(config["ENV_NAME"], partial_obs=config["PARTIAL"], obs_size=config["OBS_SIZE"])
+    env, env_params = popgym_arcade.make(
+        config["ENV_NAME"], partial_obs=config["PARTIAL"], obs_size=config["OBS_SIZE"]
+    )
     env = LogWrapper(env)
     # config["TEST_NUM_STEPS"] = config.get(
     #     "TEST_NUM_STEPS", env_params.max_steps_in_episode
@@ -136,15 +140,17 @@ def make_train(config):
         eps_scheduler = optax.linear_schedule(
             config["EPS_START"],
             config["EPS_FINISH"],
-            (config["EPS_DECAY"]) * config["NUM_UPDATES_DECAY"] * config["NUM_MINIBATCHES"],
+            (config["EPS_DECAY"])
+            * config["NUM_UPDATES_DECAY"]
+            * config["NUM_MINIBATCHES"],
         )
 
         lr_scheduler = optax.linear_schedule(
             init_value=config["LR"],
             end_value=5e-7,
             transition_steps=(config["NUM_UPDATES_DECAY"])
-                             * config["NUM_MINIBATCHES"]
-                             * config["NUM_EPOCHS"],
+            * config["NUM_MINIBATCHES"]
+            * config["NUM_EPOCHS"],
         )
         lr = lr_scheduler if config.get("LR_LINEAR_DECAY", False) else config["LR"]
         rng, _rng, rng_init = jax.random.split(rng, 3)
@@ -173,11 +179,15 @@ def make_train(config):
         # TRAINING LOOP
         def _update_step(runner_state, unused):
 
-            train_state, memory_transitions, expl_state, test_metrics, rng = runner_state
+            train_state, memory_transitions, expl_state, test_metrics, rng = (
+                runner_state
+            )
 
             # SAMPLE PHASE
             def _step_env(runner_state, _):
-                train_state, memory_transitions, expl_state, test_metrics, rng = runner_state
+                train_state, memory_transitions, expl_state, test_metrics, rng = (
+                    runner_state
+                )
                 hs, last_obs, last_done, last_action, env_state = expl_state
                 rng, rng_a, rng_s = jax.random.split(rng, 3)
 
@@ -191,7 +201,9 @@ def make_train(config):
                     _done,
                     _last_action,
                 )  # (num_envs, hidden_size), (1, num_envs, num_actions)
-                q_vals = q_vals.squeeze(axis=0)  # (num_envs, num_actions) remove the time dim
+                q_vals = q_vals.squeeze(
+                    axis=0
+                )  # (num_envs, num_actions) remove the time dim
 
                 _rngs = jax.random.split(rng_a, config["NUM_ENVS"])
                 eps = jnp.full(config["NUM_ENVS"], eps_scheduler(train_state.n_updates))
@@ -213,7 +225,13 @@ def make_train(config):
                     infos=info,
                 )
                 new_expl_state = (new_hs, new_obs, new_done, new_action, new_env_state)
-                runner_state = (train_state, memory_transitions, new_expl_state, test_metrics, rng)
+                runner_state = (
+                    train_state,
+                    memory_transitions,
+                    new_expl_state,
+                    test_metrics,
+                    rng,
+                )
                 return runner_state, transition
 
             # step the env
@@ -224,7 +242,9 @@ def make_train(config):
                 None,
                 config["NUM_STEPS"],
             )
-            train_state, memory_transitions, expl_state, test_metrics, rng = runner_state
+            train_state, memory_transitions, expl_state, test_metrics, rng = (
+                runner_state
+            )
             # hs, last_obs, last_done, last_action, env_state = expl_state
             # hs = train_state.model.initialize_carry(key=rng_init)
             # hs = add_batch_dim(hs, config["NUM_ENVS"])
@@ -237,12 +257,13 @@ def make_train(config):
             expl_state = tuple(expl_state)
 
             train_state = train_state.replace(
-                timesteps=train_state.timesteps + config["NUM_STEPS"] * config["NUM_ENVS"]
+                timesteps=train_state.timesteps
+                + config["NUM_STEPS"] * config["NUM_ENVS"]
             )  # update timesteps count
 
             # insert the transitions into the memory
             memory_transitions = jax.tree.map(
-                lambda x, y: jnp.concatenate([x[config["NUM_STEPS"]:], y], axis=0),
+                lambda x, y: jnp.concatenate([x[config["NUM_STEPS"] :], y], axis=0),
                 memory_transitions,
                 transitions,
             )
@@ -270,18 +291,20 @@ def make_train(config):
                             reward, q, done = rew_q_done
                             lambda_returns, next_q = lambda_returns_and_next_q
                             target_bootstrap = (
-                                    reward + config["GAMMA"] * (1 - done) * next_q
+                                reward + config["GAMMA"] * (1 - done) * next_q
                             )
                             delta = lambda_returns - next_q
                             lambda_returns = (
-                                    target_bootstrap
-                                    + config["GAMMA"] * config["LAMBDA"] * delta
+                                target_bootstrap
+                                + config["GAMMA"] * config["LAMBDA"] * delta
                             )
                             lambda_returns = (1 - done) * lambda_returns + done * reward
                             next_q = jnp.max(q, axis=-1)
                             return (lambda_returns, next_q), lambda_returns
 
-                        lambda_returns = reward[-1] + config["GAMMA"] * (1 - done[-1]) * last_q
+                        lambda_returns = (
+                            reward[-1] + config["GAMMA"] * (1 - done[-1]) * last_q
+                        )
                         last_q = jnp.max(q_vals[-1], axis=-1)
                         _, targets = jax.lax.scan(
                             _get_target,
@@ -314,8 +337,12 @@ def make_train(config):
                             q_vals,
                             jnp.expand_dims(minibatch.action, axis=-1),
                             axis=-1,
-                        ).squeeze(axis=-1)  # (num_steps, num_agents, batch_size,)
-                        chosen_action_qvals = chosen_action_qvals[:-1].reshape(-1)  # (num_steps-1*batch_size,)
+                        ).squeeze(
+                            axis=-1
+                        )  # (num_steps, num_agents, batch_size,)
+                        chosen_action_qvals = chosen_action_qvals[:-1].reshape(
+                            -1
+                        )  # (num_steps-1*batch_size,)
 
                         loss = 0.5 * jnp.square(chosen_action_qvals - target).mean()
                         return loss, chosen_action_qvals
@@ -324,7 +351,9 @@ def make_train(config):
                         _loss_fn, has_aux=True
                     )(train_state.model)
                     updates, new_opt_state = train_state.opt.update(
-                        grads, train_state.opt_state, eqx.filter(train_state.model, eqx.is_array),
+                        grads,
+                        train_state.opt_state,
+                        eqx.filter(train_state.model, eqx.is_array),
                         # TODO is_inexact_array
                     )
                     new_network = eqx.apply_updates(train_state.model, updates)
@@ -347,7 +376,9 @@ def make_train(config):
                     x = x.reshape(
                         x.shape[0], config["NUM_MINIBATCHES"], -1, *x.shape[2:]
                     )  # num_steps, minibatches, batch_size/num_minbatches,
-                    x = jnp.swapaxes(x, 0, 1)  # (minibatches, num_steps, batch_size/num_minbatches, ...)
+                    x = jnp.swapaxes(
+                        x, 0, 1
+                    )  # (minibatches, num_steps, batch_size/num_minbatches, ...)
                     return x
 
                 rng, _rng = jax.random.split(rng)
@@ -383,12 +414,12 @@ def make_train(config):
             new_action = jnp.argmax(qvals_new[-1], axis=-1)
             churn_ratio = (last_action != new_action).mean()
             metrics["churn_ratio"] = churn_ratio
-            
+
             # jax.debug.print("Metrics: {}", metrics)
             # write info to file
             with open("metrics.txt", "a") as f:
                 f.write(f"churn_ratio: {churn_ratio}\n")
-            jax.debug.print("churn_ratio: {}", churn_ratio) 
+            jax.debug.print("churn_ratio: {}", churn_ratio)
             # action: (128+4, 16)
 
             # print(f"memory_transitions.shape: {memory_transitions}")
@@ -443,7 +474,13 @@ def make_train(config):
 
             #     jax.debug.callback(callback, metrics)
 
-            runner_state = (train_state, memory_transitions, tuple(expl_state), test_metrics, rng)
+            runner_state = (
+                train_state,
+                memory_transitions,
+                tuple(expl_state),
+                test_metrics,
+                rng,
+            )
 
             return runner_state, metrics
 
@@ -465,7 +502,9 @@ def make_train(config):
                     _done,
                     _last_action,
                 )  # (num_envs, hidden_size), (1, num_envs, num_actions)
-                q_vals = q_vals.squeeze(axis=0)  # (num_envs, num_actions) remove the time dim
+                q_vals = q_vals.squeeze(
+                    axis=0
+                )  # (num_envs, num_actions) remove the time dim
                 eps = jnp.full(config["TEST_NUM_ENVS"], config["EPS_TEST"])
                 new_action = jax.vmap(eps_greedy_exploration)(
                     jax.random.split(rng_a, config["TEST_NUM_ENVS"]), q_vals, eps
@@ -540,9 +579,11 @@ def make_train(config):
                 _done,
                 _last_action,
             )  # (num_envs, hidden_size), (1, num_envs, num_actions)
-            q_vals = q_vals.squeeze(axis=0)  # (num_envs, num_actions) remove the time dim
+            q_vals = q_vals.squeeze(
+                axis=0
+            )  # (num_envs, num_actions) remove the time dim
             _rngs = jax.random.split(rng_a, config["NUM_ENVS"])
-            eps = jnp.full(config["NUM_ENVS"], 1.)  # random actions
+            eps = jnp.full(config["NUM_ENVS"], 1.0)  # random actions
             new_action = jax.vmap(eps_greedy_exploration)(_rngs, q_vals, eps)
             new_obs, new_env_state, reward, new_done, info = vmap_step(
                 config["NUM_ENVS"]
@@ -590,7 +631,9 @@ def make_train(config):
 def evaluate(model, config):
     seed = jax.random.PRNGKey(10)
     seed, _rng = jax.random.split(seed)
-    env, env_params = popgym_arcade.make(config["ENV_NAME"], partial_obs=config["PARTIAL"], obs_size=config["OBS_SIZE"])
+    env, env_params = popgym_arcade.make(
+        config["ENV_NAME"], partial_obs=config["PARTIAL"], obs_size=config["OBS_SIZE"]
+    )
     env = LogWrapper(env)
     vmap_reset = lambda n_envs: lambda rng: jax.vmap(env.reset, in_axes=(0, None))(
         jax.random.split(rng, n_envs), env_params
@@ -611,6 +654,7 @@ def evaluate(model, config):
 
     carry = (hs, obs, init_done, init_action, state, frames, _rng)
     wandb.init(project=f'{config["PROJECT"]}')
+
     def evaluate_step(carry, i):
         hs, obs, done, action, state, frames, _rng = carry
         _rng, rng_step = jax.random.split(_rng, 2)
@@ -639,7 +683,18 @@ def evaluate(model, config):
     frames = np.array(frames, dtype=np.uint8)
     frames = frames.transpose((0, 3, 1, 2))
     # imageio.mimsave('{}_{}_{}_Partial={}_SEED={}.gif'.format(config["TRAIN_TYPE"], config["MEMORY_TYPE"], config["ENV_NAME"], config["PARTIAL"], config["SEED"]), frames)
-    wandb.log({"{}_{}_{}_model_Partial={}_SEED={}".format(config["TRAIN_TYPE"], config["MEMORY_TYPE"], config["ENV_NAME"], config["PARTIAL"], config["SEED"]): wandb.Video(frames, fps=4)})
+    wandb.log(
+        {
+            "{}_{}_{}_model_Partial={}_SEED={}".format(
+                config["TRAIN_TYPE"],
+                config["MEMORY_TYPE"],
+                config["ENV_NAME"],
+                config["PARTIAL"],
+                config["SEED"],
+            ): wandb.Video(frames, fps=4)
+        }
+    )
+
 
 def single_run(config):
     # config = {**config, **config["alg"]}
@@ -673,14 +728,36 @@ def single_run(config):
     train_state = outs["runner_state"][0]
 
     network_squeezed = jax.tree.map(
-        lambda x: x.squeeze(0) if (hasattr(x, "ndim") and x.ndim > 1 and x.shape[0] == 1) else x,
-        train_state.model
+        lambda x: (
+            x.squeeze(0)
+            if (hasattr(x, "ndim") and x.ndim > 1 and x.shape[0] == 1)
+            else x
+        ),
+        train_state.model,
     )
 
-    eqx.tree_serialise_leaves('{}_{}_{}_model_Partial={}_SEED={}.pkl'.format(config["TRAIN_TYPE"], config["MEMORY_TYPE"], config["ENV_NAME"], config["PARTIAL"], config["SEED"]), network_squeezed)
+    eqx.tree_serialise_leaves(
+        "{}_{}_{}_model_Partial={}_SEED={}.pkl".format(
+            config["TRAIN_TYPE"],
+            config["MEMORY_TYPE"],
+            config["ENV_NAME"],
+            config["PARTIAL"],
+            config["SEED"],
+        ),
+        network_squeezed,
+    )
     rng, _rng = jax.random.split(rng)
     network = QNetworkRNN(_rng, config["OBS_SIZE"], config["MEMORY_TYPE"])
-    model = eqx.tree_deserialise_leaves('{}_{}_{}_model_Partial={}_SEED={}.pkl'.format(config["TRAIN_TYPE"], config["MEMORY_TYPE"], config["ENV_NAME"], config["PARTIAL"], config["SEED"]), network)
+    model = eqx.tree_deserialise_leaves(
+        "{}_{}_{}_model_Partial={}_SEED={}.pkl".format(
+            config["TRAIN_TYPE"],
+            config["MEMORY_TYPE"],
+            config["ENV_NAME"],
+            config["PARTIAL"],
+            config["SEED"],
+        ),
+        network,
+    )
 
     evaluate(model, config)
 

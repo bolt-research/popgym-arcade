@@ -1,10 +1,15 @@
+import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-import matplotlib.pyplot as plt
+
 # import sys; sys.path.extend(['/home/ubuntu-user/popjym-main/'])
 
-alldata = pd.read_csv('F:/Desktop/ML/Popjym/popjym/popjym/popjym/plotting/fps_data/all.csv')
-popgymarcadedata = pd.read_csv('F:/Desktop/ML/Popjym/popjym/popjym/popjym/plotting/fps_data/True_popgymarcadefpsdata.csv')
+alldata = pd.read_csv(
+    "F:/Desktop/ML/Popjym/popjym/popjym/popjym/plotting/fps_data/all.csv"
+)
+popgymarcadedata = pd.read_csv(
+    "F:/Desktop/ML/Popjym/popjym/popjym/popjym/plotting/fps_data/True_popgymarcadefpsdata.csv"
+)
 
 sns.set()
 # sns.color_palette("Paired")
@@ -13,40 +18,40 @@ sns.set()
 fig, axes = plt.subplots(1, 2, figsize=(24, 8), sharex=True, sharey=True)
 
 sns.lineplot(
-    data=popgymarcadedata, 
-    x='Num Envs', 
-    y='FPS', 
-    hue='Environment',
-    marker='o', 
+    data=popgymarcadedata,
+    x="Num Envs",
+    y="FPS",
+    hue="Environment",
+    marker="o",
     markersize=25,
     ax=axes[0],
     # errorbar=('ci', 95)
 )
-axes[0].set_xscale('log', base=2)
-axes[0].set_yscale('log', base=10)
-axes[0].tick_params(axis='both', which='major', labelsize=35)
-axes[0].legend(title='', title_fontsize='20', fontsize='22', ncol=3)
-axes[0].set_xlabel('')
-axes[0].set_ylabel('')
+axes[0].set_xscale("log", base=2)
+axes[0].set_yscale("log", base=10)
+axes[0].tick_params(axis="both", which="major", labelsize=35)
+axes[0].legend(title="", title_fontsize="20", fontsize="22", ncol=3)
+axes[0].set_xlabel("")
+axes[0].set_ylabel("")
 sns.lineplot(
-    data=alldata, 
-    x='Num Envs', 
-    y='FPS', 
-    hue='Environment',
-    marker='o', 
+    data=alldata,
+    x="Num Envs",
+    y="FPS",
+    hue="Environment",
+    marker="o",
     markersize=25,
     # errorbar=('ci', 95)
     ax=axes[1],
 )
 
-axes[1].set_xscale('log', base=2)
-axes[1].set_yscale('log', base=2)
-axes[1].tick_params(axis='both', which='major', labelsize=35)
-axes[1].legend(title='', title_fontsize='20', fontsize='22', ncol=3)
-axes[1].set_xlabel('')
-axes[1].set_ylabel('')
-fig.text(0.55, 0.04, 'Number of Parallel Environments', ha='center', fontsize=35)
-fig.text(0.04, 0.6, 'Frames per second', va='center', rotation='vertical', fontsize=35)
+axes[1].set_xscale("log", base=2)
+axes[1].set_yscale("log", base=2)
+axes[1].tick_params(axis="both", which="major", labelsize=35)
+axes[1].legend(title="", title_fontsize="20", fontsize="22", ncol=3)
+axes[1].set_xlabel("")
+axes[1].set_ylabel("")
+fig.text(0.55, 0.04, "Number of Parallel Environments", ha="center", fontsize=35)
+fig.text(0.04, 0.6, "Frames per second", va="center", rotation="vertical", fontsize=35)
 
 # fig.subplots_adjust(wspace=0.3)
 

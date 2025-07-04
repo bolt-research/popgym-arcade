@@ -1,22 +1,23 @@
+import functools
+import time
 from typing import Any, Dict, Optional, Tuple, Union
 
 import chex
 import jax
-from jax import lax
 import jax.numpy as jnp
-import functools
-import time
-from gymnax.environments import environment
-from gymnax.environments import spaces
 from chex import dataclass
+from gymnax.environments import environment, spaces
+from jax import lax
 
-from popgym_arcade.environments.draw_utils import (draw_crooked_arrow,
-                                            draw_horizontal_arrow,
-                                            draw_rectangle,
-                                            draw_pole,
-                                            draw_number,
-                                            draw_sub_canvas,
-                                            draw_str)
+from popgym_arcade.environments.draw_utils import (
+    draw_crooked_arrow,
+    draw_horizontal_arrow,
+    draw_number,
+    draw_pole,
+    draw_rectangle,
+    draw_str,
+    draw_sub_canvas,
+)
 
 
 @dataclass(frozen=True)
@@ -167,11 +168,11 @@ class CartPole(environment.Environment[EnvState, EnvParams]):
     }
 
     def __init__(
-            self,
-            n_sigma: float = 0.0,
-            max_steps_in_episode: int = 200,
-            partial_obs: bool = False,
-            obs_size: int = 128,
+        self,
+        n_sigma: float = 0.0,
+        max_steps_in_episode: int = 200,
+        partial_obs: bool = False,
+        obs_size: int = 128,
     ):
         """
         Initialize the environment.
@@ -193,11 +194,11 @@ class CartPole(environment.Environment[EnvState, EnvParams]):
 
     @functools.partial(jax.jit, static_argnums=(0,))
     def step_env(
-            self,
-            key: chex.PRNGKey,
-            state: EnvState,
-            action: Union[int, float, chex.Array],
-            params: EnvParams,
+        self,
+        key: chex.PRNGKey,
+        state: EnvState,
+        action: Union[int, float, chex.Array],
+        params: EnvParams,
     ) -> Tuple[chex.Array, EnvState, chex.Array, chex.Array, Dict[Any, Any]]:
         """
         Perform a step in the environment.
@@ -237,18 +238,12 @@ class CartPole(environment.Environment[EnvState, EnvParams]):
 
         # Calculate acceleration and update state
         temp = (
-            force + params.polemass_length * state.theta_dot ** 2 * sintheta
+            force + params.polemass_length * state.theta_dot**2 * sintheta
         ) / params.total_mass
 
-        thetaacc = (
-                (params.gravity * sintheta - costheta * temp)
-                / (
-                        params.length
-                        * (
-                                4.0 / 3.0
-                                - params.masspole * costheta ** 2 / params.total_mass
-                        )
-                )
+        thetaacc = (params.gravity * sintheta - costheta * temp) / (
+            params.length
+            * (4.0 / 3.0 - params.masspole * costheta**2 / params.total_mass)
         )
         xacc = temp - params.polemass_length * thetaacc * costheta / params.total_mass
         x = state.x + params.tau * state.x_dot
@@ -273,9 +268,9 @@ class CartPole(environment.Environment[EnvState, EnvParams]):
             score=new_score,
         )
         infos = {
-            'terminated': done,
-            'truncated': state.time >= self.max_steps_in_episode,
-            'discount': self.discount(state, params),
+            "terminated": done,
+            "truncated": state.time >= self.max_steps_in_episode,
+            "discount": self.discount(state, params),
         }
         return (
             lax.stop_gradient(self.get_obs(state, params, key=key)),
@@ -284,10 +279,10 @@ class CartPole(environment.Environment[EnvState, EnvParams]):
             done,
             infos,
         )
-    
+
     @functools.partial(jax.jit, static_argnums=(0,))
     def reset_env(
-            self, key: chex.PRNGKey, params: EnvParams
+        self, key: chex.PRNGKey, params: EnvParams
     ) -> Tuple[chex.Array, EnvState]:
         """
         Reset the environment to an initial state.
@@ -299,9 +294,7 @@ class CartPole(environment.Environment[EnvState, EnvParams]):
         Returns:
             A tuple containing the initial observation and state.
         """
-        init_state = jax.random.uniform(
-            key, minval=-0.05, maxval=0.05, shape=(4,)
-        )
+        init_state = jax.random.uniform(key, minval=-0.05, maxval=0.05, shape=(4,))
         key_obs, _key = jax.random.split(key)
         state = EnvState(
             x=init_state[0],
@@ -329,9 +322,7 @@ class CartPole(environment.Environment[EnvState, EnvParams]):
         return self.render(state, params, key=key)
 
     @functools.partial(jax.jit, static_argnums=(0,))
-    def render(
-            self, state: EnvState, params: EnvParams, key=None
-    ) -> chex.Array:
+    def render(self, state: EnvState, params: EnvParams, key=None) -> chex.Array:
         """
         Render the current state into an image observation.
 
@@ -358,33 +349,32 @@ class CartPole(environment.Environment[EnvState, EnvParams]):
             Returns:
                 The mapped value.
             """
-            map_factor = (
-                    (render_config["sub_size"] - car_width)
-                    / (params.x_threshold * 2)
+            map_factor = (render_config["sub_size"] - car_width) / (
+                params.x_threshold * 2
             )
-            map_bias = (
-                    (render_config["sub_size"] - car_width)
-                    - map_factor * 2.4
-            )
+            map_bias = (render_config["sub_size"] - car_width) - map_factor * 2.4
             return value * map_factor + map_bias
 
         # Initialize canvas and sub-canvas
-        canvas = jnp.zeros(
-            (render_config["size"], render_config["size"], 3),
-            dtype=jnp.uint8
-        ) + render_config["clr"]
+        canvas = (
+            jnp.zeros(
+                (render_config["size"], render_config["size"], 3), dtype=jnp.uint8
+            )
+            + render_config["clr"]
+        )
 
-        sub_canvas = jnp.zeros(
-            (render_config["sub_size"], render_config["sub_size"], 3),
-            dtype=jnp.uint8
-        ) + render_config["sub_clr"]
+        sub_canvas = (
+            jnp.zeros(
+                (render_config["sub_size"], render_config["sub_size"], 3),
+                dtype=jnp.uint8,
+            )
+            + render_config["sub_clr"]
+        )
 
         # Add noise to the state
         noise = jax.random.normal(key, shape=(4,)) * self.n_sigma
         noisy_state = (
-            jnp.clip(
-                state.x + noise[0], -params.x_threshold, params.x_threshold
-            ),
+            jnp.clip(state.x + noise[0], -params.x_threshold, params.x_threshold),
             state.x_dot + noise[1],
             jnp.clip(
                 state.theta + noise[2],
@@ -395,7 +385,9 @@ class CartPole(environment.Environment[EnvState, EnvParams]):
         )
 
         # Map noisy state to canvas coordinates
-        x = map_value_to_canvas(noisy_state[0], render_config["cart_w"]).astype(jax.numpy.int32)
+        x = map_value_to_canvas(noisy_state[0], render_config["cart_w"]).astype(
+            jax.numpy.int32
+        )
         x_dot = noisy_state[1]
         theta = noisy_state[2]
         theta_dot = noisy_state[3]
@@ -504,10 +496,7 @@ class CartPole(environment.Environment[EnvState, EnvParams]):
 
         done_steps = state.time >= self.max_steps_in_episode
 
-        done = jnp.logical_or(
-            jnp.logical_or(done1, done2),
-            done_steps
-        )
+        done = jnp.logical_or(jnp.logical_or(done1, done2), done_steps)
         return done
 
     @property

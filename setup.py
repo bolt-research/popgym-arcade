@@ -15,13 +15,8 @@ setup(
             "popgym-arcade-play = popgym_arcade.play:main",
         ],
     },
-    install_requires=[
-        "gymnax",
-        "dm_pix",
-        "jaxtyping",
-        "pygame"
-    ],
-    extras_require = {
+    install_requires=["gymnax", "dm_pix", "jaxtyping", "pygame"],
+    extras_require={
         "baselines": [
             "optax",
             "equinox",
@@ -29,7 +24,7 @@ setup(
             "wandb",
             "beartype",
             "jaxtyping",
-            "imageio"
+            "imageio",
         ],
     },
     classifiers=[

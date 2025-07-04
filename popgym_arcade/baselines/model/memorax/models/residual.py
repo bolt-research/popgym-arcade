@@ -52,7 +52,9 @@ class ResidualModel(Module):
             )
 
     def __call__(
-        self, h: ResetRecurrentState, x: Input,
+        self,
+        h: ResetRecurrentState,
+        x: Input,
     ) -> Tuple[ResetRecurrentState, ...]:
         emb, start = x
         emb = filter_vmap(self.map_in)(emb)
@@ -61,7 +63,10 @@ class ResidualModel(Module):
         for ff, recurrent_layer, h_i in zip(self.ff, self.layers, h):
             # key, rkey = jax.random.split(key)
             # tmp, z = recurrent_layer(h_i, layer_in, key=rkey)
-            tmp, z = recurrent_layer(h_i, layer_in,)
+            tmp, z = recurrent_layer(
+                h_i,
+                layer_in,
+            )
             h_out.append(tmp)
             z = filter_vmap(ff)(z)
             layer_in = (z, start)

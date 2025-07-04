@@ -1,25 +1,23 @@
+import copy
+import time
 from typing import Any, NamedTuple
+
+import chex
+import equinox as eqx
 import jax
 import jax.numpy as jnp
-from jax import lax
 import numpy as np
-import chex
-
 import optax
-import equinox as eqx
+from jax import lax
 
 import popgym_arcade
+import wandb
 from popgym_arcade.baselines.model import QNetwork
 from popgym_arcade.wrappers import LogWrapper
-import wandb
-import time
-import copy
 
 
 def debug_shape(x):
-    jax.tree.map(
-        lambda x: print(x.shape) if hasattr(x, "shape") else x, x
-    )
+    jax.tree.map(lambda x: print(x.shape) if hasattr(x, "shape") else x, x)
 
 
 @eqx.filter_jit
@@ -39,6 +37,7 @@ def filter_scan(f, init, xs, *args, **kwargs):
 
 class BoltzmannActor(eqx.Module):
     """Actor that follows a boltzmann (softmax) policy based on the Q values"""
+
     model: QNetwork
 
     def __call__(self, x: jax.Array, temperature: jax.Array, key: jax.Array):
@@ -63,7 +62,7 @@ class State(eqx.Module):
 
     def replace(self, **kwargs):
         """Replaces existing fields.
-        
+
         E.g., s = State(bork=1, dork=2)
         s.replace(dork=3)
         print(s)
@@ -91,18 +90,20 @@ class TrainState(State):
 
 def make_train(config):
     config["NUM_UPDATES"] = (
-            config["TOTAL_TIMESTEPS"] // config["NUM_STEPS"] // config["NUM_ENVS"]
+        config["TOTAL_TIMESTEPS"] // config["NUM_STEPS"] // config["NUM_ENVS"]
     )
 
     config["NUM_UPDATES_DECAY"] = (
-            config["TOTAL_TIMESTEPS_DECAY"] // config["NUM_STEPS"] // config["NUM_ENVS"]
+        config["TOTAL_TIMESTEPS_DECAY"] // config["NUM_STEPS"] // config["NUM_ENVS"]
     )
 
     assert (config["NUM_STEPS"] * config["NUM_ENVS"]) % config[
         "NUM_MINIBATCHES"
     ] == 0, "NUM_MINIBATCHES must divide NUM_STEPS*NUM_ENVS"
 
-    env, env_params = popgym_arcade.make(config["ENV_NAME"], partial_obs=config["PARTIAL"], obs_size=config["OBS_SIZE"])
+    env, env_params = popgym_arcade.make(
+        config["ENV_NAME"], partial_obs=config["PARTIAL"], obs_size=config["OBS_SIZE"]
+    )
     env = LogWrapper(env)
     # config["TEST_NUM_STEPS"] = config.get(
     #     "TEST_NUM_STEPS", env_params.max_steps_in_episode
@@ -135,13 +136,17 @@ def make_train(config):
         eps_scheduler = optax.linear_schedule(
             config["EPS_START"],
             config["EPS_FINISH"],
-            (config["EPS_DECAY"]) * config["NUM_UPDATES_DECAY"] * config["NUM_MINIBATCHES"],
+            (config["EPS_DECAY"])
+            * config["NUM_UPDATES_DECAY"]
+            * config["NUM_MINIBATCHES"],
         )
 
         lr_scheduler = optax.linear_schedule(
             init_value=config["LR"],
             end_value=5e-7,
-            transition_steps=(config["NUM_UPDATES_DECAY"]) * config["NUM_MINIBATCHES"] * config["NUM_EPOCHS"],
+            transition_steps=(config["NUM_UPDATES_DECAY"])
+            * config["NUM_MINIBATCHES"]
+            * config["NUM_EPOCHS"],
         )
 
         lr = lr_scheduler if config.get("LR_LINEAR_DECAY", False) else config["LR"]
@@ -206,7 +211,8 @@ def make_train(config):
             train_state, obsv, env_state, test_metrics, rng = runner_state
 
             train_state = train_state.replace(
-                timesteps=train_state.timesteps + config["NUM_STEPS"] * config["NUM_ENVS"]
+                timesteps=train_state.timesteps
+                + config["NUM_STEPS"] * config["NUM_ENVS"]
             )  # update timesteps count
 
             last_q = train_state.model(transitions.next_obs[-1])
@@ -215,15 +221,15 @@ def make_train(config):
             def _get_target(lambda_returns_and_next_q, transition):
                 lambda_returns, next_q = lambda_returns_and_next_q
                 target_bootstrap = (
-                        transition.reward + config["GAMMA"] * (1 - transition.done) * next_q
+                    transition.reward + config["GAMMA"] * (1 - transition.done) * next_q
                 )
                 delta = lambda_returns - next_q
                 lambda_returns = (
-                        target_bootstrap + config["GAMMA"] * config["LAMBDA"] * delta
+                    target_bootstrap + config["GAMMA"] * config["LAMBDA"] * delta
                 )
                 lambda_returns = (
-                                         1 - transition.done
-                                 ) * lambda_returns + transition.done * transition.reward
+                    1 - transition.done
+                ) * lambda_returns + transition.done * transition.reward
                 next_q = jnp.max(transition.q_val, axis=-1)
                 return (lambda_returns, next_q), lambda_returns
 
@@ -265,7 +271,9 @@ def make_train(config):
                     updates, new_opt_state = train_state.opt.update(
                         grads,
                         train_state.opt_state,
-                        eqx.filter(train_state.model, eqx.is_array),  # TODO is_inexact_array
+                        eqx.filter(
+                            train_state.model, eqx.is_array
+                        ),  # TODO is_inexact_array
                     )
                     new_network = eqx.apply_updates(train_state.model, updates)
                     new_train_state = train_state.replace(
@@ -320,7 +328,9 @@ def make_train(config):
             if config.get("TEST_DURING_TRAINING", False):
                 rng, _rng = jax.random.split(rng)
                 test_metrics = jax.lax.cond(
-                    train_state.n_updates % int(config["NUM_UPDATES"] * config["TEST_INTERVAL"]) == 0,
+                    train_state.n_updates
+                    % int(config["NUM_UPDATES"] * config["TEST_INTERVAL"])
+                    == 0,
                     lambda _: get_test_metrics(train_state.model, _rng),
                     lambda _: test_metrics,
                     operand=None,
@@ -403,7 +413,9 @@ def make_train(config):
 def evaluate(model, config):
     seed = jax.random.PRNGKey(10)
     seed, _rng = jax.random.split(seed)
-    env, env_params = popgym_arcade.make(config["ENV_NAME"], partial_obs=config["PARTIAL"], obs_size=config["OBS_SIZE"])
+    env, env_params = popgym_arcade.make(
+        config["ENV_NAME"], partial_obs=config["PARTIAL"], obs_size=config["OBS_SIZE"]
+    )
     env = LogWrapper(env)
     vmap_reset = lambda n_envs: lambda rng: jax.vmap(env.reset, in_axes=(0, None))(
         jax.random.split(rng, n_envs), env_params
@@ -427,9 +439,17 @@ def evaluate(model, config):
         frames.append(frame)
     frames = np.array(frames, dtype=np.uint8)
     frames = frames.transpose((0, 3, 1, 2))
-    wandb.log({"{}_{}_{}_model_Partial={}_SEED={}".format(config["TRAIN_TYPE"], config["MEMORY_TYPE"],
-                                                          config["ENV_NAME"], config["PARTIAL"],
-                                                          config["SEED"]): wandb.Video(frames, fps=4)})
+    wandb.log(
+        {
+            "{}_{}_{}_model_Partial={}_SEED={}".format(
+                config["TRAIN_TYPE"],
+                config["MEMORY_TYPE"],
+                config["ENV_NAME"],
+                config["PARTIAL"],
+                config["SEED"],
+            ): wandb.Video(frames, fps=4)
+        }
+    )
 
 
 def single_run(config):
@@ -462,18 +482,28 @@ def single_run(config):
     train_state = outs["runner_state"][0]
 
     network_squeezed = jax.tree.map(
-        lambda x: x.squeeze(0) if (hasattr(x, "ndim") and x.ndim > 1 and x.shape[0] == 1) else x,
-        train_state.model
+        lambda x: (
+            x.squeeze(0)
+            if (hasattr(x, "ndim") and x.ndim > 1 and x.shape[0] == 1)
+            else x
+        ),
+        train_state.model,
     )
 
     eqx.tree_serialise_leaves(
-        '{}_{}_model_Partial={}_SEED={}.pkl'.format(config["TRAIN_TYPE"], config["ENV_NAME"], config["PARTIAL"],
-                                                    config["SEED"]), network_squeezed)
+        "{}_{}_model_Partial={}_SEED={}.pkl".format(
+            config["TRAIN_TYPE"], config["ENV_NAME"], config["PARTIAL"], config["SEED"]
+        ),
+        network_squeezed,
+    )
     rng, _rng = jax.random.split(rng)
     network = QNetwork(rng, obs_size=config["OBS_SIZE"])
     model = eqx.tree_deserialise_leaves(
-        '{}_{}_model_Partial={}_SEED={}.pkl'.format(config["TRAIN_TYPE"], config["ENV_NAME"], config["PARTIAL"],
-                                                    config["SEED"]), network)
+        "{}_{}_model_Partial={}_SEED={}.pkl".format(
+            config["TRAIN_TYPE"], config["ENV_NAME"], config["PARTIAL"], config["SEED"]
+        ),
+        network,
+    )
 
     evaluate(model, config)
 

@@ -1,19 +1,21 @@
+import csv  # Import csv for direct CSV writing if needed
+import os  # Import os for path manipulation
+from typing import Any, Dict, List, Optional, Tuple, Union
+
 import chex
 import equinox as eqx
-from jax import lax
-from typing import Any, Optional, Tuple, Dict, List, Union
 import jax
 import jax.numpy as jnp
-import seaborn as sns
-from matplotlib import pyplot as plt
 import matplotlib.ticker as ticker
+import numpy as np
+import pandas as pd  # Import pandas for CSV handling
+import seaborn as sns
+from jax import lax
+from matplotlib import pyplot as plt
+
+import popgym_arcade
 from popgym_arcade.baselines.model.memorax import add_batch_dim
 from popgym_arcade.wrappers import LogWrapper
-import popgym_arcade
-import numpy as np
-import os  # Import os for path manipulation
-import pandas as pd  # Import pandas for CSV handling
-import csv  # Import csv for direct CSV writing if needed
 
 
 @eqx.filter_jit
@@ -32,11 +34,11 @@ def filter_scan(f, init, xs, *args, **kwargs):
 
 
 def get_saliency_maps(
-        seed: jax.random.PRNGKey,
-        model: eqx.Module,
-        config: Dict,
-        max_steps: int = 5,
-        initial_state_and_obs: Optional[Tuple[Any, Any]] = None,
+    seed: jax.random.PRNGKey,
+    model: eqx.Module,
+    config: Dict,
+    max_steps: int = 5,
+    initial_state_and_obs: Optional[Tuple[Any, Any]] = None,
 ) -> Tuple[list, chex.Array, list]:
     """
     Computes saliency maps for visualizing model attention patterns in given environments.
@@ -66,15 +68,17 @@ def get_saliency_maps(
     """
 
     seed, _rng = jax.random.split(seed)
-    env, env_params = popgym_arcade.make(config["ENV_NAME"], partial_obs=config["PARTIAL"], obs_size=config["OBS_SIZE"])
+    env, env_params = popgym_arcade.make(
+        config["ENV_NAME"], partial_obs=config["PARTIAL"], obs_size=config["OBS_SIZE"]
+    )
     env = LogWrapper(env)
     n_envs = 1
     vmap_reset = lambda n_envs: lambda rng: jax.vmap(env.reset, in_axes=(0, None))(
         jax.random.split(rng, n_envs), env_params
     )
-    vmap_step = lambda n_envs: lambda rng, env_state, action: jax.vmap(env.step, in_axes=(0, 0, 0, None))(
-        jax.random.split(rng, n_envs), env_state, action, env_params
-    )
+    vmap_step = lambda n_envs: lambda rng, env_state, action: jax.vmap(
+        env.step, in_axes=(0, 0, 0, None)
+    )(jax.random.split(rng, n_envs), env_state, action, env_params)
     if initial_state_and_obs is None:
         obs_seq, env_state = vmap_reset(n_envs)(_rng)
     else:
@@ -97,14 +101,14 @@ def get_saliency_maps(
             _, q_val = model(hs, obs_batch, done_batch, action_batch)
             q_val_action = lax.stop_gradient(q_val)
             action = jnp.argmax(q_val_action[-1], axis=-1)
-            new_obs, new_state, reward, new_done, info = vmap_step(n_envs)(seed, env_state, action)
+            new_obs, new_state, reward, new_done, info = vmap_step(n_envs)(
+                seed, env_state, action
+            )
             return q_val[-1].sum(), (new_state, new_obs, action, new_done)
 
-        grads_obs, (new_state, new_obs, action, new_done) = jax.grad(q_val_fn, argnums=0, has_aux=True)(
-            obs_seq,
-            action_seq,
-            done_seq
-        )
+        grads_obs, (new_state, new_obs, action, new_done) = jax.grad(
+            q_val_fn, argnums=0, has_aux=True
+        )(obs_seq, action_seq, done_seq)
         obs_seq = jnp.concatenate([obs_seq, new_obs[jnp.newaxis, :]])
         action_seq = jnp.concatenate([action_seq, action[jnp.newaxis, :]])
         done_seq = jnp.concatenate([done_seq, new_done[jnp.newaxis, :]])
@@ -112,13 +116,9 @@ def get_saliency_maps(
 
     for _ in range(max_steps):
         rng, _rng = jax.random.split(seed, 2)
-        grads_obs, env_state, obs_seq, action_seq, done_seq = jax.jit(step_env_and_compute_grads)(
-            env_state,
-            obs_seq,
-            action_seq,
-            done_seq,
-            rng
-        )
+        grads_obs, env_state, obs_seq, action_seq, done_seq = jax.jit(
+            step_env_and_compute_grads
+        )(env_state, obs_seq, action_seq, done_seq, rng)
         grads.append(grads_obs)
         grad_accumulator.append(jnp.sum(grads_obs, axis=0))
         if done_seq[-1].any():
@@ -128,12 +128,14 @@ def get_saliency_maps(
 
 
 def get_terminal_saliency_maps(
-        seed: jax.random.PRNGKey,
-        model: eqx.Module,
-        config: Dict,
-        initial_state_and_obs: Optional[Tuple[Any, Any]] = None,
+    seed: jax.random.PRNGKey,
+    model: eqx.Module,
+    config: Dict,
+    initial_state_and_obs: Optional[Tuple[Any, Any]] = None,
 ) -> Tuple[list, chex.Array, list]:
-    env, env_params = popgym_arcade.make(config["ENV_NAME"], partial_obs=config["PARTIAL"], obs_size=config["OBS_SIZE"])
+    env, env_params = popgym_arcade.make(
+        config["ENV_NAME"], partial_obs=config["PARTIAL"], obs_size=config["OBS_SIZE"]
+    )
     env = LogWrapper(env)
     reset = lambda rng: env.reset(rng, env_params)
     step = lambda rng, env_state, action: env.step(rng, env_state, action, env_params)
@@ -148,10 +150,7 @@ def get_terminal_saliency_maps(
     def step_env(hs, env_state, obs, done, action, seed):
         seed, step_key = jax.random.split(seed)
         # Add time and batch dim for model
-        inputs = [
-            add_batch_dim(add_batch_dim(x, 1), 1)
-            for x in [obs, done, action]
-        ]
+        inputs = [add_batch_dim(add_batch_dim(x, 1), 1) for x in [obs, done, action]]
 
         hs, q_val = model(hs, *inputs)
         # Remove batch dim
@@ -167,7 +166,9 @@ def get_terminal_saliency_maps(
     action = jnp.zeros((), dtype=int)
     observations, dones, actions = [obs], [done], [action]
     while not jnp.any(done):
-        hs, env_state, obs, done, action, seed = jax.jit(step_env)(hs, env_state, obs, done, action, seed)
+        hs, env_state, obs, done, action, seed = jax.jit(step_env)(
+            hs, env_state, obs, done, action, seed
+        )
         observations.append(obs)
         dones.append(done)
         actions.append(action)
@@ -191,12 +192,12 @@ def get_terminal_saliency_maps(
 
 
 def vis_fn(
-        maps: list,
-        obs_seq: chex.Array,
-        config: dict,
-        cmap: str = 'hot',
-        mode: str = 'line',
-        use_latex: bool = True,
+    maps: list,
+    obs_seq: chex.Array,
+    config: dict,
+    cmap: str = "hot",
+    mode: str = "line",
+    use_latex: bool = True,
 ) -> None:
     """
     Generates visualizations of model attention patterns using saliency mapping techniques.
@@ -222,93 +223,107 @@ def vis_fn(
 
     sns.set(style="whitegrid", palette="pastel", font_scale=1.2)
     if use_latex:
-        plt.rc('text', usetex=True)
-    plt.rc('font', family='serif')
+        plt.rc("text", usetex=True)
+    plt.rc("font", family="serif")
 
     length = len(maps)
-    if mode == 'line':
-        fig, axs = plt.subplots(2, length, figsize=(30, 8))  # Adjusted figure size if necessary
+    if mode == "line":
+        fig, axs = plt.subplots(
+            2, length, figsize=(30, 8)
+        )  # Adjusted figure size if necessary
         maps_last = jnp.abs(maps[-1])
         for i in range(length):
             # Top row: Original observations
             obs = axs[0][i]
-            obs.imshow(obs_seq[i].squeeze(axis=0), cmap='gray')
+            obs.imshow(obs_seq[i].squeeze(axis=0), cmap="gray")
             if use_latex:
                 obs.set_title(rf"$o_{{{i}}}$", fontsize=25, pad=20)
             else:
                 obs.set_title(f"o{i}", fontsize=25, pad=20)
-            obs.axis('off')
+            obs.axis("off")
 
             # Bottom row: Saliency map
             map_ax = axs[1][i]
             saliency_map = maps_last[i].squeeze(axis=0).mean(axis=-1)
-            im = map_ax.imshow(saliency_map, cmap='hot')
+            im = map_ax.imshow(saliency_map, cmap="hot")
             if use_latex:
                 map_ax.set_title(
                     rf"$\sum\limits_{{a \in A}}\left|\frac{{\partial Q(\hat{{s}}_{{{length - 1}}}, a_{{{length - 1}}})}}{{\partial o_{{{i}}}}}\right|$",
-                    fontsize=25, pad=30)
+                    fontsize=25,
+                    pad=30,
+                )
             else:
-                map_ax.set_title(f"dQ(s{length - 1}, a{length - 1})", fontsize=25, pad=30)
-            map_ax.axis('off')
+                map_ax.set_title(
+                    f"dQ(s{length - 1}, a{length - 1})", fontsize=25, pad=30
+                )
+            map_ax.axis("off")
 
         cbar_ax = fig.add_axes([0.92, 0.15, 0.02, 0.7])  # [left, bottom, width, height]
-        cbar = fig.colorbar(im, cax=cbar_ax, orientation='vertical', label="Gradient Magnitude")
-        formatter = ticker.FormatStrFormatter('%.4f')
+        cbar = fig.colorbar(
+            im, cax=cbar_ax, orientation="vertical", label="Gradient Magnitude"
+        )
+        formatter = ticker.FormatStrFormatter("%.4f")
         cbar.ax.yaxis.set_major_formatter(formatter)
-        plt.subplots_adjust(hspace=0.1, right=0.9)  # Adjust the main plot to the left to make room for the colorbar
-        plt.savefig(f'{config["ENV_NAME"]}_PARTIAL={config["PARTIAL"]}_SEED={config["SEED"]}.pdf', format='pdf',
-                    dpi=300, bbox_inches='tight')
+        plt.subplots_adjust(
+            hspace=0.1, right=0.9
+        )  # Adjust the main plot to the left to make room for the colorbar
+        plt.savefig(
+            f'{config["ENV_NAME"]}_PARTIAL={config["PARTIAL"]}_SEED={config["SEED"]}.pdf',
+            format="pdf",
+            dpi=300,
+            bbox_inches="tight",
+        )
         plt.show()
-    elif mode == 'grid':
+    elif mode == "grid":
         maps = [jnp.abs(m) for m in maps]
         fig, axs = plt.subplots(length, length + 1, figsize=(120, 150))
         for i in range(length):
             obs_ax = axs[i][0]
-            obs_ax.imshow(obs_seq[i].squeeze(axis=0), cmap='gray')
+            obs_ax.imshow(obs_seq[i].squeeze(axis=0), cmap="gray")
             if use_latex:
                 obs_ax.set_title(rf"$o_{{{i}}}$", fontsize=100, pad=90)
             else:
                 obs_ax.set_title(f"$o{i}", fontsize=100, pad=90)
-            obs_ax.axis('off')
+            obs_ax.axis("off")
             for j in range(length):
                 # print(maps[i].shape)
                 if j < maps[i].shape[0]:
                     map_ax = axs[i][j + 1]
-                    im = map_ax.imshow(maps[i][j].squeeze(axis=0).mean(axis=-1), cmap=cmap)
+                    im = map_ax.imshow(
+                        maps[i][j].squeeze(axis=0).mean(axis=-1), cmap=cmap
+                    )
                     if use_latex:
                         map_ax.set_title(
                             rf"$\sum\limits_{{a \in A}}\left|\frac{{\partial Q(\hat{{s}}_{{{length - 1}}}, a_{{{length - 1}}})}}{{\partial o_{{{j}}}}}\right|$",
-                            fontsize=100, pad=110)
+                            fontsize=100,
+                            pad=110,
+                        )
                     else:
                         map_ax.set_title(
                             f"$dQ(s{length - 1}, a{length - 1}) / do{j} $",
-                            fontsize=100, pad=110)
-                    map_ax.axis('off')
+                            fontsize=100,
+                            pad=110,
+                        )
+                    map_ax.axis("off")
                 else:
                     map_ax = axs[i][j + 1]
-                    map_ax.axis('off')
+                    map_ax.axis("off")
 
         cbar_ax = fig.add_axes([0.92, 0.15, 0.02, 0.7])  # [left, bottom, width, height]
-        cbar = fig.colorbar(im, cax=cbar_ax, orientation='vertical', label="Gradient Magnitude")
-        formatter = ticker.FormatStrFormatter('%.4f')
+        cbar = fig.colorbar(
+            im, cax=cbar_ax, orientation="vertical", label="Gradient Magnitude"
+        )
+        formatter = ticker.FormatStrFormatter("%.4f")
         cbar.ax.yaxis.set_major_formatter(formatter)
-        cbar.ax.tick_params(axis='y', labelsize=80)
+        cbar.ax.tick_params(axis="y", labelsize=80)
         cbar.set_label("Gradient Magnitude", fontsize=100)
-        plt.subplots_adjust(hspace=0.1, right=0.9)  # Adjust the main plot to the left to make room for the colorbar
+        plt.subplots_adjust(
+            hspace=0.1, right=0.9
+        )  # Adjust the main plot to the left to make room for the colorbar
         plt.savefig(
             f'{config["MEMORY_TYPE"]}_{config["ENV_NAME"]}_PARTIAL={config["PARTIAL"]}_SEED={config["SEED"]}.pdf',
-            format='pdf', dpi=300, bbox_inches='tight')
+            format="pdf",
+            dpi=300,
+            bbox_inches="tight",
+        )
         plt.show()
-
-
-
-
-
-
-
-
-
-
-
-
-
