@@ -306,7 +306,11 @@ class CountRecall(environment.Environment):
             new_state.timestep == self.num_cards,
             new_state.alreadyMove >= self.max_steps_in_episode
         )
-        return obs, new_state, reward, terminated, {}
+        infos = {
+            'terminated': new_state.timestep >= self.num_cards,  # play all cards
+            'truncated': new_state.alreadyMove >= self.max_steps_in_episode,  # timelimit
+        }
+        return obs, new_state, reward, terminated, infos
 
     def reset_env(
         self,

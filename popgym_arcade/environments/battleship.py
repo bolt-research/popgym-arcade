@@ -276,7 +276,11 @@ class BattleShip(environment.Environment):
                 timestep=new_timestep,
             )
             done = new_timestep >= self.max_episode_length
-            return self.get_obs(new_state), new_state, 0.0, done, {}
+            infos = {
+                'terminated': False,
+                'truncated': new_timestep >= self.max_episode_length,
+            }
+            return self.get_obs(new_state), new_state, 0.0, done, infos
 
         def move_down(state):
             """Move the action position down."""
@@ -287,7 +291,11 @@ class BattleShip(environment.Environment):
                 timestep=new_timestep,
             )
             done = new_timestep >= self.max_episode_length
-            return self.get_obs(new_state), new_state, 0.0, done, {}
+            infos = {
+                'terminated': False,
+                'truncated': new_timestep >= self.max_episode_length,
+            }
+            return self.get_obs(new_state), new_state, 0.0, done, infos
 
         def move_left(state):
             """Move the action position left."""
@@ -298,7 +306,11 @@ class BattleShip(environment.Environment):
                 timestep=new_timestep,
             )
             done = new_timestep >= self.max_episode_length
-            return self.get_obs(new_state), new_state, 0.0, done, {}
+            infos = {
+                'terminated': False,
+                'truncated': new_timestep >= self.max_episode_length,
+            }
+            return self.get_obs(new_state), new_state, 0.0, done, infos
 
         def move_right(state):
             """Move the action position right."""
@@ -309,7 +321,11 @@ class BattleShip(environment.Environment):
                 timestep=new_timestep,
             )
             done = new_timestep >= self.max_episode_length
-            return self.get_obs(new_state), new_state, 0.0, done, {}
+            infos = {
+                'terminated': False,
+                'truncated': new_timestep >= self.max_episode_length,
+            }
+            return self.get_obs(new_state), new_state, 0.0, done, infos
 
         def hit(state):
             """Perform a hit action."""
@@ -348,7 +364,14 @@ class BattleShip(environment.Environment):
                 score=new_score,
                 repeat_count=repeat_count,
             )
-            return self.get_obs(new_state), new_state, reward, terminated, {}
+            infos = {
+                'terminated': jnp.logical_or(
+                    new_state.hits >= self.needed_hits,
+                    state.repeat_count >= self.board_size * self.board_size / 2
+                ),
+                'truncated': new_timestep >= self.max_episode_length,
+            }
+            return self.get_obs(new_state), new_state, reward, terminated, infos
 
         action_functions = [move_up, move_down, move_left, move_right, hit]
 

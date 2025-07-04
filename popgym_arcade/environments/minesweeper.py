@@ -224,7 +224,11 @@ class MineSweeper(environment.Environment):
                 timestep=new_timestep
             )
             done = (new_timestep >= self.max_episode_length)
-            return self.get_obs(new_state), new_state, 0.0, done, {}
+            infos = {
+                'terminated': False,
+                'truncated': new_timestep >= self.max_episode_length,
+            }
+            return self.get_obs(new_state), new_state, 0.0, done, infos
 
         def move_down(state):
             action_y = lax.min(state.action_y + 1, self.board_size - 1)
@@ -234,7 +238,11 @@ class MineSweeper(environment.Environment):
                 timestep=new_timestep
             )
             done = (new_timestep >= self.max_episode_length)
-            return self.get_obs(new_state), new_state, 0.0, done, {}
+            infos = {
+                'terminated': False,
+                'truncated': new_timestep >= self.max_episode_length,
+            }
+            return self.get_obs(new_state), new_state, 0.0, done, infos
 
         def move_left(state):
             action_x = lax.max(state.action_x - 1, 0)
@@ -244,7 +252,11 @@ class MineSweeper(environment.Environment):
                 timestep=new_timestep
             )
             done = (new_timestep >= self.max_episode_length)
-            return self.get_obs(new_state), new_state, 0.0, done, {}
+            infos = {
+                'terminated': False,
+                'truncated': new_timestep >= self.max_episode_length,
+            }
+            return self.get_obs(new_state), new_state, 0.0, done, infos
 
         def move_right(state):
             action_x = lax.min(state.action_x + 1, self.board_size - 1)
@@ -254,7 +266,11 @@ class MineSweeper(environment.Environment):
                 timestep=new_timestep
             )
             done = (new_timestep >= self.max_episode_length)
-            return self.get_obs(new_state), new_state, 0.0, done, {}
+            infos = {
+                'terminated': False,
+                'truncated': new_timestep >= self.max_episode_length,
+            }
+            return self.get_obs(new_state), new_state, 0.0, done, infos
 
         def hit(state):
             action_x, action_y = state.action_x, state.action_y
@@ -282,8 +298,8 @@ class MineSweeper(environment.Environment):
             )
             viewed_count = state.viewed_count + jnp.where(viewed, 1, 0)
 
-            terminated = state.timestep >= self.max_episode_length
-            terminated = jnp.where(mine, True, terminated)
+            truncated = state.timestep >= self.max_episode_length
+            terminated = jnp.where(mine, True, False)
             terminated = jnp.logical_or(
                 terminated,
                 jnp.sum(new_grid == 2) == (self.board_size ** 2 - self.num_mines)
@@ -301,7 +317,12 @@ class MineSweeper(environment.Environment):
                 viewed_count=viewed_count,
             )
             obs = self.get_obs(new_state)
-            return obs, new_state, reward, terminated, {}
+            done = jnp.logical_or(terminated, truncated)
+            infos = {
+                'terminated': terminated,
+                'truncated': truncated,
+            }
+            return obs, new_state, reward, done, infos
 
         action_functions = [move_up, move_down, move_left, move_right, hit]
 

@@ -269,8 +269,11 @@ class AutoEncode(environment.Environment):
             default_action=new_state.default_action,
         )
         obs = self.get_obs(new_state)
-
-        return obs, new_state, reward, terminated, {}
+        infos = {
+            'terminated': new_state.count >= num_cards,
+            'truncated': new_state.timestep >= self.max_steps_in_episode,
+        }
+        return obs, new_state, reward, terminated, infos
 
     def reset_env(
             self,

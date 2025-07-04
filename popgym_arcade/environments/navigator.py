@@ -293,7 +293,11 @@ class Navigator(environment.Environment):
                 operand=None
             )
             new_state = new_state.replace(score=new_score)
-            return self.get_obs(new_state), new_state, reward, terminated, {}
+            infos = {
+                'terminated': done,
+                'truncated': truncated,
+            }
+            return self.get_obs(new_state), new_state, reward, terminated, infos
 
         def move_down(state):
             action_y = lax.min(state.action_y + 1, self.board_size - 1)
@@ -321,7 +325,11 @@ class Navigator(environment.Environment):
                 operand=None
             )
             new_state = new_state.replace(score=new_score)
-            return self.get_obs(new_state), new_state, reward, terminated, {}
+            infos = {
+                'terminated': done,
+                'truncated': truncated,
+            }
+            return self.get_obs(new_state), new_state, reward, terminated, infos
 
         def move_left(state):
             action_x = lax.max(state.action_x - 1, 0)
@@ -349,7 +357,11 @@ class Navigator(environment.Environment):
                 operand=None
             )
             new_state = new_state.replace(score=new_score)
-            return self.get_obs(new_state), new_state, reward, terminated, {}
+            infos = {
+                'terminated': done,
+                'truncated': truncated,
+            }
+            return self.get_obs(new_state), new_state, reward, terminated, infos
 
         def move_right(state):
             action_x = lax.min(state.action_x + 1, self.board_size - 1)
@@ -377,14 +389,19 @@ class Navigator(environment.Environment):
                 operand=None
             )
             new_state = new_state.replace(score=new_score)
-            return self.get_obs(new_state), new_state, reward, terminated, {}
+            infos = {
+                'terminated': done,
+                'truncated': truncated,
+            }
+            return self.get_obs(new_state), new_state, reward, terminated, infos
 
         def hit(state):
             action_x, action_y = state.action_x, state.action_y
             is_treasure = state.board[action_x, action_y] == 2
             new_timestep = state.timestep + 1
             terminated = is_treasure
-            done = jnp.logical_or(is_treasure, (new_timestep >= self.max_steps_in_episode))
+            truncated = new_timestep >= self.max_steps_in_episode
+            done = jnp.logical_or(is_treasure, truncated)
             reward = lax.cond(
                 terminated,
                 lambda _: self.reward_win,
@@ -404,7 +421,11 @@ class Navigator(environment.Environment):
                 score=new_score,
             )
             obs = self.get_obs(new_state)
-            return obs, new_state, reward, done, {}
+            infos = {
+                'terminated': terminated,
+                'truncated': truncated,
+            }
+            return obs, new_state, reward, done, infos
 
         action_functions = [move_up, move_down, move_left, move_right, hit]
 

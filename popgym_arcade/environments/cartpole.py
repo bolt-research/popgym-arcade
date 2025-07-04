@@ -268,13 +268,17 @@ class CartPole(environment.Environment[EnvState, EnvParams]):
             time=state.time + 1,
             score=new_score,
         )
-
+        infos = {
+            'terminated': done,
+            'truncated': state.time >= self.max_steps_in_episode,
+            'discount': self.discount(state, params),
+        }
         return (
             lax.stop_gradient(self.get_obs(state, params, key=key)),
             lax.stop_gradient(state),
             jnp.array(reward),
             done,
-            {"discount": self.discount(state, params)},
+            infos,
         )
     
     @functools.partial(jax.jit, static_argnums=(0,))

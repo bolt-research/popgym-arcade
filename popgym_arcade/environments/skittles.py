@@ -232,13 +232,17 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
         )
         
         done = self.is_terminal(state, params)
-
+        infos = {
+            'terminated': state.xp + state.over,
+            'truncated': state.time >= self.max_steps_in_episode,
+            'discount': self.discount(state, params),
+        }
         return (
             lax.stop_gradient(self.get_obs(state)),
             lax.stop_gradient(state),
             jnp.array(self.reward_scale),
             done,
-            {"discount": self.discount(state, params)},
+            infos,
         )
 
     def reset_env(
