@@ -85,7 +85,7 @@ def get_saliency_maps(
         env_state, obs_seq = initial_state_and_obs
     done_seq = jnp.zeros(n_envs, dtype=bool)
     action_seq = jnp.zeros(n_envs, dtype=int)
-    obs_seq = obs_seq[jnp.newaxis, :]
+    obs_seq = obs_seq[jnp.newaxis, :].astype(jnp.float32)
     done_seq = done_seq[jnp.newaxis, :]
     action_seq = action_seq[jnp.newaxis, :]
     # save all the grads separate from each state
@@ -109,7 +109,7 @@ def get_saliency_maps(
         grads_obs, (new_state, new_obs, action, new_done) = jax.grad(
             q_val_fn, argnums=0, has_aux=True
         )(obs_seq, action_seq, done_seq)
-        obs_seq = jnp.concatenate([obs_seq, new_obs[jnp.newaxis, :]])
+        obs_seq = jnp.concatenate([obs_seq, new_obs[jnp.newaxis, :]].astype(jnp.float32))
         action_seq = jnp.concatenate([action_seq, action[jnp.newaxis, :]])
         done_seq = jnp.concatenate([done_seq, new_done[jnp.newaxis, :]])
         return grads_obs, new_state, obs_seq, action_seq, done_seq
@@ -142,8 +142,10 @@ def get_terminal_saliency_maps(
     if initial_state_and_obs is None:
         seed, _rng = jax.random.split(seed)
         obs, env_state = reset(_rng)
+        obs = obs.astype(jnp.float32)
     else:
         env_state, obs = initial_state_and_obs
+        obs = obs.astype(jnp.float32)
 
     # Step 1: Compute rollout until terminal state
 
@@ -169,7 +171,7 @@ def get_terminal_saliency_maps(
         hs, env_state, obs, done, action, seed = jax.jit(step_env)(
             hs, env_state, obs, done, action, seed
         )
-        observations.append(obs)
+        observations.append(obs.astype(jnp.float32))
         dones.append(done)
         actions.append(action)
 

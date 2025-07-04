@@ -458,7 +458,6 @@ def evaluate(model, config):
         obs, new_state, reward, done, info = vmap_step(2)(rng_step, state, action)
         state = new_state
         frame = jnp.asarray(obs[0])
-        frame = (frame * 255).astype(jnp.uint8)
         # Update frames array at index i
         frames = frames.at[i].set(frame)
         carry = (actor_hstate, critic_hstate, obs, done, action, state, frames, _rng)
