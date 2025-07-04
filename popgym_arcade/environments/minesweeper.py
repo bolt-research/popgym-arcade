@@ -130,58 +130,57 @@ class MineSweeper(environment.Environment):
     num_mines: number of mines to generate.
     partial_obs: bool switch with POMDP and FOMDP.
     """
+    render_common = {
+        "clr": jnp.array([229, 234, 242], dtype=jnp.uint8),
+        "sub_clr": jnp.array([0, 0, 0], dtype=jnp.uint8),
+        # parameters for rendering numbers
+        "num_clr": jnp.array([255, 255, 255], dtype=jnp.uint8),
+        # parameters for rendering current action position
+        "action_clr": jnp.array([255, 127, 0], dtype=jnp.uint8),
+        # parameters for rendering grids
+        "grid_clr": jnp.array([102, 102, 102], dtype=jnp.uint8),
+        # parameters for rendering score
+        "sc_clr": jnp.array([153, 0, 204], dtype=jnp.uint8),
+        # parameters for rendering env name
+        "env_clr": jnp.array([0, 51, 102], dtype=jnp.uint8),
+
+    }
     render_256x = {
         # parameters for rendering (256, 256, 3) canvas
+        **render_common,
         "size": 256,
-        "clr": jnp.array([0.9, 0.92, 0.95]),
         "sub_size": {
             4: 186,
             6: 182,
             8: 186,
         },
-        "sub_clr": jnp.array([0.0, 0.0, 0.0]),
-        # parameters for rendering numbers
-        "num_clr": jnp.array([1.0, 1.0, 1.0]),
-        # parameters for rendering current action position
-        "action_clr": jnp.array([1.0, 0.5, 0.0]),
         # parameters for rendering grids
         "grid_px": 2,
-        "grid_clr": jnp.array([0.4, 0.4, 0.4]),
         # parameters for rendering score
         "sc_t_l": (86, 2),
         "sc_b_r": (171, 30),
-        "sc_clr": jnp.array([0.6, 0.0, 0.8]),
         # parameters for rendering env name
         "env_t_l": (0, 231),
         "env_b_r": (256, 256),
-        "env_clr": jnp.array([0.0, 0.2, 0.4]),
     }
 
     render_128x = {
+        **render_common,
         # parameters for rendering (128, 128, 3) canvas
         "size": 128,
-        "clr": jnp.array([0.9, 0.92, 0.95]),
         "sub_size": {
             4: 94,
             6: 92,
             8: 90,
         },
-        "sub_clr": jnp.array([0.0, 0.0, 0.0]),
-        # parameters for rendering numbers
-        "num_clr": jnp.array([1.0, 1.0, 1.0]),
-        # parameters for rendering current action position
-        "action_clr": jnp.array([1.0, 0.5, 0.0]),
         # parameters for rendering grids
         "grid_px": 2,
-        "grid_clr": jnp.array([0.4, 0.4, 0.4]),
         # parameters for rendering score
         "sc_t_l": (43, 1),
         "sc_b_r": (85, 15),
-        "sc_clr": jnp.array([0.0, 1.0, 0.5]),
         # parameters for rendering envName
         "env_t_l": (0, 115),
         "env_b_r": (128, 128),
-        "env_clr": jnp.array([0.29, 0.84, 0.97]),
     }
     render_mode = {
         256: render_256x,
@@ -224,11 +223,7 @@ class MineSweeper(environment.Environment):
                 timestep=new_timestep
             )
             done = (new_timestep >= self.max_episode_length)
-            infos = {
-                'terminated': False,
-                'truncated': new_timestep >= self.max_episode_length,
-            }
-            return self.get_obs(new_state), new_state, 0.0, done, infos
+            return self.get_obs(new_state), new_state, 0.0, done, {}
 
         def move_down(state):
             action_y = lax.min(state.action_y + 1, self.board_size - 1)
@@ -238,11 +233,7 @@ class MineSweeper(environment.Environment):
                 timestep=new_timestep
             )
             done = (new_timestep >= self.max_episode_length)
-            infos = {
-                'terminated': False,
-                'truncated': new_timestep >= self.max_episode_length,
-            }
-            return self.get_obs(new_state), new_state, 0.0, done, infos
+            return self.get_obs(new_state), new_state, 0.0, done, {}
 
         def move_left(state):
             action_x = lax.max(state.action_x - 1, 0)
@@ -252,11 +243,7 @@ class MineSweeper(environment.Environment):
                 timestep=new_timestep
             )
             done = (new_timestep >= self.max_episode_length)
-            infos = {
-                'terminated': False,
-                'truncated': new_timestep >= self.max_episode_length,
-            }
-            return self.get_obs(new_state), new_state, 0.0, done, infos
+            return self.get_obs(new_state), new_state, 0.0, done, {}
 
         def move_right(state):
             action_x = lax.min(state.action_x + 1, self.board_size - 1)
@@ -266,11 +253,7 @@ class MineSweeper(environment.Environment):
                 timestep=new_timestep
             )
             done = (new_timestep >= self.max_episode_length)
-            infos = {
-                'terminated': False,
-                'truncated': new_timestep >= self.max_episode_length,
-            }
-            return self.get_obs(new_state), new_state, 0.0, done, infos
+            return self.get_obs(new_state), new_state, 0.0, done, {}
 
         def hit(state):
             action_x, action_y = state.action_x, state.action_y
@@ -298,8 +281,8 @@ class MineSweeper(environment.Environment):
             )
             viewed_count = state.viewed_count + jnp.where(viewed, 1, 0)
 
-            truncated = state.timestep >= self.max_episode_length
-            terminated = jnp.where(mine, True, False)
+            terminated = state.timestep >= self.max_episode_length
+            terminated = jnp.where(mine, True, terminated)
             terminated = jnp.logical_or(
                 terminated,
                 jnp.sum(new_grid == 2) == (self.board_size ** 2 - self.num_mines)
@@ -317,12 +300,7 @@ class MineSweeper(environment.Environment):
                 viewed_count=viewed_count,
             )
             obs = self.get_obs(new_state)
-            done = jnp.logical_or(terminated, truncated)
-            infos = {
-                'terminated': terminated,
-                'truncated': truncated,
-            }
-            return obs, new_state, reward, done, infos
+            return obs, new_state, reward, terminated, {}
 
         action_functions = [move_up, move_down, move_left, move_right, hit]
 
@@ -389,7 +367,8 @@ class MineSweeper(environment.Environment):
         # Initialize canvas and sub-canvas
         canvas = jnp.full(
             (render_config["size"], render_config["size"], 3),
-            render_config["clr"]
+            render_config["clr"],
+            dtype=jnp.uint8,
         )
         sub_canvas = jnp.full(
             (
@@ -397,7 +376,8 @@ class MineSweeper(environment.Environment):
                 render_config["sub_size"][board_size],
                 3,
             ),
-            render_config["sub_clr"]
+            render_config["sub_clr"],
+            dtype=jnp.uint8,
         )
 
         # Extract action coordinates
@@ -499,10 +479,12 @@ class MineSweeper(environment.Environment):
     def observation_space(self, params: EnvParams) -> spaces.Box:
         """Observation space of the environment."""
         return spaces.Box(
-            jnp.zeros((self.num_mines,)),
-            jnp.ones((self.num_mines,)),
-            (self.num_mines,),
-            dtype=jnp.float32,
+            #jnp.zeros((self.num_mines,)),
+            #jnp.ones((self.num_mines,)),
+            0,
+            255,
+            (self.board_size, self.board_size, 3),
+            dtype=jnp.uint8,
         )
 
 
