@@ -58,40 +58,55 @@ class CountRecall(environment.Environment):
     Source: https://github.com/proroklab/popgym/blob/master/popgym/envs/count_recall.py
 
     ### Description
-    A game where the agent is queried on past events.
+    **CountRecall** is a game designed to test an agent’s **long-term, order-agnostic memory**—similar to
+      remembering items in a **set**, rather than recalling their **sequence**.
 
-    The agent is queried on how many times it has observed a specific event in the past. This tests long-term
-    order-agnostic memory like sets. The agent is dealt a card, and then asked how many times it has seen a
-    specific card in the past. The agent must answer correctly to receive a reward.
+    In each round:
 
-    CountRecall is a card counting game. The agent is dealt a card, and then asked how many times it has seen.
-    There are three different levels of difficulty: easy, medium, and hard. The easy level has one deck of cards
-    with two types of cards, the medium level has two decks of cards with two types of cards, and the hard level
-    has three decks of cards with four types of cards. A query card is located in the top right corner of the
-    screen, and the value card is located in the top left corner of the screen. The agent can increase or decrease
-    the count of the card by pressing the up or down action. The agent can lock in the count by pressing the
-    confirm action. The score will increase by one if the agent locks in the correct count.
+    1. The agent is **dealt a card**.
+    2. Later, it is asked: *“How many times have you seen this specific card before?”*
+    3. The agent must **respond correctly** to earn a **reward**.
 
+    ---
+
+    **How to play**:
+    - The **query card** appears in the **top-right corner** of the screen.
+    - The **current value card** *(just dealt)* appears in the **top-left corner**.  
+    - Green number is the **count**:  
+    - **Increase** the count with the `up` action.  
+    - **Decrease** the count with the `down` action.  
+    - **Confirm** its answer with the `confirm` action.  
+    - If the confirmed answer matches the **true count**, the **score**(red number) increases by **1**.
+
+    ---
+
+    **Difficulty Levels**:
+
+    - **Easy** – `1 deck`, `2 types of cards`, 26 cards
+    - **Medium** – `2 decks`, `2 types of cards`, 52 cards
+    - **Hard** – `3 decks`, `4 types of cards`, 78 cards
 
     ### Observation
-    The observation space is a chex.Array with shape `(256, 256, 3)`
-    Current state is rendered into a matrix using multiple graphical elements to form a visual observation.
-    The entire observation consists of a large canvas with a smaller canvas embedded within it.
-    The smaller canvas primarily displays the game interface,
-    while the larger canvas shows additional information, such as the score.
+    The **observation space** is a `chex.Array` with shape `(256, 256, 3)`.  
+    The **current state** is rendered as a visual matrix composed of multiple graphical elements.  
 
-    In the smaller canvas, the following elements are displayed:
-    - The sequence of historical cards observed by the agent.
+    The observation is structured as a **large canvas** containing a **smaller embedded canvas**:  
 
-    In the larger canvas, the following elements are displayed:
-    - The suit of the card dealt to the agent.
-    - The suit of the card queried to the agent.
-    - The action controller, which displays the current action selected by the agent.
-    - The score of the agent has accumulated so far.
-    - The name of the environment.
+    - **Smaller Canvas**:  
+    1. The **sequence of historical cards** observed by the agent *(only in the fully observable version)*.  
 
-    In the fully observable version of the environment, the historical cards are displayed in the smaller canvas.
-    In the partially observable version of the environment, the historical cards are not displayed.
+    - **Larger Canvas**:  
+    1. Suit of the dealt card.  
+    2. Suit of the query card.  
+    3. Action counter – current action selected by the agent.  
+    4. Score – total points accumulated so far.  
+    5. Environment name.  
+    ---
+    **Observation Modes**:  
+    - **Fully Observable** – Historical cards are visible in the smaller canvas.  
+    - **Partially Observable** – Historical cards are hidden from the smaller canvas.
+    
+    ---
 
     ### Actions
     | Action | Description                         |
@@ -102,14 +117,20 @@ class CountRecall(environment.Environment):
     | 3      | Right (No-op)                       |
     | 4      | Confirm (Lock in current selection) |
 
+    ---
+
     ### Rewards
     The agent receives a reward of 1.0 / num_cards for each correct answer only when the agent confirms
     the selection (action 4). The agent receives a reward of 0.0 otherwise.
 
+    ---
+
     ### Termination & Truncation
     The episode terminates when the agent has made `max_steps_in_episode` moves or when the agent has seen
     all the cards.
-
+    
+    ---
+    
     ### Args
     num_decks: The number of decks of cards in the game. Easy: 1, Medium: 2, Hard: 3.
     num_types: The number of types of cards in the game. Easy: 2, Medium: 2, Hard: 4.

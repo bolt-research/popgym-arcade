@@ -54,42 +54,47 @@ class AutoEncode(environment.Environment):
     Source: https://github.com/proroklab/popgym/blob/master/popgym/envs/autoencode.py
 
     ### Description
-    In the AutoEncode environment, the agent is presented with a sequence of cards,
-    each belonging to one of four suits: Club, Spade, Heart, or Diamond. The agent's
-    task is to recall and output the sequence of cards it saw, but in reverse order.
-    For example, if the agent sees the sequence [Club, Spade, Heart],
-    it should output [Heart, Spade, Club]. There are three difficulties: Easy, Medium,
-    and Hard. In Easy, the agent is presented with a single deck of cards, in Medium,
-    two decks, and in Hard, three decks. The agent is presented with the sequence of
-    cards in the watch stage, and then must recall and output the sequence in the play
-    stage. The agent receives a reward of 1.0 / (num_cards) for each correct card it
-    outputs in the play stage.
+    **AutoEncode** is a game where the agent must **recall** and **output** a sequence of cards **in reverse order**.  
+    - The sequence consists of cards from four suits: **Club (♣)**, **Spade (♠)**, **Heart (♥)**, and **Diamond (♦)**.  
+    - Example: If the agent sees `[♣, ♠, ♥]` in the **watch stage**, it must output `[♥, ♠, ♣]` in the **play stage**.  
+
+    ---
+
+    **How to play**
+    1. **Watch Stage** – The agent is shown a sequence of cards, one at a time.  
+    2. **Play Stage** – The agent outputs the sequence **in reverse order**.  
+    3. Reward: `1.0 / num_cards` for each correct card in the **play stage**.  
+    4. No rewards are given during the **watch stage**.  
+
+    
+    **Difficulty Levels**  
+    - **Easy** – `1 deck`, 26 cards
+    - **Medium** – `2 decks`, 52 cards
+    - **Hard** – `3 decks`, 78 cards
 
     ### Action Space
     | Action | Description                         |
     |--------|-------------------------------------|
-    | 0      | Up (No-op)                          |
-    | 1      | Down (No-op)                        |
-    | 2      | Left (Cycle options left)           |
-    | 3      | Right (Cycle options right)         |
-    | 4      | Confirm (Lock in current selection) |
+    | `0`    | Up *(No-op)*                        |
+    | `1`    | Down *(No-op)*                      |
+    | `2`    | Left *(Cycle options left)*         |
+    | `3`    | Right *(Cycle options right)*       |
+    | `4`    | Confirm *(Lock in current selection)* |
 
     ### Observation Space
-    The observation space consists of 256x256x3 and 192x192x3 image embeddings.
-    There are 4 suits in each difficulties: Club, Spade, Heart, Diamond. The score
-    is shown in the top middle of the image. The score will increase by 1 if the agent
-    plays the correct card in play stage. In the watch stage, the agent will not receive
-    ang reward, so the score will not increase. The current suit is shown in the bottom
-    middle of the image.
+    - **Image Embeddings**:  
+    - `256x256x3 (192x192x3)` or `128x128x3 (96x96x3)` depending on observation size.
+    - **Query Suits**: Always one of `[♣, ♠, ♥, ♦]` at top-left during watch stage.
+    - **History Suits**: Query Suits eventually becomes a sequence of history suits.
+    - **Score**: Shown at **top-middle** of the screen.  
+    - **Current Suit**: User's current action (chosen suit), shown at **top-right** in watch/play stage. 
 
-    In MDP version, the agent can see the full sequence of history cards, shows in
-    192x192x3 image embeddings.
+    **MDP Version**  
+    - Agent can see full sequence of **History Suits**, **Query Suits**, and **Current Suit**.
 
-    In POMDP version, the agent can only see the current card, shows in 256x256x3
-    image in the top left corner.
+    **POMDP Version**  
+    - Agent only sees the **Query Suits**, and **Current Suit**.
 
-    Agent can always see the score and the current suit in the image, which is shown
-    in the top middle and top left of the image respectively.
 
     ### Reward
     - Reward Scale: 1.0 / (num_cards)
@@ -208,7 +213,7 @@ class AutoEncode(environment.Environment):
             dtype=jnp.uint8,
         )
 
-        self.max_steps_in_episode = 140 + self.decksize * self.num_decks
+        self.max_steps_in_episode = self.decksize * self.num_decks * 2 * 5
         self.setup_render_templates()
 
     @property
