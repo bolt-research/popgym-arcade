@@ -94,18 +94,18 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
         "action_clr": jnp.array([1, 1, 1], dtype=jnp.uint8),
         # parameters for rendering enemy
         "red": jnp.array([1, 0, 0], dtype=jnp.uint8),
-        "orange": jnp.array([1, 128, 0], dtype=jnp.uint8),
+        "orange": jnp.array([1, 0.5, 0], dtype=jnp.uint8),
         "yellow": jnp.array([1, 1, 0], dtype=jnp.uint8),
         "green": jnp.array([0, 1, 0], dtype=jnp.uint8),
         "blue": jnp.array([0, 0, 1], dtype=jnp.uint8),
-        "indigo": jnp.array([74, 214, 247], dtype=jnp.uint8),
-        "violet": jnp.array([125, 0, 235], dtype=jnp.uint8),
+        "indigo": jnp.array([0.29, 0.84, 0.99], dtype=jnp.uint8),
+        "violet": jnp.array([0.49, 0, 0.92], dtype=jnp.uint8),
         # parameters for rendering grids
         "grid_clr": jnp.array([1, 1, 1], dtype=jnp.uint8),
         # parameters for rendering score
-        "sc_clr": jnp.array([0, 1, 128], dtype=jnp.uint8),
+        "sc_clr": jnp.array([0, 1, 0.5], dtype=jnp.uint8),
         # parameters for rendering env name
-        "env_clr": jnp.array([1, 245, 0], dtype=jnp.uint8),
+        "env_clr": jnp.array([1, 0,96, 0], dtype=jnp.uint8),
     }
     render_256x = {
         **render_common,
