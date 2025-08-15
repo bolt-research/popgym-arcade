@@ -4,21 +4,19 @@ from typing import Optional, Tuple
 import chex
 import jax
 import jax.numpy as jnp
-from chex import dataclass
-from gymnax.environments import environment, spaces
 from jax import lax
+from flax import struct
+from gymnax.environments import environment, spaces
 
-from popgym_arcade.environments.draw_utils import (
-    draw_grid,
-    draw_number,
-    draw_rectangle,
-    draw_single_digit,
-    draw_str,
-    draw_sub_canvas,
-)
+from popgym_arcade.environments.draw_utils import (draw_rectangle,
+                                            draw_number,
+                                            draw_grid,
+                                            draw_sub_canvas,
+                                            draw_str,
+                                            draw_single_digit)
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvState:
     """
     - mine_grid:
@@ -27,7 +25,6 @@ class EnvState:
     2: viewed
     - neighbor_grid: record the number of the mines in a (3 * 3) grid
     """
-
     action_x: chex.Array
     action_y: chex.Array
     timestep: int
@@ -37,7 +34,7 @@ class EnvState:
     viewed_count: int
 
 
-@dataclass(frozen=True)
+@struct.dataclass
 class EnvParams:
     pass
 
@@ -58,7 +55,9 @@ def convolve2d(input: jnp.ndarray, kernel: jnp.ndarray) -> jnp.ndarray:
 
     # Pad the input array
     padded_input = jnp.pad(
-        input, ((pad_height, pad_height), (pad_width, pad_width)), mode="constant"
+        input,
+        ((pad_height, pad_height), (pad_width, pad_width)),
+        mode='constant'
     )
 
     # Initialize the output array
@@ -68,7 +67,7 @@ def convolve2d(input: jnp.ndarray, kernel: jnp.ndarray) -> jnp.ndarray:
     for i in range(input_height):
         for j in range(input_width):
             # Extract the region of interest from the padded input
-            region = padded_input[i : i + kernel_height, j : j + kernel_width]
+            region = padded_input[i:i + kernel_height, j:j + kernel_width]
             # Compute the dot product between the region and the kernel
             output = output.at[i, j].set(jnp.sum(region * kernel))
 
@@ -131,57 +130,58 @@ class MineSweeper(environment.Environment):
     num_mines: number of mines to generate.
     partial_obs: bool switch with POMDP and FOMDP.
     """
-
-    render_common = {
-        "clr": jnp.array([229, 234, 242], dtype=jnp.uint8),
-        "sub_clr": jnp.array([0, 0, 0], dtype=jnp.uint8),
-        # parameters for rendering numbers
-        "num_clr": jnp.array([255, 255, 255], dtype=jnp.uint8),
-        # parameters for rendering current action position
-        "action_clr": jnp.array([255, 127, 0], dtype=jnp.uint8),
-        # parameters for rendering grids
-        "grid_clr": jnp.array([102, 102, 102], dtype=jnp.uint8),
-        # parameters for rendering score
-        "sc_clr": jnp.array([153, 0, 204], dtype=jnp.uint8),
-        # parameters for rendering env name
-        "env_clr": jnp.array([0, 51, 102], dtype=jnp.uint8),
-    }
     render_256x = {
         # parameters for rendering (256, 256, 3) canvas
-        **render_common,
         "size": 256,
+        "clr": jnp.array([0.9, 0.92, 0.95]),
         "sub_size": {
             4: 186,
             6: 182,
             8: 186,
         },
+        "sub_clr": jnp.array([0.0, 0.0, 0.0]),
+        # parameters for rendering numbers
+        "num_clr": jnp.array([1.0, 1.0, 1.0]),
+        # parameters for rendering current action position
+        "action_clr": jnp.array([1.0, 0.5, 0.0]),
         # parameters for rendering grids
         "grid_px": 2,
+        "grid_clr": jnp.array([0.4, 0.4, 0.4]),
         # parameters for rendering score
         "sc_t_l": (86, 2),
         "sc_b_r": (171, 30),
+        "sc_clr": jnp.array([0.6, 0.0, 0.8]),
         # parameters for rendering env name
         "env_t_l": (0, 231),
         "env_b_r": (256, 256),
+        "env_clr": jnp.array([0.0, 0.2, 0.4]),
     }
 
     render_128x = {
-        **render_common,
         # parameters for rendering (128, 128, 3) canvas
         "size": 128,
+        "clr": jnp.array([0.9, 0.92, 0.95]),
         "sub_size": {
             4: 94,
             6: 92,
             8: 90,
         },
+        "sub_clr": jnp.array([0.0, 0.0, 0.0]),
+        # parameters for rendering numbers
+        "num_clr": jnp.array([1.0, 1.0, 1.0]),
+        # parameters for rendering current action position
+        "action_clr": jnp.array([1.0, 0.5, 0.0]),
         # parameters for rendering grids
         "grid_px": 2,
+        "grid_clr": jnp.array([0.4, 0.4, 0.4]),
         # parameters for rendering score
         "sc_t_l": (43, 1),
         "sc_b_r": (85, 15),
+        "sc_clr": jnp.array([0.0, 1.0, 0.5]),
         # parameters for rendering envName
         "env_t_l": (0, 115),
         "env_b_r": (128, 128),
+        "env_clr": jnp.array([0.29, 0.84, 0.97]),
     }
     render_mode = {
         256: render_256x,
@@ -189,11 +189,11 @@ class MineSweeper(environment.Environment):
     }
 
     def __init__(
-        self,
-        board_size: int,
-        num_mines: int = 2,
-        partial_obs: bool = False,
-        obs_size: int = 128,
+            self,
+            obs_size: int,
+            board_size: int,
+            num_mines: int = 2,
+            partial_obs: bool = False,
     ):
         super().__init__()
         self.obs_size = obs_size
@@ -201,62 +201,60 @@ class MineSweeper(environment.Environment):
         self.num_mines = num_mines
         self.partial_obs = partial_obs
         self.max_episode_length = self.board_size * self.board_size * 2
-        self.success_reward_scale = 1 / (
-            self.board_size * self.board_size - self.num_mines
-        )
+        self.success_reward_scale = 1 / (self.board_size * self.board_size - self.num_mines)
         self.fail_reward_scale = 0.0
-        self.bad_action_reward_scale = -1.0 / (self.board_size * self.board_size / 2)
+        self.bad_action_reward_scale = - 1.0 / (self.board_size * self.board_size / 2)
 
     @property
     def default_params(self) -> EnvParams:
         return EnvParams()
 
     def step_env(
-        self, key: chex.PRNGKey, state: EnvState, action: int, params: EnvParams
+            self,
+            key: chex.PRNGKey,
+            state: EnvState,
+            action: int,
+            params: EnvParams
     ) -> Tuple[chex.Array, EnvState, float, bool, dict]:
         def move_up(state):
             action_y = lax.max(state.action_y - 1, 0)
             new_timestep = state.timestep + 1
-            new_state = state.replace(action_y=action_y, timestep=new_timestep)
-            done = new_timestep >= self.max_episode_length
-            infos = {
-                'terminated': False,
-                'truncated': new_timestep >= self.max_episode_length,
-            }
-            return self.get_obs(new_state), new_state, 0.0, done, infos
+            new_state = state.replace(
+                action_y=action_y,
+                timestep=new_timestep
+            )
+            done = (new_timestep >= self.max_episode_length)
+            return self.get_obs(new_state), new_state, 0.0, done, {}
 
         def move_down(state):
             action_y = lax.min(state.action_y + 1, self.board_size - 1)
             new_timestep = state.timestep + 1
-            new_state = state.replace(action_y=action_y, timestep=new_timestep)
-            done = new_timestep >= self.max_episode_length
-            infos = {
-                'terminated': False,
-                'truncated': new_timestep >= self.max_episode_length,
-            }
-            return self.get_obs(new_state), new_state, 0.0, done, infos
+            new_state = state.replace(
+                action_y=action_y,
+                timestep=new_timestep
+            )
+            done = (new_timestep >= self.max_episode_length)
+            return self.get_obs(new_state), new_state, 0.0, done, {}
 
         def move_left(state):
             action_x = lax.max(state.action_x - 1, 0)
             new_timestep = state.timestep + 1
-            new_state = state.replace(action_x=action_x, timestep=new_timestep)
-            done = new_timestep >= self.max_episode_length
-            infos = {
-                'terminated': False,
-                'truncated': new_timestep >= self.max_episode_length,
-            }
-            return self.get_obs(new_state), new_state, 0.0, done, infos
+            new_state = state.replace(
+                action_x=action_x,
+                timestep=new_timestep
+            )
+            done = (new_timestep >= self.max_episode_length)
+            return self.get_obs(new_state), new_state, 0.0, done, {}
 
         def move_right(state):
             action_x = lax.min(state.action_x + 1, self.board_size - 1)
             new_timestep = state.timestep + 1
-            new_state = state.replace(action_x=action_x, timestep=new_timestep)
-            done = new_timestep >= self.max_episode_length
-            infos = {
-                'terminated': False,
-                'truncated': new_timestep >= self.max_episode_length,
-            }
-            return self.get_obs(new_state), new_state, 0.0, done, infos
+            new_state = state.replace(
+                action_x=action_x,
+                timestep=new_timestep
+            )
+            done = (new_timestep >= self.max_episode_length)
+            return self.get_obs(new_state), new_state, 0.0, done, {}
 
         def hit(state):
             action_x, action_y = state.action_x, state.action_y
@@ -266,22 +264,33 @@ class MineSweeper(environment.Environment):
             new_grid = state.mine_grid.at[action_x, action_y].set(2)
 
             reward = self.success_reward_scale
-            reward = jnp.where(viewed, self.bad_action_reward_scale, reward)
-            reward = jnp.where(mine, self.fail_reward_scale, reward)
+            reward = jnp.where(
+                viewed,
+                self.bad_action_reward_scale,
+                reward
+            )
+            reward = jnp.where(
+                mine,
+                self.fail_reward_scale,
+                reward
+            )
             new_score = state.score + lax.cond(
-                reward > 0, lambda _: 1, lambda _: 0, operand=None
+                reward > 0,
+                lambda _: 1,
+                lambda _: 0,
+                operand=None
             )
             viewed_count = state.viewed_count + jnp.where(viewed, 1, 0)
 
-            truncated = state.timestep >= self.max_episode_length
-            terminated = jnp.where(mine, True, False)
+            terminated = state.timestep >= self.max_episode_length
+            terminated = jnp.where(mine, True, terminated)
             terminated = jnp.logical_or(
                 terminated,
-                jnp.sum(new_grid == 2) == (self.board_size**2 - self.num_mines),
+                jnp.sum(new_grid == 2) == (self.board_size ** 2 - self.num_mines)
             )
             terminated = jnp.logical_or(
                 terminated,
-                state.viewed_count >= (self.board_size * self.board_size / 2),
+                state.viewed_count >= (self.board_size * self.board_size / 2)
             )
 
             new_state = state.replace(
@@ -292,25 +301,29 @@ class MineSweeper(environment.Environment):
                 viewed_count=viewed_count,
             )
             obs = self.get_obs(new_state)
-            done = jnp.logical_or(terminated, truncated)
-            infos = {
-                'terminated': terminated,
-                'truncated': truncated,
-            }
-            return obs, new_state, reward, done, infos
+            return obs, new_state, reward, terminated, {}
 
         action_functions = [move_up, move_down, move_left, move_right, hit]
 
-        info = lax.switch(action, action_functions, state)
+        info = lax.switch(
+            action,
+            action_functions,
+            state
+        )
 
         return info
 
     def reset_env(
-        self, key: chex.PRNGKey, params: EnvParams
+            self,
+            key: chex.PRNGKey,
+            params: EnvParams
     ) -> Tuple[chex.Array, EnvState]:
         """Performs resetting of environment."""
         # hidden_grid = jnp.zeros((params.dims[0] * params.dims[1],), dtype=jnp.int8)
-        hidden_grid = jnp.zeros((self.board_size * self.board_size,), dtype=jnp.int8)
+        hidden_grid = jnp.zeros(
+            (self.board_size * self.board_size,),
+            dtype=jnp.int8
+        )
         mines_flat = jax.random.choice(
             key, hidden_grid.shape[0], shape=(self.num_mines,), replace=False
         )
@@ -341,27 +354,21 @@ class MineSweeper(environment.Environment):
         render_config = self.render_mode[self.obs_size]
         board_size = self.board_size
         square_size = (
-            render_config["sub_size"][board_size]
-            - (board_size + 1) * render_config["grid_px"]
+                render_config["sub_size"][board_size] - (board_size + 1) * render_config["grid_px"]
         ) // board_size
 
         # Generate grid coordinates
         x_coords, y_coords = jnp.arange(board_size), jnp.arange(board_size)
-        xx, yy = jnp.meshgrid(x_coords, y_coords, indexing="ij")
-        top_left_x = render_config["grid_px"] + xx * (
-            square_size + render_config["grid_px"]
-        )
-        top_left_y = render_config["grid_px"] + yy * (
-            square_size + render_config["grid_px"]
-        )
+        xx, yy = jnp.meshgrid(x_coords, y_coords, indexing='ij')
+        top_left_x = render_config["grid_px"] + xx * (square_size + render_config["grid_px"])
+        top_left_y = render_config["grid_px"] + yy * (square_size + render_config["grid_px"])
         bottom_right_x = top_left_x + square_size
         bottom_right_y = top_left_y + square_size
 
         # Initialize canvas and sub-canvas
         canvas = jnp.full(
             (render_config["size"], render_config["size"], 3),
-            render_config["clr"],
-            dtype=jnp.uint8,
+            render_config["clr"]
         )
         sub_canvas = jnp.full(
             (
@@ -369,8 +376,7 @@ class MineSweeper(environment.Environment):
                 render_config["sub_size"][board_size],
                 3,
             ),
-            render_config["sub_clr"],
-            dtype=jnp.uint8,
+            render_config["sub_clr"]
         )
 
         # Extract action coordinates
@@ -378,12 +384,12 @@ class MineSweeper(environment.Environment):
 
         # Draw rectangle for the action
         tl_x, tl_y = top_left_x[action_x, action_y], top_left_y[action_x, action_y]
-        br_x, br_y = (
-            bottom_right_x[action_x, action_y],
-            bottom_right_y[action_x, action_y],
-        )
+        br_x, br_y = bottom_right_x[action_x, action_y], bottom_right_y[action_x, action_y]
         sub_canvas = draw_rectangle(
-            (tl_x, tl_y), (br_x, br_y), render_config["action_clr"], sub_canvas
+            (tl_x, tl_y),
+            (br_x, br_y),
+            render_config["action_clr"],
+            sub_canvas
         )
 
         # Check hit map for mines
@@ -398,9 +404,9 @@ class MineSweeper(environment.Environment):
                     (br_x, br_y),
                     render_config["num_clr"],
                     _sub_canvas,
-                    state.neighbor_grid[action_x, action_y],
+                    state.neighbor_grid[action_x, action_y]
                 ),
-                lambda: _sub_canvas,
+                lambda: _sub_canvas
             )
 
         # Define full rendering function
@@ -414,11 +420,10 @@ class MineSweeper(environment.Environment):
                     lambda: draw_single_digit(
                         (top_left_x[x, y], top_left_y[x, y]),
                         (bottom_right_x[x, y], bottom_right_y[x, y]),
-                        render_config["num_clr"],
-                        canvas,
-                        state.neighbor_grid[x, y],
+                        render_config["num_clr"], canvas,
+                        state.neighbor_grid[x, y]
                     ),
-                    lambda: canvas,
+                    lambda: canvas
                 )
 
             batched_render = jax.vmap(_render_cell, in_axes=(0, 0, None))
@@ -429,11 +434,8 @@ class MineSweeper(environment.Environment):
 
         # Draw score on the canvas
         canvas = draw_number(
-            render_config["sc_t_l"],
-            render_config["sc_b_r"],
-            render_config["sc_clr"],
-            canvas,
-            state.score,
+            render_config["sc_t_l"], render_config["sc_b_r"],
+            render_config["sc_clr"], canvas, state.score
         )
 
         # Conditionally render partial or full sub-canvas
@@ -441,12 +443,15 @@ class MineSweeper(environment.Environment):
             (state.timestep > 0) & self.partial_obs,
             _render_partial,
             lambda _: _render_full(sub_canvas),
-            operand=sub_canvas,
+            operand=sub_canvas
         )
 
         # Draw grid on the sub-canvas
         sub_canvas = draw_grid(
-            square_size, render_config["grid_px"], render_config["grid_clr"], sub_canvas
+            square_size,
+            render_config["grid_px"],
+            render_config["grid_clr"],
+            sub_canvas
         )
 
         # Draw environment name on the canvas
@@ -455,7 +460,7 @@ class MineSweeper(environment.Environment):
             render_config["env_b_r"],
             render_config["env_clr"],
             canvas,
-            self.name,
+            self.name
         )
 
         # Return the final canvas with sub-canvas drawn on it
@@ -473,12 +478,10 @@ class MineSweeper(environment.Environment):
     def observation_space(self, params: EnvParams) -> spaces.Box:
         """Observation space of the environment."""
         return spaces.Box(
-            # jnp.zeros((self.num_mines,)),
-            # jnp.ones((self.num_mines,)),
-            0,
-            255,
-            (self.board_size, self.board_size, 3),
-            dtype=jnp.uint8,
+            jnp.zeros((self.num_mines,)),
+            jnp.ones((self.num_mines,)),
+            (self.num_mines,),
+            dtype=jnp.float32,
         )
 
 
