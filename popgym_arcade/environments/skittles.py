@@ -23,8 +23,6 @@ class EnvState(environment.EnvState):
     over: int
     time: int
     score: int
-    lives: int
-
 
 @dataclass(frozen=True)
 class EnvParams(environment.EnvParams):
@@ -208,8 +206,6 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
         matrix_state = state.matrix_state
         xp = matrix_state[self.grid_size-1, x]
         over = xp 
-        lives = jnp.where(xp == 1, state.lives - 1, state.lives)
-        over = jnp.where(lives <= 0, 1, over)
         # each row moves down by one, and the first row is replaced by a new enemy row
         matrix_state = matrix_state.at[1:self.grid_size, :].set(matrix_state[0:self.grid_size-1, :])
 
@@ -232,7 +228,6 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
             time = state.time + 1,
             score = state.score + 1,
             color_indexes = new_color_indexes,
-            lives = lives,
         )
         
         done = self.is_terminal(state, params)
@@ -261,7 +256,6 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
             time = 0,
             score = 0,
             over = 0,
-            lives = 5,
         )
         return self.get_obs(state), state
 
@@ -281,10 +275,9 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
     def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
         """Check if the episode is done."""
         # done_crash = state.xp + state.over
-        done_crash = state.over | (state.lives <= 0)
+        done_crash = state.over
         done_steps = state.time >= self.max_steps_in_episode
         done = jnp.logical_or(done_crash, done_steps)
-        # done = jnp.logical_and(done, state.lives <= 0)
         return done
 
     @functools.partial(jax.jit, static_argnums=(0,))
