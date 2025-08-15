@@ -118,7 +118,7 @@ class LSTM(GRAS):
         h: LSTMRecurrentStateWithReset,
         x: Input,
         key: Optional[Shaped[PRNGKeyArray, ""]] = None,
-    ) ->  Float[Array, "Recurrent"]:
+    ) ->  Float[Array, "Recurrent"]: #TODO: Float[Array, "{self.hidden_size}"] or Float[Array, "{self.recurrent_size}"]
         (c_t, h_t), reset_flag = h
         emb, start = x
         return h_t

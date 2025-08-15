@@ -6,12 +6,7 @@ import jax
 import jax.numpy as jnp
 from jaxtyping import PRNGKeyArray, Shaped
 
-from popgym_arcade.baselines.model.memorax.mtypes import (
-    Input,
-    RecurrentState,
-    ResetRecurrentState,
-    StartFlag,
-)
+from popgym_arcade.baselines.model.memorax.mtypes import Input, RecurrentState, ResetRecurrentState, StartFlag
 from popgym_arcade.baselines.model.memorax.utils import debug_shape
 
 
@@ -78,9 +73,7 @@ class SetAction(BinaryAlgebra):
     def __call__(self, carry: RecurrentState, input: RecurrentState) -> RecurrentState:
         pass
 
-    def initialize_carry(
-        self, key: Optional[Shaped[PRNGKeyArray, ""]] = None
-    ) -> RecurrentState:
+    def initialize_carry(self,  key: Optional[Shaped[PRNGKeyArray, ""]] = None) -> RecurrentState:
         raise NotImplementedError
 
 
@@ -104,9 +97,7 @@ class Semigroup(BinaryAlgebra):
     def __call__(self, carry: RecurrentState, input: RecurrentState) -> RecurrentState:
         raise NotImplementedError
 
-    def initialize_carry(
-        self, key: Optional[Shaped[PRNGKeyArray, ""]] = None
-    ) -> RecurrentState:
+    def initialize_carry(self, key: Optional[Shaped[PRNGKeyArray, ""]] = None) -> RecurrentState:
         raise NotImplementedError
 
 
@@ -138,8 +129,9 @@ class Resettable(BinaryAlgebra):
             return out
 
         # TODO: Plumb key thru
-        initial_states = self.algebra.initialize_carry(None)
-        states = jax.tree.map(partial(reset_state, start), states, initial_states)
+        initial_states = self.algebra.initialize_carry(None) 
+        states = jax.tree.map(
+            partial(reset_state, start), states, initial_states)
         out = self.algebra(states, xs)
         carry_reset_flag = jnp.logical_or(start, prev_carry_reset_flag)
         to_return = out, carry_reset_flag

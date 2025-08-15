@@ -104,16 +104,10 @@ def make_train(config):
     ] == 0, "NUM_MINIBATCHES must divide NUM_STEPS*NUM_ENVS"
 
     env, env_params = popgym_arcade.make(config["ENV_NAME"], partial_obs=config["PARTIAL"], obs_size=config["OBS_SIZE"])
-    env = LogWrapper(env)
+    log_env = LogWrapper(env)
     # config["TEST_NUM_STEPS"] = config.get(
     #     "TEST_NUM_STEPS", env_params.max_steps_in_episode
     # )
-    vmap_reset = lambda n_envs: lambda rng: jax.vmap(env.reset, in_axes=(0, None))(
-        jax.random.split(rng, n_envs), env_params
-    )
-    vmap_step = lambda n_envs: lambda rng, env_state, action: jax.vmap(
-        env.step, in_axes=(0, 0, 0, None)
-    )(jax.random.split(rng, n_envs), env_state, action, env_params)
 
     # epsilon-greedy exploration
     def eps_greedy_exploration(rng, q_vals, eps):
@@ -132,6 +126,17 @@ def make_train(config):
         return chosed_actions
 
     def train(rng):
+        
+        # vmap_reset_sub = lambda n_envs: lambda rng: eqx.filter_vmap(env.reset, in_axes=(0, None))(
+        #     jax.random.split(rng, n_envs), env_params
+        #     )
+        vmap_reset = lambda n_envs: lambda rng: eqx.filter_vmap(log_env.reset, in_axes=(0, None))(
+            jax.random.split(rng, n_envs), env_params
+        )
+        vmap_step = lambda n_envs: lambda rng, env_state, action: eqx.filter_vmap(
+            log_env.step, in_axes=(0, 0, 0, None)
+        )(jax.random.split(rng, n_envs), env_state, action, env_params)
+
         original_rng = rng[0]
         eps_scheduler = optax.linear_schedule(
             config["EPS_START"],
@@ -149,7 +154,7 @@ def make_train(config):
         lr = lr_scheduler if config.get("LR_LINEAR_DECAY", False) else config["LR"]
         rng, _rng, rng_init = jax.random.split(rng, 3)
 
-        network = QNetworkRNN(rng, config["OBS_SIZE"], config["MEMORY_TYPE"])
+        network = QNetworkRNN(rng, config["MEMORY_TYPE"])
 
         hidden_state = network.initialize_carry(key=rng_init)
         hidden_state = add_batch_dim(hidden_state, config["NUM_ENVS"])
@@ -212,12 +217,15 @@ def make_train(config):
                     q_vals=q_vals,
                     infos=info,
                 )
+                # jax.debug.print("transition.infos: {}", transition.infos)
                 new_expl_state = (new_hs, new_obs, new_done, new_action, new_env_state)
+                # debug_shape(new_expl_state)
                 runner_state = (train_state, memory_transitions, new_expl_state, test_metrics, rng)
                 return runner_state, transition
 
             # step the env
             rng, _rng = jax.random.split(rng)
+
             runner_state, transitions = filter_scan(
                 _step_env,
                 runner_state,
@@ -225,16 +233,24 @@ def make_train(config):
                 config["NUM_STEPS"],
             )
             train_state, memory_transitions, expl_state, test_metrics, rng = runner_state
-            # hs, last_obs, last_done, last_action, env_state = expl_state
-            # hs = train_state.model.initialize_carry(key=rng_init)
-            # hs = add_batch_dim(hs, config["NUM_ENVS"])
-            # last_obs, env_state = vmap_reset(config["NUM_ENVS"])(_rng)
-            # last_done = jnp.zeros((config["NUM_ENVS"]), dtype=bool)
-            # last_action = jnp.zeros((config["NUM_ENVS"]), dtype=int)
+            
+            hs, last_obs, last_done, last_action, env_state = expl_state
+            
+            # jax.debug.print("env_state: {}", env_state)
+            hs = train_state.model.initialize_carry(key=rng_init)
+            hs = add_batch_dim(hs, config["NUM_ENVS"])
+            last_obs, env_state = vmap_reset(config["NUM_ENVS"])(_rng)
+            # jax.debug.print("env_state: {}", env_state)
+            last_done = jnp.zeros((config["NUM_ENVS"]), dtype=bool)
+            last_action = jnp.zeros((config["NUM_ENVS"]), dtype=int)
+            
+            expl_state = (hs, last_obs, last_done, last_action, env_state)
+            
+            runner_state = (train_state, memory_transitions, expl_state, test_metrics, rng)
 
-            # expl_state = (hs, last_obs, last_done, last_action, env_state)
-
-            expl_state = tuple(expl_state)
+            # expl_state = tuple(expl_state)
+            
+            # debug_shape(expl_state)
 
             train_state = train_state.replace(
                 timesteps=train_state.timesteps + config["NUM_STEPS"] * config["NUM_ENVS"]
@@ -378,7 +394,9 @@ def make_train(config):
                 "td_loss": loss.mean(),
                 "qvals": qvals.mean(),
             }
-            metrics.update({k: v.mean() for k, v in transitions.infos.items()})
+            # jax.debug.print("transitions: {}", transitions.infos)
+            # jax.debug.print("returned_episode_lengths.shape: {}", transitions.infos["returned_episode_lengths"].shape)
+            metrics.update({k: v[-1].mean() for k, v in transitions.infos.items()})
             last_action = jnp.argmax(qvals[-1], axis=-1)
             new_action = jnp.argmax(qvals_new[-1], axis=-1)
             churn_ratio = (last_action != new_action).mean()
@@ -443,7 +461,7 @@ def make_train(config):
 
             #     jax.debug.callback(callback, metrics)
 
-            runner_state = (train_state, memory_transitions, tuple(expl_state), test_metrics, rng)
+            runner_state = (train_state, memory_transitions, expl_state, test_metrics, rng)
 
             return runner_state, metrics
 
@@ -679,7 +697,7 @@ def single_run(config):
 
     eqx.tree_serialise_leaves('{}_{}_{}_model_Partial={}_SEED={}.pkl'.format(config["TRAIN_TYPE"], config["MEMORY_TYPE"], config["ENV_NAME"], config["PARTIAL"], config["SEED"]), network_squeezed)
     rng, _rng = jax.random.split(rng)
-    network = QNetworkRNN(_rng, config["OBS_SIZE"], config["MEMORY_TYPE"])
+    network = QNetworkRNN(5, _rng, config["MEMORY_TYPE"])
     model = eqx.tree_deserialise_leaves('{}_{}_{}_model_Partial={}_SEED={}.pkl'.format(config["TRAIN_TYPE"], config["MEMORY_TYPE"], config["ENV_NAME"], config["PARTIAL"], config["SEED"]), network)
 
     evaluate(model, config)
