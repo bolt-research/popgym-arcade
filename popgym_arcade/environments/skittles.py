@@ -1,21 +1,18 @@
-import functools
 from typing import Any, Dict, Optional, Tuple, Union
 
 import chex
-import jax
-import jax.numpy as jnp
 from chex import dataclass
-from gymnax.environments import environment, spaces
+import jax
 from jax import lax
-
+import jax.numpy as jnp
+import functools
+from gymnax.environments import environment, spaces
 from popgym_arcade.environments.draw_utils import (
-    draw_grid,
-    draw_number,
-    draw_rectangle,
-    draw_str,
-    draw_sub_canvas,
-)
-
+                                            draw_rectangle,
+                                            draw_number,
+                                            draw_str,
+                                            draw_grid,
+                                            draw_sub_canvas)
 
 @dataclass(frozen=True)
 class EnvState(environment.EnvState):
@@ -27,7 +24,6 @@ class EnvState(environment.EnvState):
     time: int
     score: int
 
-
 @dataclass(frozen=True)
 class EnvParams(environment.EnvParams):
     pass
@@ -35,10 +31,10 @@ class EnvParams(environment.EnvParams):
 
 class Skittles(environment.Environment[EnvState, EnvParams]):
     """
-    Jax compilable environment for Skittles.
-
+    Jax compilable environment for the Swimming Dragon.
+    
     ### Description
-    In Skittles, the agent is tasked with avoiding enemies that fall from the top of the screen.
+    In Swimming Dragon, the agent is tasked with avoiding enemies that fall from the top of the screen.
     The agent can move left or right to dodge the enemies. The goal is to survive as long as possible without being hit by an enemy.
     There are three difficulties: easy, medium, and hard. Each difficulty has a different grid size and maximum steps in an episode.
     Easy: 8x8 grid, agent's goal is to survive 200 steps, have 1 enemy in each row
@@ -59,7 +55,7 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
     | 2      | Left                                |
     | 3      | Right                               |
     | 4      | Fire (No-op)                        |
-
+    
     ### Observation Space
     OBS_SIZE can be either 128 or 256. The observation is a rendered image of the state with shape (OBS_SIZE, OBS_SIZE, 3).
     The image contains:
@@ -73,7 +69,7 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
     - Reward Scale: 1.0 / max_steps_in_episode
 
     ### Termination & Truncation
-    The episode ends when the agent is hit by an enemy or
+    The episode ends when the agent is hit by an enemy or 
      the maximum number of steps is reached.
 
     ### Args
@@ -85,64 +81,86 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
 
     """
 
-    render_common = {
-        # parameters for rendering (256, 256, 3) canvas
-        "clr": jnp.array([0, 0, 0], dtype=jnp.uint8),
-        # parameters for rendering sub canvas
-        "sub_clr": jnp.array([0, 0, 0], dtype=jnp.uint8),
-        # parameters for current action position
-        "action_clr": jnp.array([255, 255, 255], dtype=jnp.uint8),
-        # parameters for rendering enemy
-        "red": jnp.array([255, 0, 0], dtype=jnp.uint8),
-        "orange": jnp.array([255, 128, 0], dtype=jnp.uint8),
-        "yellow": jnp.array([255, 255, 0], dtype=jnp.uint8),
-        "green": jnp.array([0, 255, 0], dtype=jnp.uint8),
-        "blue": jnp.array([0, 0, 255], dtype=jnp.uint8),
-        "indigo": jnp.array([74, 214, 247], dtype=jnp.uint8),
-        "violet": jnp.array([125, 0, 235], dtype=jnp.uint8),
-        # parameters for rendering grids
-        "grid_clr": jnp.array([255, 255, 255], dtype=jnp.uint8),
-        # parameters for rendering score
-        "sc_clr": jnp.array([0, 255, 128], dtype=jnp.uint8),
-        # parameters for rendering env name
-        "env_clr": jnp.array([255, 245, 0], dtype=jnp.uint8),
-    }
     render_256x = {
-        **render_common,
         # parameters for rendering (256, 256, 3) canvas
         "size": 256,
+        "clr": jnp.array([0.0, 0.0, 0.0]),
         "sub_size": {
             8: 186,
             10: 192,
             12: 182,
         },
+        # parameters for rendering sub canvas
+        "sub_clr": jnp.array([0.0, 0.0, 0.0]),
+        
+        # parameters for current action position
+        "action_clr": jnp.array([1.0, 1.0, 1.0]),
+        
+        # parameters for rendering enemy
+        # "enemy_clr": jnp.array([0.29, 0.84, 0.97]),
+        # rainbow color
+        "red": jnp.array([1.0, 0.0, 0.0]),
+        "orange": jnp.array([1.0, 0.5, 0.0]),
+        "yellow": jnp.array([1.0, 1.0, 0.0]),
+        "green": jnp.array([0.0, 1.0, 0.0]),
+        "blue": jnp.array([0.0, 0.0, 1.0]),
+        "indigo": jnp.array([0.29, 0.84, 0.97]),
+        "violet": jnp.array([0.49, 0.0, 0.92]),
+
         # parameters for rendering grids
         "grid_px": 2,
+        "grid_clr": jnp.array([1.0, 1.0, 1.0]),
+
         # parameters for rendering score
         "sc_t_l": (86, 2),
         "sc_b_r": (171, 30),
+        "sc_clr": jnp.array([0.0, 1.0, 0.5]),
+        
         # parameters for rendering env name
         "env_t_l": (0, 231),
         "env_b_r": (256, 256),
+        "env_clr": jnp.array([1.0, 0.96, 0.0]),
     }
 
     render_128x = {
-        **render_common,
         # parameters for rendering (128, 128, 3) canvas
         "size": 128,
+        "clr": jnp.array([0.0, 0.0, 0.0]),
         "sub_size": {
             8: 90,
             10: 92,
             12: 98,
         },
+        # parameters for rendering sub canvas
+        "sub_clr": jnp.array([0.0, 0.0, 0.0]),
+        
+        # parameters for current action position
+        "action_clr": jnp.array([1.0, 1.0, 1.0]),
+        
+        # parameters for rendering enemy
+        # "enemy_clr": jnp.array([0.29, 0.84, 0.97]),
+        # rainbow color
+        "red": jnp.array([1.0, 0.0, 0.0]),
+        "orange": jnp.array([1.0, 0.5, 0.0]),
+        "yellow": jnp.array([1.0, 1.0, 0.0]),
+        "green": jnp.array([0.0, 1.0, 0.0]),
+        "blue": jnp.array([0.0, 0.0, 1.0]),
+        "indigo": jnp.array([0.29, 0.84, 0.97]),
+        "violet": jnp.array([0.49, 0.0, 0.92]),
+
         # parameters for rendering grids
         "grid_px": 2,
+        "grid_clr": jnp.array([1.0, 1.0, 1.0]),
+
         # parameters for rendering score
         "sc_t_l": (43, 1),
         "sc_b_r": (85, 15),
+        "sc_clr": jnp.array([0.0, 1.0, 0.5]),
+        
         # parameters for rendering env name
         "env_t_l": (0, 115),
         "env_b_r": (128, 128),
+        "env_clr": jnp.array([1.0, 0.96, 0.0]),
     }
     render_mode = {
         256: render_256x,
@@ -150,20 +168,21 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
     }
 
     def __init__(
-        self,
-        max_steps_in_episode: int,
-        grid_size: int,
-        obs_size: int = 128,
-        partial_obs=False,
-        enemy_num: int = 2,
-    ):
+            self, 
+            max_steps_in_episode: int, 
+            grid_size: int,
+            obs_size: int = 128,
+            partial_obs = False,
+            enemy_num: int = 2,
+            ):
         super().__init__()
         self.obs_size = obs_size
         self.max_steps_in_episode = max_steps_in_episode
-        self.reward_scale = 1.0 / max_steps_in_episode
+        self.reward_scale = (1.0 / max_steps_in_episode)
         self.grid_size = grid_size
         self.partial_obs = partial_obs
         self.enemy_num = enemy_num
+
 
     @property
     def default_params(self) -> EnvParams:
@@ -181,50 +200,44 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
         xp = state.xp
         over = state.over
         x = state.x
-        x = jnp.clip(jnp.where(action == 2, x - 1, x), 0, self.grid_size - 1)
-        x = jnp.clip(jnp.where(action == 3, x + 1, x), 0, self.grid_size - 1)
-
+        x = jnp.clip(jnp.where(action == 2, x-1, x), 0, self.grid_size-1)
+        x = jnp.clip(jnp.where(action == 3, x+1, x), 0, self.grid_size-1)
+        
         matrix_state = state.matrix_state
-        xp = matrix_state[self.grid_size - 1, x]
-        over = xp
+        xp = matrix_state[self.grid_size-1, x]
+        over = xp 
         # each row moves down by one, and the first row is replaced by a new enemy row
-        matrix_state = matrix_state.at[1 : self.grid_size, :].set(
-            matrix_state[0 : self.grid_size - 1, :]
-        )
+        matrix_state = matrix_state.at[1:self.grid_size, :].set(matrix_state[0:self.grid_size-1, :])
 
         newkey, enemy_key = jax.random.split(newkey)
         enemy_new = self.random_enemy(enemy_key)
         enemy_new = jnp.squeeze(enemy_new)
 
         matrix_state = matrix_state.at[0, :].set(enemy_new)
-        xp = matrix_state[self.grid_size - 1, x]
+        xp = matrix_state[self.grid_size-1, x]
 
         new_color_idx = (state.color_indexes[0] + 1) % 7
 
         new_color_indexes = jnp.roll(state.color_indexes, shift=1)
         new_color_indexes = new_color_indexes.at[0].set(new_color_idx)
         state = EnvState(
-            matrix_state=matrix_state,
-            x=x,
-            xp=matrix_state[self.grid_size - 1, x],
-            over=over,
-            time=state.time + 1,
-            score=state.score + 1,
-            color_indexes=new_color_indexes,
+            matrix_state = matrix_state,
+            x = x,
+            xp = matrix_state[self.grid_size-1, x],
+            over = over,
+            time = state.time + 1,
+            score = state.score + 1,
+            color_indexes = new_color_indexes,
         )
-
+        
         done = self.is_terminal(state, params)
-        infos = {
-            "terminated": state.xp + state.over,
-            "truncated": state.time >= self.max_steps_in_episode,
-            "discount": self.discount(state, params),
-        }
+
         return (
             lax.stop_gradient(self.get_obs(state)),
             lax.stop_gradient(state),
             jnp.array(self.reward_scale),
             done,
-            infos,
+            {"discount": self.discount(state, params)},
         )
 
     def reset_env(
@@ -233,18 +246,16 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
         """Reset the environment to an initial state."""
         key, subkey1 = jax.random.split(key)
         matrix_state = jnp.zeros((self.grid_size, self.grid_size), dtype=jnp.int32)
-        x = jax.random.randint(
-            subkey1, shape=(), minval=0, maxval=self.grid_size, dtype=jnp.int32
-        )
+        x = jax.random.randint(subkey1, shape=(), minval=0, maxval=self.grid_size).astype(jnp.int32) 
 
         state = EnvState(
-            matrix_state=matrix_state,
+            matrix_state = matrix_state,
             color_indexes=jnp.zeros(self.grid_size).at[0].set(0),
-            x=x,
-            xp=matrix_state[self.grid_size - 1, x],
-            time=0,
-            score=0,
-            over=0,
+            x = x,
+            xp = matrix_state[self.grid_size-1, x],
+            time = 0,
+            score = 0,
+            over = 0,
         )
         return self.get_obs(state), state
 
@@ -252,9 +263,7 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
         """Generate a random enemy row."""
         key, subkey2 = jax.random.split(key)
         enemy_row = jnp.zeros(self.grid_size, dtype=jnp.int32)
-        indices = jax.random.choice(
-            subkey2, jnp.arange(self.grid_size), shape=(self.enemy_num,), replace=False
-        )
+        indices = jax.random.choice(subkey2, jnp.arange(self.grid_size), shape=(self.enemy_num,), replace=False)
         enemy_row = enemy_row.at[indices].set(1)
         enemy_row = enemy_row.reshape(1, -1)
         return enemy_row
@@ -265,7 +274,8 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
 
     def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
         """Check if the episode is done."""
-        done_crash = state.xp + state.over
+        # done_crash = state.xp + state.over
+        done_crash = state.over
         done_steps = state.time >= self.max_steps_in_episode
         done = jnp.logical_or(done_crash, done_steps)
         return done
@@ -292,10 +302,10 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
 
         # Initialize canvases
         canvas = jnp.full(
-            (render_config["size"],) * 2 + (3,), render_config["clr"], dtype=jnp.uint8
+            (render_config["size"],) * 2 + (3,), render_config["clr"]
         )
         sub_canvas = jnp.full(
-            (sub_size, sub_size, 3), render_config["sub_clr"], dtype=jnp.uint8
+            (sub_size, sub_size, 3), render_config["sub_clr"]
         )
 
         action_x, action_y = board_size - 1, state.x
@@ -334,20 +344,24 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
 
             return canvas
 
-        # Partial rendering: only the action cell + the first row
+        # Partial rendering: only the action cell + the top few rows
         def _render_partial(sub_canvas):
             pos = action_x * board_size + action_y
             sub_canvas = render_cell(pos, sub_canvas)
 
-            first_row_indices = jnp.arange(board_size)
+            # Number of top rows to render (change this to 2 or 3 as needed)
+            num_top_rows = self.grid_size // 2
+            
+            # Generate indices for the top rows
+            top_rows_indices = jnp.arange(num_top_rows * board_size)
 
-            def render_first_row_cell(idx, canvas):
+            def render_top_rows_cell(idx, canvas):
                 return render_cell(idx, canvas)
 
             sub_canvas = jax.lax.fori_loop(
                 0,
-                board_size,
-                lambda i, c: render_first_row_cell(first_row_indices[i], c),
+                num_top_rows * board_size,
+                lambda i, c: render_top_rows_cell(top_rows_indices[i], c),
                 sub_canvas,
             )
             return sub_canvas
@@ -416,14 +430,14 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
 
 class SkittlesEasy(Skittles):
     def __init__(self, **kwargs):
-        super().__init__(max_steps_in_episode=200, grid_size=8, enemy_num=1, **kwargs)
+        super().__init__(max_steps_in_episode=300, grid_size=12, enemy_num=1, **kwargs)
 
 
 class SkittlesMedium(Skittles):
     def __init__(self, **kwargs):
-        super().__init__(max_steps_in_episode=400, grid_size=10, enemy_num=2, **kwargs)
+        super().__init__(max_steps_in_episode=300, grid_size=10, enemy_num=1, **kwargs)
 
 
 class SkittlesHard(Skittles):
     def __init__(self, **kwargs):
-        super().__init__(max_steps_in_episode=600, grid_size=12, enemy_num=2, **kwargs)
+        super().__init__(max_steps_in_episode=300, grid_size=8, enemy_num=1, **kwargs)

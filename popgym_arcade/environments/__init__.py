@@ -36,3 +36,13 @@ from popgym_arcade.environments.skittles import (
     SkittlesHard,
     SkittlesMedium,
 )
+from popgym_arcade.environments.breakout import (
+    BreakoutEasy,
+    BreakoutHard,
+    BreakoutMedium,
+)
+from popgym_arcade.environments.tetris import (
+    TetrisEasy,
+    TetrisHard,
+    TetrisMedium,
+)

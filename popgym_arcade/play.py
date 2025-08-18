@@ -41,7 +41,7 @@ def parse_args():
 
 def to_surf(arr):
     # Convert jax arry to pygame surface
-    return np.transpose(arr, (1, 0, 2))
+    return np.transpose(np.array(arr * 255, dtype=np.uint8), (1, 0, 2))
 
 
 def play(args):
