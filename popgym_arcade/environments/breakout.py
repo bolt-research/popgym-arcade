@@ -288,6 +288,12 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
         state, new_x, new_y = step_agent(state, a)
         state, reward = step_ball_brick(state, new_x, new_y, params, self.paddle_width)
 
+        # Add negative reward if game terminates due to ball hitting bottom
+        # (but not if all bricks are cleared, which is a win condition)
+        ball_hit_bottom = jnp.logical_and(state.terminal, jnp.count_nonzero(state.brick_map) > 0)
+        negative_reward = jax.lax.select(ball_hit_bottom, -0.1, 0.0)
+        reward = reward + negative_reward
+
         # Check game condition & no. steps for termination condition
         state = state.replace(time=state.time + 1)
         jax.debug.print("Step: {}, Reward: {}, Board: {}", state.time, reward, state.brick_map)
