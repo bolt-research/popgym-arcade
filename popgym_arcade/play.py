@@ -18,9 +18,6 @@ def parse_args():
         "env", help="The env you want to play, for example BattleShipEasy"
     )
     parser.add_argument(
-        "--partial", "-p", help="Play the POMDP variant, else MDP", action="store_true"
-    )
-    parser.add_argument(
         "--obs-size",
         "-o",
         help="Pixel size of observations, can be 128 or 256",
@@ -45,30 +42,42 @@ def to_surf(arr):
 
 
 def play(args):
-    # Create env env variant
-    env, env_params = popgym_arcade.make(
-        args.env, partial_obs=args.partial, obs_size=args.obs_size
+    # Create MDP env variant
+    env_mdp, env_params_mdp = popgym_arcade.make(
+        args.env, partial_obs=False, obs_size=args.obs_size
+    )
+    
+    # Create POMDP env variant
+    env_pomdp, env_params_pomdp = popgym_arcade.make(
+        args.env, partial_obs=True, obs_size=args.obs_size
     )
 
-    # Vectorize and compile the env
-    env_reset = jax.jit(env.reset)
-    env_step = jax.jit(env.step)
+    # Vectorize and compile the envs
+    env_reset_mdp = jax.jit(env_mdp.reset)
+    env_step_mdp = jax.jit(env_mdp.step)
+    env_reset_pomdp = jax.jit(env_pomdp.reset)
+    env_step_pomdp = jax.jit(env_pomdp.step)
 
-    # Initialize environment
+    # Initialize environments with same seed
     key = jax.random.PRNGKey(0)
     key, reset_key = jax.random.split(key)
-    observation, env_state = env_reset(reset_key, env_params)
-    done = False
+    observation_mdp, env_state_mdp = env_reset_mdp(reset_key, env_params_mdp)
+    observation_pomdp, env_state_pomdp = env_reset_pomdp(reset_key, env_params_pomdp)
+    done_mdp = False
+    done_pomdp = False
 
-    # Pygame setup
+    # Pygame setup - side by side display
     pygame.init()
-    screen = pygame.display.set_mode((args.obs_size, args.obs_size))
+    screen_width = args.obs_size * 2
+    screen_height = args.obs_size
+    screen = pygame.display.set_mode((screen_width, screen_height))
     clock = pygame.time.Clock()
     running = True
 
-    # Convert numpy array to Pygame surface
-    print(observation.dtype)
-    surface = pygame.surfarray.make_surface(to_surf(observation))
+    # Convert numpy arrays to Pygame surfaces
+    print(observation_mdp.dtype)
+    surface_mdp = pygame.surfarray.make_surface(to_surf(observation_mdp))
+    surface_pomdp = pygame.surfarray.make_surface(to_surf(observation_pomdp))
 
     # Action mappings (modify based on your environment's action space)
     ACTION_MEANINGS = {
@@ -80,6 +89,7 @@ def play(args):
         # Add more keys if needed
     }
     print("Controls: up, down, left, right, spacebar")
+    print("MDP (left) | POMDP (right)")
 
     while running:
         # Handle events
@@ -91,21 +101,31 @@ def play(args):
                 if event.key in ACTION_MEANINGS:
                     action = ACTION_MEANINGS[event.key]
 
-        # Render to screen
-        screen.blit(surface, (0, 0))
+        # Render both environments to screen
+        screen.blit(surface_mdp, (0, 0))  # Left side
+        screen.blit(surface_pomdp, (args.obs_size, 0))  # Right side
         pygame.display.flip()
 
         # Take action if key pressed
         if action is not None:
             key, step_key = jax.random.split(key)
-            observation, env_state, reward, done, info = env_step(
-                step_key, env_state, action, env_params
-            )
-            surface = pygame.surfarray.make_surface(to_surf(observation))
+            
+            # Step both environments with the same action and key
+            if not done_mdp:
+                observation_mdp, env_state_mdp, reward_mdp, done_mdp, info_mdp = env_step_mdp(
+                    step_key, env_state_mdp, action, env_params_mdp
+                )
+                surface_mdp = pygame.surfarray.make_surface(to_surf(observation_mdp))
+            
+            if not done_pomdp:
+                observation_pomdp, env_state_pomdp, reward_pomdp, done_pomdp, info_pomdp = env_step_pomdp(
+                    step_key, env_state_pomdp, action, env_params_pomdp
+                )
+                surface_pomdp = pygame.surfarray.make_surface(to_surf(observation_pomdp))
 
-            # Render to screen
-            if done:
-                print("Game over")
+            # Check if both games are done
+            if done_mdp and done_pomdp:
+                print("Both games over")
                 break
 
         clock.tick(30)  # Control FPS

@@ -35,7 +35,7 @@ class EnvState(environment.EnvState):
     terminal: bool  # Game over flag
     drop_timer: int  # Timer for automatic piece dropping
     lock_timer: int  # Timer for piece locking
-
+    just_locked: bool = False
 
 @dataclass(frozen=True)
 class EnvParams(environment.EnvParams):
@@ -489,40 +489,61 @@ class Tetris(environment.Environment[EnvState, EnvParams]):
         params: EnvParams,
     ) -> tuple[jax.Array, EnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
         """Perform single timestep state transition."""
-        # Step the current piece
-        state, should_lock = step_piece(state, action, params)
-        
-        reward = 0.0
-        
-        # Handle piece locking using JAX conditional
-        def lock_piece(state_and_key):
+        # Handle spawning new piece and clearing lines from previous frame
+        def spawn_and_clear(state_and_key):
             state, key = state_and_key
-            # Place piece on board
-            piece_shape = TETROMINOES[state.current_piece, state.current_rotation]
-            new_board = place_piece(state.board, piece_shape, state.current_x, state.current_y, state.current_piece)
-            
-            # Clear completed lines
-            new_board, lines_cleared = clear_lines(new_board)
+            # Clear completed lines now (after showing the piece for one frame)
+            new_board, lines_cleared = clear_lines(state.board)
             
             # Calculate reward based on lines cleared
             reward = lines_cleared.astype(jnp.float32) / params.max_steps_in_episode
             
-            # Update state with new board and spawn new piece
+            # Update state with cleared board
             state = state.replace(
                 board=new_board,
                 lines_cleared=state.lines_cleared + lines_cleared,
                 score=state.score + lines_cleared,
+                just_locked=False,
             )
             
             # Spawn new piece
-            state = spawn_new_piece(state, key, self.preview_num)
-            return state, reward
+            new_state = spawn_new_piece(state, key, self.preview_num)
+            return new_state, reward
         
-        def no_lock(state_and_key):
+        def no_spawn_clear(state_and_key):
             state, key = state_and_key
             return state, 0.0
         
         state, reward = jax.lax.cond(
+            state.just_locked,
+            spawn_and_clear,
+            no_spawn_clear,
+            (state, key)
+        )
+        jax.debug.print("Reward: {}", reward)
+        # Step the current piece
+        state, should_lock = step_piece(state, action, params)
+        
+        # Handle piece locking using JAX conditional
+        def lock_piece(state_and_key):
+            state, key = state_and_key
+            # Place piece on board (but don't clear lines yet - do that next frame)
+            piece_shape = TETROMINOES[state.current_piece, state.current_rotation]
+            new_board = place_piece(state.board, piece_shape, state.current_x, state.current_y, state.current_piece)
+            
+            # Update state with new board but set just_locked=True to clear lines next frame
+            state = state.replace(
+                board=new_board,
+                just_locked=True,
+            )
+            
+            return state
+        
+        def no_lock(state_and_key):
+            state, key = state_and_key
+            return state
+        
+        state = jax.lax.cond(
             should_lock,
             lock_piece,
             no_lock,
@@ -717,13 +738,13 @@ class Tetris(environment.Environment[EnvState, EnvParams]):
         lines_text_x = 1 * cell_size  # Position in left margin
         lines_text_y = 2 * cell_size  # Near the top
         
-        # Draw "LINES:" label
+
         small_canvas = draw_str(
-            (lines_text_x - 5, lines_text_y),
+            (lines_text_x + 1, lines_text_y),
             (lines_text_x + 3 * cell_size - 5, lines_text_y + cell_size),
             self.color["cyan"],
             small_canvas,
-            "LINES",
+            "LINE",
             horizontal=True,
         )
         
@@ -928,12 +949,12 @@ class Tetris(environment.Environment[EnvState, EnvParams]):
 
 class TetrisEasy(Tetris):
     def __init__(self, **kwargs):
-        super().__init__(max_steps_in_episode=8000, preview_num=3, **kwargs)
+        super().__init__(max_steps_in_episode=3000, preview_num=3, **kwargs)
 
 
 class TetrisMedium(Tetris):
     def __init__(self, **kwargs):
-        super().__init__(max_steps_in_episode=5000, preview_num=2, **kwargs)
+        super().__init__(max_steps_in_episode=3000, preview_num=2, **kwargs)
 
 
 class TetrisHard(Tetris):
