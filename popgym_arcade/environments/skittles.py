@@ -274,8 +274,7 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
 
     def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
         """Check if the episode is done."""
-        # done_crash = state.xp + state.over
-        done_crash = state.over
+        done_crash = state.xp + state.over
         done_steps = state.time >= self.max_steps_in_episode
         done = jnp.logical_or(done_crash, done_steps)
         return done
@@ -344,15 +343,12 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
 
             return canvas
 
-        # Partial rendering: only the action cell + the top few rows
         def _render_partial(sub_canvas):
             pos = action_x * board_size + action_y
             sub_canvas = render_cell(pos, sub_canvas)
 
-            # Number of top rows to render (change this to 2 or 3 as needed)
             num_top_rows = self.grid_size // 2
             
-            # Generate indices for the top rows
             top_rows_indices = jnp.arange(num_top_rows * board_size)
 
             def render_top_rows_cell(idx, canvas):
@@ -366,13 +362,11 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
             )
             return sub_canvas
 
-        # Full rendering: all cells
         def _render_full(sub_canvas):
             cell_indices = jnp.arange(board_size**2)
             updated = jax.vmap(render_cell, in_axes=(0, None))(cell_indices, sub_canvas)
             return jnp.max(updated, axis=0)
 
-        # Conditional rendering logic
         sub_canvas = lax.cond(
             state.time == 0,
             lambda: _render_full(sub_canvas),
@@ -389,12 +383,10 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
             action_tl, action_br, render_config["action_clr"], sub_canvas
         )
 
-        # Draw grid lines
         sub_canvas = draw_grid(
             square_size, grid_px, render_config["grid_clr"], sub_canvas
         )
 
-        # Draw score on canvas
         canvas = draw_number(
             render_config["sc_t_l"],
             render_config["sc_b_r"],
@@ -403,7 +395,6 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
             state.score,
         )
 
-        # Draw environment name
         canvas = draw_str(
             render_config["env_t_l"],
             render_config["env_b_r"],
@@ -412,7 +403,6 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
             self.name,
         )
 
-        # Merge sub-canvas onto main canvas
         return draw_sub_canvas(sub_canvas, canvas)
 
     @property

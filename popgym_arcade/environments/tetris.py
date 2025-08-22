@@ -5,7 +5,7 @@ Tetris
     POMDP: Hide upcoming pieces or part of the board
 """
 from typing import Any
-
+import functools
 import jax
 import jax.numpy as jnp
 from chex import dataclass
@@ -531,7 +531,6 @@ class Tetris(environment.Environment[EnvState, EnvParams]):
         
         # Update time
         state = state.replace(time=state.time + 1)
-        jax.debug.print("Step: {}, Reward: {}, Board: {}", state.time, reward, state.board)
         # Check termination
         done = self.is_terminal(state, params)
         state = state.replace(terminal=done)
@@ -578,53 +577,53 @@ class Tetris(environment.Environment[EnvState, EnvParams]):
 
     def get_obs(self, state: EnvState, params=None, key=None) -> jax.Array:
         """Return observation from raw state transformation."""
-        obs = jnp.zeros(self.obs_shape, dtype=jnp.float32)
+        # obs = jnp.zeros(self.obs_shape, dtype=jnp.float32)
         
-        # Channel 0: Board state
-        obs = obs.at[:, :, 0].set(state.board.astype(jnp.float32))
+        # # Channel 0: Board state
+        # obs = obs.at[:, :, 0].set(state.board.astype(jnp.float32))
         
-        # Channel 1: Current piece
-        current_piece_shape = TETROMINOES[state.current_piece, state.current_rotation]
+        # # Channel 1: Current piece
+        # current_piece_shape = TETROMINOES[state.current_piece, state.current_rotation]
         
-        # Place current piece on observation using JAX-compatible operations
-        # Create coordinate grids for the 4x4 piece
-        py_coords, px_coords = jnp.meshgrid(jnp.arange(4), jnp.arange(4), indexing='ij')
+        # # Place current piece on observation using JAX-compatible operations
+        # # Create coordinate grids for the 4x4 piece
+        # py_coords, px_coords = jnp.meshgrid(jnp.arange(4), jnp.arange(4), indexing='ij')
         
-        # Calculate board positions for each piece cell
-        board_y_coords = state.current_y + py_coords
-        board_x_coords = state.current_x + px_coords
+        # # Calculate board positions for each piece cell
+        # board_y_coords = state.current_y + py_coords
+        # board_x_coords = state.current_x + px_coords
         
-        # Check if each position is valid and has a piece block
-        valid_y = jnp.logical_and(board_y_coords >= 0, board_y_coords < 20)
-        valid_x = jnp.logical_and(board_x_coords >= 0, board_x_coords < 10)
-        valid_pos = jnp.logical_and(valid_y, valid_x)
-        has_block = current_piece_shape == 1
-        should_update = jnp.logical_and(valid_pos, has_block)
+        # # Check if each position is valid and has a piece block
+        # valid_y = jnp.logical_and(board_y_coords >= 0, board_y_coords < 20)
+        # valid_x = jnp.logical_and(board_x_coords >= 0, board_x_coords < 10)
+        # valid_pos = jnp.logical_and(valid_y, valid_x)
+        # has_block = current_piece_shape == 1
+        # should_update = jnp.logical_and(valid_pos, has_block)
         
-        # Clamp coordinates to valid ranges for safe indexing
-        safe_y = jnp.clip(board_y_coords, 0, 19)
-        safe_x = jnp.clip(board_x_coords, 0, 9)
+        # # Clamp coordinates to valid ranges for safe indexing
+        # safe_y = jnp.clip(board_y_coords, 0, 19)
+        # safe_x = jnp.clip(board_x_coords, 0, 9)
         
-        # Create update values - 1.0 where we should place piece, 0.0 elsewhere
-        updates = should_update.astype(jnp.float32)
+        # # Create update values - 1.0 where we should place piece, 0.0 elsewhere
+        # updates = should_update.astype(jnp.float32)
         
-        # Use a loop-free approach: create indices and use scatter_add
-        # Flatten the coordinates and updates
-        flat_y = safe_y.flatten()
-        flat_x = safe_x.flatten()
-        flat_updates = updates.flatten()
+        # # Use a loop-free approach: create indices and use scatter_add
+        # # Flatten the coordinates and updates
+        # flat_y = safe_y.flatten()
+        # flat_x = safe_x.flatten()
+        # flat_updates = updates.flatten()
         
-        # Create linear indices for the observation array
-        linear_indices = flat_y * 10 + flat_x
+        # # Create linear indices for the observation array
+        # linear_indices = flat_y * 10 + flat_x
         
-        # Create a flat view of the current piece channel
-        current_piece_channel = obs[:, :, 1].flatten()
+        # # Create a flat view of the current piece channel
+        # current_piece_channel = obs[:, :, 1].flatten()
         
-        # Use scatter_add to accumulate the updates (this handles overlaps correctly)
-        updated_channel = current_piece_channel.at[linear_indices].add(flat_updates)
+        # # Use scatter_add to accumulate the updates (this handles overlaps correctly)
+        # updated_channel = current_piece_channel.at[linear_indices].add(flat_updates)
         
-        # Reshape back and update the observation
-        obs = obs.at[:, :, 1].set(updated_channel.reshape(20, 10))
+        # # Reshape back and update the observation
+        # obs = obs.at[:, :, 1].set(updated_channel.reshape(20, 10))
         
         # Return rendered observation
         return self.render(state)
@@ -639,6 +638,7 @@ class Tetris(environment.Environment[EnvState, EnvParams]):
         """Environment name."""
         return "Tetris"
 
+    @functools.partial(jax.jit, static_argnums=(0,))
     def render(self, state: EnvState) -> jax.Array:
         """Render the current state."""
         canvas = jnp.zeros(
@@ -866,7 +866,6 @@ class Tetris(environment.Environment[EnvState, EnvParams]):
                 canvas
             )
         
-        piece_positions = [(py, px) for py in range(4) for px in range(4)]
         small_canvas = jax.lax.fori_loop(
             0, 16,
             lambda i, canvas: draw_piece_block(canvas, (i // 4, i % 4)),

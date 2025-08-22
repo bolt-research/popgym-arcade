@@ -4,6 +4,7 @@ Breakout
     Nonstationary: Random initial ball location or random block values (e.g.,1 vs 2 hit to break)
     POMDP: Hide blocks, paddle, or ball
 """
+import functools
 from typing import Any
 
 import jax
@@ -296,7 +297,6 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
 
         # Check game condition & no. steps for termination condition
         state = state.replace(time=state.time + 1)
-        jax.debug.print("Step: {}, Reward: {}, Board: {}", state.time, reward, state.brick_map)
         done = self.is_terminal(state, params)
         state = state.replace(terminal=done)
         info = {"discount": self.discount(state, params)}
@@ -330,15 +330,13 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
 
     def get_obs(self, state: EnvState, params=None, key=None) -> jax.Array:
         """Return observation from raw state trafo."""
-        obs = jnp.zeros(self.obs_shape, dtype=jnp.bool)
-        # Set the position of the player paddle, paddle, trail & brick map
-        obs = obs.at[19, state.pos, 0].set(True)
-        obs = obs.at[state.ball_y, state.ball_x, 1].set(True)
-        obs = obs.at[state.last_y, state.last_x, 2].set(True)
-        obs = obs.at[:, :, 3].set(state.brick_map.astype(jnp.bool))
-        
-        obs = self.render(state)
-        return obs.astype(jnp.float32)
+        # obs = jnp.zeros(self.obs_shape, dtype=jnp.bool)
+        # # Set the position of the player paddle, paddle, trail & brick map
+        # obs = obs.at[19, state.pos, 0].set(True)
+        # obs = obs.at[state.ball_y, state.ball_x, 1].set(True)
+        # obs = obs.at[state.last_y, state.last_x, 2].set(True)
+        # obs = obs.at[:, :, 3].set(state.brick_map.astype(jnp.bool))
+        return self.render(state)
 
     def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
         """Check whether state is terminal."""
@@ -351,21 +349,27 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
         """Environment name."""
         return "Breakout"
      
+    @functools.partial(jax.jit, static_argnums=(0,))
     def render(self, state: EnvState) -> jax.Array:
-        # canvas = jnp.full((self.size[self.obs_size]["canvas_size"], self.size[self.obs_size]["canvas_size"], 3),
-        #                    self.color["gray"])
+        # Initialize canvases
         canvas = jnp.zeros(
-                (self.size[self.obs_size]["canvas_size"], self.size[self.obs_size]["canvas_size"], 3)
-            ) + self.color["gray"]
-        small_canvas = jnp.full((self.size[self.obs_size]["small_canvas_size"], self.size[self.obs_size]["small_canvas_size"], 3),
-                                self.color["black"])
+            (self.size[self.obs_size]["canvas_size"], self.size[self.obs_size]["canvas_size"], 3)
+        ) + self.color["gray"]
+        
+        small_canvas = jnp.full(
+            (self.size[self.obs_size]["small_canvas_size"], self.size[self.obs_size]["small_canvas_size"], 3),
+            self.color["black"]
+        )
         
         # Calculate scaling factors for rendering the 20x20 game grid on the small canvas
         cell_size = self.size[self.obs_size]["small_canvas_size"] // 20
         
-        # render bricks using vectorized operations with different colors per row
-        y_coords, x_coords = jnp.meshgrid(jnp.arange(self.size[self.obs_size]["small_canvas_size"]), 
-                                          jnp.arange(self.size[self.obs_size]["small_canvas_size"]), indexing='ij')
+        # Vectorized brick rendering - much more efficient than loops
+        y_coords, x_coords = jnp.meshgrid(
+            jnp.arange(self.size[self.obs_size]["small_canvas_size"]), 
+            jnp.arange(self.size[self.obs_size]["small_canvas_size"]), 
+            indexing='ij'
+        )
         
         # Calculate which brick each pixel belongs to
         brick_y = y_coords // cell_size
@@ -375,79 +379,60 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
         brick_y = jnp.clip(brick_y, 0, 19)
         brick_x = jnp.clip(brick_x, 0, 19)
         
-        # Get brick values for each pixel
+        # Get brick values for each pixel and create mask
         brick_values = state.brick_map[brick_y, brick_x]
-        
-        # Create mask for where bricks should be drawn
         brick_mask = brick_values == 1
         
-        # Create color array based on row (brick_y)
+        # Pre-compute brick colors array for all rows
         brick_colors = jnp.array([
-            self.color["brick1"],
-            self.color["brick2"],
-            self.color["brick3"],
-            self.color["brick4"],
-            self.color["brick5"],
-            self.color["brick6"],
+            self.color["brick1"], self.color["brick2"], self.color["brick3"],
+            self.color["brick4"], self.color["brick5"], self.color["brick6"],
         ])
         
-        # Get color index for each pixel based on its brick row
-        # Subtract 1 because brick rows start at 1, but array indexing starts at 0
+        # Get color index for each pixel based on its brick row (rows 1-6 map to indices 0-5)
         color_indices = jnp.clip(brick_y - 1, 0, 5)
         pixel_colors = brick_colors[color_indices]
         
-        # Apply brick color where mask is true
+        # Apply brick colors where mask is true
         small_canvas = jnp.where(brick_mask[:, :, None], pixel_colors, small_canvas)
 
-        # render paddle (paddle is at row 19, position state.pos with paddle_width)
-        paddle_y = 19 * cell_size
+        # Efficient paddle rendering using vectorized rectangle drawing
+        paddle_y_start = 19 * cell_size
+        paddle_y_end = 20 * cell_size
         paddle_x_start = state.pos * cell_size
-        paddle_x_end = jnp.minimum((state.pos + self.paddle_width) * cell_size, self.size[self.obs_size]["small_canvas_size"])
+        paddle_x_end = jnp.minimum((state.pos + self.paddle_width) * cell_size, 
+                                  self.size[self.obs_size]["small_canvas_size"])
         
-        small_canvas = draw_rectangle(
-            (paddle_x_start, paddle_y),
-            (paddle_x_end, (19 + 1) * cell_size),
-            self.color["ball_and_paddle"],
-            small_canvas
+        # Create paddle mask
+        paddle_mask = jnp.logical_and(
+            jnp.logical_and(y_coords >= paddle_y_start, y_coords < paddle_y_end),
+            jnp.logical_and(x_coords >= paddle_x_start, x_coords < paddle_x_end)
         )
+        
+        # Apply paddle color
+        small_canvas = jnp.where(paddle_mask[:, :, None], 
+                                self.color["ball_and_paddle"], small_canvas)
 
-        # render ball trail (last position)
-        ball_radius = cell_size // 3
-        trail_top_left = (state.last_x * cell_size, state.last_y * cell_size)
-        trail_bottom_right = ((state.last_x + 1) * cell_size, (state.last_y + 1) * cell_size)
-        # small_canvas = draw_circle(
-        #     trail_top_left,
-        #     trail_bottom_right,
-        #     ball_radius,
-        #     self.color["ball_and_paddle"],
-        #     small_canvas
-        # )
-
-        # render ball (current position)
+        # Efficient ball rendering using vectorized circle
         ball_center_x = state.ball_x * cell_size + cell_size // 2
         ball_center_y = state.ball_y * cell_size + cell_size // 2
+        ball_radius = cell_size // 3
         
-        
-        ball_top_left = (ball_center_x - ball_radius, ball_center_y - ball_radius)
-        ball_bottom_right = (ball_center_x + ball_radius, ball_center_y + ball_radius)
+        # Create ball mask using distance calculation
+        ball_dist = jnp.sqrt((x_coords - ball_center_x) ** 2 + 
+                           (y_coords - ball_center_y) ** 2)
+        ball_mask = ball_dist <= ball_radius
         
         # POMDP: Hide ball when it's falling down (direction 2 or 3)
         ball_falling_down = jnp.logical_or(state.ball_dir == 2, state.ball_dir == 3)
         should_hide_ball = jnp.logical_and(self.partial_obs, ball_falling_down)
         
-        small_canvas = jax.lax.cond(
-            should_hide_ball,
-            lambda canvas: canvas,  # Don't draw ball if hidden
-            lambda canvas: draw_circle(
-                ball_top_left,
-                ball_bottom_right,
-                ball_radius,
-                self.color["ball_and_paddle"],
-                canvas
-            ),
-            small_canvas
-        )
+        # Apply ball color conditionally
+        ball_mask = jnp.logical_and(ball_mask, jnp.logical_not(should_hide_ball))
+        small_canvas = jnp.where(ball_mask[:, :, None], 
+                                self.color["ball_and_paddle"], small_canvas)
 
+        # Draw score and name (these are less performance critical)
         canvas = draw_number(
             self.size[self.obs_size]["score"]["top_left"],
             self.size[self.obs_size]["score"]["bottom_right"],
@@ -462,10 +447,9 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
             self.color["yellow"],
             canvas,
             self.name,
-            # jnp.full((1, 8), 72, dtype=jnp.uint8),
-            # state.score,
         )
-        # return canvas
+        
+        # Combine canvases
         return draw_sub_canvas(small_canvas, canvas)
 
 
