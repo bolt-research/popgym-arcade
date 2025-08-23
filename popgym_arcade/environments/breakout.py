@@ -110,9 +110,12 @@ def step_ball_brick(
         1 - border_cond1_y, state.brick_map[new_y, new_x] == 1
     )
     strike_bool = jnp.logical_and((1 - state.strike), strike_toggle)
-    # Total bricks: 6 rows * 20 columns = 120 bricks
-    # Each brick gives 1/120 reward so clearing all gives total reward of 1
-    reward += strike_bool * (1.0 / 120.0)
+    # Variable reward system: harder-to-reach bricks give more reward
+    # Rows 1-6 have bricks, with row 1 being hardest (top) and row 6 being easiest (bottom)
+    # Total reward = 1.0 when all bricks cleared (6 rows * 20 columns * average reward)
+    row_rewards = jnp.linspace(0.015, 0.005, 6)  # from hard (top) to easy (bottom)
+    row_index = jnp.clip(new_y - 1, 0, 5)  # rows 1-6 map to indices 0-5
+    reward += strike_bool * row_rewards[row_index]
     # next line wasn't used anywhere
     # strike = jax.lax.select(strike_toggle, strike_bool, False)
 
@@ -182,8 +185,9 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
 
     ENVIRONMENT DESCRIPTION - 'Breakout-MinAtar'
     - Player controls paddle on bottom of screen.
-    - Must bounce ball to break 3 rows if bricks along top of screen.
-    - Each brick gives 1/120 reward (total reward = 1 when all bricks cleared).
+    - Must bounce ball to break 6 rows of bricks along top of screen.
+    - Variable reward system: top bricks (harder to reach) give more reward than bottom bricks.
+    - Total reward = +1.0 when all bricks cleared, death penalty = -(fraction of bricks left).
     - Game terminates when all bricks are cleared or ball hits bottom.
     - Ball travels only along diagonals, when paddle/wall hit it bounces off
     - Termination if ball hits bottom of screen.
@@ -290,11 +294,14 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
         state, reward = step_ball_brick(state, new_x, new_y, params, self.paddle_width)
 
         # Add negative reward if game terminates due to ball hitting bottom
-        # (but not if all bricks are cleared, which is a win condition)
+        # Penalty is proportional to fraction of bricks remaining
+        # This ensures total reward stays in [-1, 1] range
         ball_hit_bottom = jnp.logical_and(state.terminal, jnp.count_nonzero(state.brick_map) > 0)
-        negative_reward = jax.lax.select(ball_hit_bottom, -0.1, 0.0)
+        negative_reward = jax.lax.select(ball_hit_bottom, 
+                                        -jnp.count_nonzero(state.brick_map) / 120.0, 
+                                        0.0)
         reward = reward + negative_reward
-
+        jax.debug.print("Reward: {}", reward)
         # Check game condition & no. steps for termination condition
         state = state.replace(time=state.time + 1)
         done = self.is_terminal(state, params)
@@ -486,7 +493,7 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
 
 class BreakoutEasy(Breakout):
     def __init__(self, **kwargs):
-        super().__init__(max_steps_in_episode=4000, paddle_width=4, **kwargs)
+        super().__init__(max_steps_in_episode=6000, paddle_width=4, **kwargs)
 
 
 class BreakoutMedium(Breakout):
@@ -496,4 +503,4 @@ class BreakoutMedium(Breakout):
 
 class BreakoutHard(Breakout):
     def __init__(self, **kwargs):
-        super().__init__(max_steps_in_episode=4000, paddle_width=2, **kwargs)
+        super().__init__(max_steps_in_episode=3000, paddle_width=2, **kwargs)

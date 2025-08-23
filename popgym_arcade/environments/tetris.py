@@ -36,12 +36,15 @@ class EnvState(environment.EnvState):
     drop_timer: int  # Timer for automatic piece dropping
     lock_timer: int  # Timer for piece locking
     just_locked: bool = False
+    frames_since_spawn: int = 0  # Track frames since new piece spawned
 
 @dataclass(frozen=True)
 class EnvParams(environment.EnvParams):
     max_steps_in_episode: int = 5000
     drop_interval: int = 30  # Steps between automatic drops
     lock_delay: int = 30  # Steps before piece locks
+    auto_drop_speed: int = 1  # Number of cells to drop automatically per step
+    soft_drop_speed: int = 2  # Number of cells to drop when soft dropping
 
 
 # Tetromino definitions: 7 pieces, 4 rotations each
@@ -281,55 +284,96 @@ def step_piece(
     """Step the current piece based on action."""
     current_piece_shape = TETROMINOES[state.current_piece, state.current_rotation]
     
+    # Check if we should use enhanced soft drop on second frame or later AND action is down (1)
+    should_double_soft_drop = jnp.logical_and(
+        state.frames_since_spawn >= 1,
+        action == 1
+    )
+
     # Handle different actions
     new_x = state.current_x
     new_y = state.current_y
     new_rotation = state.current_rotation
-    
+
     # Action 0 (up): Rotate piece 90° clockwise
     new_rotation = jax.lax.select(action == 0, (state.current_rotation + 1) % 4, new_rotation)
-    # Action 1 (down): Soft drop (move piece down)  
-    new_y = jax.lax.select(action == 1, state.current_y + 1, new_y)
+    # Action 1 (down): Soft drop (move piece down) OR enhanced soft drop if second frame or later
+    # For enhanced soft drop, try soft_drop_speed cells first, then fallback to 1 cell if collision
+    def handle_down_action():
+        # Try moving soft_drop_speed cells down
+        try_max_cells = state.current_y + params.soft_drop_speed
+        # Try moving 1 cell down
+        try_1_cell = state.current_y + 1
+        
+        # Check if soft_drop_speed cells is valid
+        can_move_max = jnp.logical_not(check_collision(
+            state.board, 
+            TETROMINOES[state.current_piece, state.current_rotation], 
+            state.current_x, 
+            try_max_cells
+        ))
+        
+        # If can move soft_drop_speed cells, use that; otherwise try 1 cell
+        return jax.lax.select(can_move_max, try_max_cells, try_1_cell)
+    
+    new_y = jax.lax.select(
+        should_double_soft_drop,
+        handle_down_action(),
+        jax.lax.select(action == 1, state.current_y + 1, new_y)
+    )
     # Action 2 (left): Move piece left
     new_x = jax.lax.select(action == 2, state.current_x - 1, new_x)
     # Action 3 (right): Move piece right  
     new_x = jax.lax.select(action == 3, state.current_x + 1, new_x)
     # Action 4 (noop): Do nothing - handled by default values above
-    
+
     # Get new piece shape after potential rotation
     new_piece_shape = TETROMINOES[state.current_piece, new_rotation]
-    
+
     # Check if move is valid
     move_valid = jnp.logical_not(check_collision(state.board, new_piece_shape, new_x, new_y))
-    
+
     # Apply move only if valid
     final_x = jax.lax.select(move_valid, new_x, state.current_x)
     final_y = jax.lax.select(move_valid, new_y, state.current_y)
     final_rotation = jax.lax.select(move_valid, new_rotation, state.current_rotation)
+
+    # Automatic falling: piece falls down based on auto_drop_speed
+    def try_auto_drop(current_y, drop_amount):
+        """Try to drop piece by drop_amount, fallback to 1 cell if blocked."""
+        target_y = current_y + drop_amount
+        can_drop_full = jnp.logical_not(check_collision(
+            state.board, 
+            TETROMINOES[state.current_piece, final_rotation], 
+            final_x, 
+            target_y
+        ))
+        # If can't drop full amount, try 1 cell
+        fallback_y = current_y + 1
+        return jax.lax.select(can_drop_full, target_y, fallback_y)
     
-    # Automatic falling: piece falls down one grid each timestep
-    auto_drop_y = final_y + 1
+    auto_drop_y = try_auto_drop(final_y, params.auto_drop_speed)
     auto_drop_valid = jnp.logical_not(check_collision(
         state.board, 
         TETROMINOES[state.current_piece, final_rotation], 
         final_x, 
         auto_drop_y
     ))
-    
+
     # Apply automatic drop if valid (unless player already moved down with action 1)
-    already_moved_down = action == 1
+    already_moved_down = jnp.logical_or(action == 1, should_double_soft_drop)
     final_y = jax.lax.select(
         jnp.logical_and(auto_drop_valid, jnp.logical_not(already_moved_down)),
         auto_drop_y,
         final_y
     )
-    
+
     # Check if piece should lock (can't move down anymore)
     piece_shape = TETROMINOES[state.current_piece, final_rotation]
     can_drop_further = jnp.logical_not(check_collision(state.board, piece_shape, final_x, final_y + 1))
-    
+
     should_lock = jnp.logical_not(can_drop_further)
-    
+
     return (
         state.replace(
             current_x=final_x,
@@ -398,6 +442,7 @@ def spawn_new_piece(state: EnvState, key: jax.Array, preview_num: int = 1) -> En
         lock_timer=0,
         drop_timer=0,
         terminal=game_over,
+        frames_since_spawn=0,  # Reset frame counter when spawning new piece
     )
 
 
@@ -466,7 +511,7 @@ class Tetris(environment.Environment[EnvState, EnvParams]):
         },
     }
 
-    def __init__(self, obs_size: int = 128, partial_obs=False, max_steps_in_episode=5000, preview_num=1):
+    def __init__(self, obs_size: int = 128, partial_obs=False, max_steps_in_episode=5000, preview_num=1, auto_drop_speed=1, soft_drop_speed=2):
         super().__init__()
         self.obs_shape = (20, 10, 2)  # board + current piece
         # Action set: [rotate (up), soft drop (down), left, right, noop]
@@ -475,11 +520,17 @@ class Tetris(environment.Environment[EnvState, EnvParams]):
         self.obs_size = obs_size
         self.partial_obs = partial_obs
         self.preview_num = preview_num
+        self.auto_drop_speed = auto_drop_speed
+        self.soft_drop_speed = soft_drop_speed
 
     @property
     def default_params(self) -> EnvParams:
         """Default environment parameters."""
-        return EnvParams(max_steps_in_episode=self.max_steps_in_episode)
+        return EnvParams(
+            max_steps_in_episode=self.max_steps_in_episode,
+            auto_drop_speed=self.auto_drop_speed,
+            soft_drop_speed=self.soft_drop_speed
+        )
 
     def step_env(
         self,
@@ -496,8 +547,10 @@ class Tetris(environment.Environment[EnvState, EnvParams]):
             new_board, lines_cleared = clear_lines(state.board)
             
             # Calculate reward based on lines cleared
-            reward = lines_cleared.astype(jnp.float32) / params.max_steps_in_episode
-            
+            # reward = lines_cleared.astype(jnp.float32) / params.max_steps_in_episode
+            max_lines = params.max_steps_in_episode // 2
+            reward =  (lines_cleared ** 2) / max_lines
+            reward -= 0.0001
             # Update state with cleared board
             state = state.replace(
                 board=new_board,
@@ -523,6 +576,11 @@ class Tetris(environment.Environment[EnvState, EnvParams]):
         jax.debug.print("Reward: {}", reward)
         # Step the current piece
         state, should_lock = step_piece(state, action, params)
+        
+        # Increment frames since spawn (but don't go beyond a reasonable limit)
+        state = state.replace(
+            frames_since_spawn=jnp.minimum(state.frames_since_spawn + 1, 10)
+        )
         
         # Handle piece locking using JAX conditional
         def lock_piece(state_and_key):
@@ -555,7 +613,7 @@ class Tetris(environment.Environment[EnvState, EnvParams]):
         # Check termination
         done = self.is_terminal(state, params)
         state = state.replace(terminal=done)
-        
+        reward = jax.lax.select(done, reward - 0.1, reward)
         info = {"discount": self.discount(state, params)}
         return (
             jax.lax.stop_gradient(self.get_obs(state)),
@@ -593,6 +651,7 @@ class Tetris(environment.Environment[EnvState, EnvParams]):
             terminal=False,
             drop_timer=0,
             lock_timer=0,
+            frames_since_spawn=0,  # Initialize frame counter
         )
         return self.get_obs(state), state
 
@@ -703,27 +762,43 @@ class Tetris(environment.Environment[EnvState, EnvParams]):
         piece_types = jnp.clip(board_values - 1, 0, 6)
         board_colors = self.piece_colors[piece_types]
         
-        # Draw board pieces with their original colors and borders (only if not partial_obs)
-        small_canvas = jnp.where(show_board_pieces[:, :, None], board_colors, small_canvas)
+        # Check for completed lines
+        line_complete = jnp.all(state.board > 0, axis=1)  # Check which lines are complete
+        
+        # Draw board pieces with their original colors (only if not partial_obs)
+        draw_normal_pieces = jnp.logical_and(show_board_pieces, jnp.logical_not(self.partial_obs))
+        small_canvas = jnp.where(draw_normal_pieces[:, :, None], board_colors, small_canvas)
         
         # Draw borders for board pieces to show individual squares (only if not partial_obs)
         # Create masks for borders
         cell_y_in_cell = y_coords % cell_size
         cell_x_in_cell = x_coords % cell_size
         
-        # Border masks (1 pixel borders)
-        top_border = jnp.logical_and(show_board_pieces, cell_y_in_cell == 0)
-        bottom_border = jnp.logical_and(show_board_pieces, cell_y_in_cell == cell_size - 1)
-        left_border = jnp.logical_and(show_board_pieces, cell_x_in_cell == 0)
-        right_border = jnp.logical_and(show_board_pieces, cell_x_in_cell == cell_size - 1)
+        # Border masks (1 pixel borders) - apply to all visible pieces
+        all_visible_pieces = jnp.logical_and(show_board_pieces, jnp.logical_not(self.partial_obs))
+        top_border = jnp.logical_and(all_visible_pieces, cell_y_in_cell == 0)
+        bottom_border = jnp.logical_and(all_visible_pieces, cell_y_in_cell == cell_size - 1)
+        left_border = jnp.logical_and(all_visible_pieces, cell_x_in_cell == 0)
+        right_border = jnp.logical_and(all_visible_pieces, cell_x_in_cell == cell_size - 1)
         
-        # Apply borders
+        # Apply white borders for normal pieces
         border_mask = jnp.logical_or(
             jnp.logical_or(top_border, bottom_border),
             jnp.logical_or(left_border, right_border)
         )
-        
         small_canvas = jnp.where(border_mask[:, :, None], self.color["white"], small_canvas)
+        
+        # Draw white squares on walls for completed lines (line clearing indicators)
+        # Create mask for completed lines positions on walls
+        board_y_in_bounds = jnp.logical_and(board_y >= 0, board_y < 20)
+        line_to_indicate = jnp.logical_and(board_y_in_bounds, line_complete[board_y])
+        
+        # Left wall indicator (at x = 5 * cell_size - 2 to 5 * cell_size - 1)
+        # left_wall_indicator_mask = jnp.logical_and(
+        #     jnp.logical_and(x_coords >= 5 * cell_size - 2, x_coords < 15 * cell_size + 2),
+        #     line_to_indicate
+        # )
+        # small_canvas = jnp.where(left_wall_indicator_mask[:, :, None], self.color["white"], small_canvas)
         
         # Draw visual walls/boundaries
         # Left wall (at x = 5 * cell_size)
@@ -908,7 +983,12 @@ class Tetris(environment.Environment[EnvState, EnvParams]):
             canvas,
             self.name,
         )
-
+        left_wall_indicator_mask = jnp.logical_and(
+            jnp.logical_and(x_coords >= 5 * cell_size - 2, x_coords < 15 * cell_size + 2),
+            line_to_indicate
+        )
+        small_canvas = jnp.where(left_wall_indicator_mask[:, :, None], self.color["white"], small_canvas)
+        
         canvas = draw_sub_canvas(small_canvas, canvas)
         return canvas
 
@@ -943,20 +1023,39 @@ class Tetris(environment.Environment[EnvState, EnvParams]):
                 "terminal": spaces.Discrete(2),
                 "drop_timer": spaces.Discrete(params.drop_interval + 1),
                 "lock_timer": spaces.Discrete(params.lock_delay + 1),
+                "frames_since_spawn": spaces.Discrete(11),  # 0-10 frames
             }
         )
 
 
 class TetrisEasy(Tetris):
     def __init__(self, **kwargs):
-        super().__init__(max_steps_in_episode=3000, preview_num=3, **kwargs)
+        super().__init__(
+            max_steps_in_episode=3000, 
+            preview_num=3, 
+            auto_drop_speed=1,
+            soft_drop_speed=2,
+            **kwargs
+        )
 
 
 class TetrisMedium(Tetris):
     def __init__(self, **kwargs):
-        super().__init__(max_steps_in_episode=3000, preview_num=2, **kwargs)
+        super().__init__(
+            max_steps_in_episode=3000, 
+            preview_num=2, 
+            auto_drop_speed=1,
+            soft_drop_speed=2,
+            **kwargs
+        )
 
 
 class TetrisHard(Tetris):
     def __init__(self, **kwargs):
-        super().__init__(max_steps_in_episode=3000, preview_num=1, **kwargs)
+        super().__init__(
+            max_steps_in_episode=3000, 
+            preview_num=1, 
+            auto_drop_speed=2,
+            soft_drop_speed=3,
+            **kwargs
+        )

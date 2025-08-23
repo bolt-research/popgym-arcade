@@ -174,6 +174,7 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
             obs_size: int = 128,
             partial_obs = False,
             enemy_num: int = 2,
+            p: float = 0.5,
             ):
         super().__init__()
         self.obs_size = obs_size
@@ -182,6 +183,7 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
         self.grid_size = grid_size
         self.partial_obs = partial_obs
         self.enemy_num = enemy_num
+        self.p = p
 
 
     @property
@@ -282,6 +284,7 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
     @functools.partial(jax.jit, static_argnums=(0,))
     def render(self, state: EnvState) -> chex.Array:
         """Render the current state of the environment."""
+        rng = jax.random.PRNGKey(state.time)
         render_config = self.render_mode[self.obs_size]
         board_size = self.grid_size
 
@@ -343,21 +346,29 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
 
             return canvas
 
-        def _render_partial(sub_canvas):
+        def _render_partial(sub_canvas, rng):
             pos = action_x * board_size + action_y
             sub_canvas = render_cell(pos, sub_canvas)
 
-            num_top_rows = self.grid_size // 2
-            
-            top_rows_indices = jnp.arange(num_top_rows * board_size)
+            cell_indices = jnp.arange(board_size * board_size)
 
-            def render_top_rows_cell(idx, canvas):
-                return render_cell(idx, canvas)
+            rng, rng_mask = jax.random.split(rng, 2)
+            mask = jax.random.bernoulli(rng_mask, p=self.p, shape=(board_size * board_size,))
+
+            # agent always True
+            mask = mask.at[pos].set(True)
+
+            def render_masked(idx, canvas):
+                return lax.cond(
+                    mask[idx],
+                    lambda: render_cell(cell_indices[idx], canvas),
+                    lambda: canvas,
+                )
 
             sub_canvas = jax.lax.fori_loop(
                 0,
-                num_top_rows * board_size,
-                lambda i, c: render_top_rows_cell(top_rows_indices[i], c),
+                board_size * board_size,
+                lambda i, c: render_masked(i, c),
                 sub_canvas,
             )
             return sub_canvas
@@ -372,7 +383,7 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
             lambda: _render_full(sub_canvas),
             lambda: lax.cond(
                 self.partial_obs,
-                lambda: _render_partial(sub_canvas),
+                lambda: _render_partial(sub_canvas, rng),
                 lambda: _render_full(sub_canvas),
             ),
         )
@@ -420,14 +431,14 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
 
 class SkittlesEasy(Skittles):
     def __init__(self, **kwargs):
-        super().__init__(max_steps_in_episode=300, grid_size=12, enemy_num=1, **kwargs)
+        super().__init__(max_steps_in_episode=300, grid_size=12, p=0.7, enemy_num=1, **kwargs)
 
 
 class SkittlesMedium(Skittles):
     def __init__(self, **kwargs):
-        super().__init__(max_steps_in_episode=300, grid_size=10, enemy_num=1, **kwargs)
+        super().__init__(max_steps_in_episode=300, grid_size=10, p=0.5, enemy_num=1, **kwargs)
 
 
 class SkittlesHard(Skittles):
     def __init__(self, **kwargs):
-        super().__init__(max_steps_in_episode=300, grid_size=8, enemy_num=1, **kwargs)
+        super().__init__(max_steps_in_episode=300, grid_size=8, p=0.3, enemy_num=1, **kwargs)
