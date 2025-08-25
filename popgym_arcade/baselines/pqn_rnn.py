@@ -417,9 +417,9 @@ def make_train(config):
 
             # jax.debug.print("Metrics: {}", metrics)
             # write info to file
-            with open("metrics.txt", "a") as f:
-                f.write(f"churn_ratio: {churn_ratio}\n")
-            jax.debug.print("churn_ratio: {}", churn_ratio)
+            # with open("metrics.txt", "a") as f:
+            #     f.write(f"churn_ratio: {churn_ratio}\n")
+            # jax.debug.print("churn_ratio: {}", churn_ratio)
             # action: (128+4, 16)
 
             # print(f"memory_transitions.shape: {memory_transitions}")
@@ -650,7 +650,7 @@ def evaluate(model, config):
 
     # Initialize frames array
     frame_shape = obs[0].shape
-    frames = jnp.zeros((500, *frame_shape), dtype=jnp.uint8)
+    frames = jnp.zeros((1000, *frame_shape), dtype=jnp.uint8)
 
     carry = (hs, obs, init_done, init_action, state, frames, _rng)
     wandb.init(project=f'{config["PROJECT"]}')
@@ -677,9 +677,9 @@ def evaluate(model, config):
         carry, _ = evaluate_step(carry, i)
         return carry
 
-    carry = lax.fori_loop(0, 500, body_fun, carry)
+    carry = lax.fori_loop(0, 1000, body_fun, carry)
     _, _, _, _, _, frames, _rng = carry
-    frames = np.array(frames, dtype=np.uint8)
+    frames = np.array(frames * 255, dtype=np.uint8)
     frames = frames.transpose((0, 3, 1, 2))
     # imageio.mimsave('{}_{}_{}_Partial={}_SEED={}.gif'.format(config["TRAIN_TYPE"], config["MEMORY_TYPE"], config["ENV_NAME"], config["PARTIAL"], config["SEED"]), frames)
     wandb.log(

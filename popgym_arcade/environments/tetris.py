@@ -573,7 +573,7 @@ class Tetris(environment.Environment[EnvState, EnvParams]):
             no_spawn_clear,
             (state, key)
         )
-        jax.debug.print("Reward: {}", reward)
+        # jax.debug.print("Reward: {}", reward)
         # Step the current piece
         state, should_lock = step_piece(state, action, params)
         

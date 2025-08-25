@@ -226,6 +226,7 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
         # "gray": jnp.array([128/255.0, 128/255.0, 128/255.0], dtype=jnp.float32),
         "gray": jnp.array([119, 122, 127], dtype=jnp.float32) / 255.0,
         "ball_and_paddle": jnp.array([200/255.0, 72/255.0, 72/255.0], dtype=jnp.float32),
+        "ball_trail": jnp.array([150/255.0, 50/255.0, 50/255.0], dtype=jnp.float32),  # Dimmer version for trail
         "brick1": jnp.array([200, 72, 72], dtype=jnp.float32) / 255.0,
         "brick2": jnp.array([198, 108, 58], dtype=jnp.float32) / 255.0,
         "brick3": jnp.array([180, 122, 48], dtype=jnp.float32) / 255.0,
@@ -301,7 +302,7 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
                                         -jnp.count_nonzero(state.brick_map) / 120.0, 
                                         0.0)
         reward = reward + negative_reward
-        jax.debug.print("Reward: {}", reward)
+        # jax.debug.print("Reward: {}", reward)
         # Check game condition & no. steps for termination condition
         state = state.replace(time=state.time + 1)
         done = self.is_terminal(state, params)
@@ -438,6 +439,24 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
         ball_mask = jnp.logical_and(ball_mask, jnp.logical_not(should_hide_ball))
         small_canvas = jnp.where(ball_mask[:, :, None], 
                                 self.color["ball_and_paddle"], small_canvas)
+
+        # Draw ball trail/track to show velocity direction
+        # Only show trail in MDP mode (not in POMDP mode)
+        # In POMDP, agent should learn to infer velocity from previous observations
+        should_show_trail = jnp.logical_not(self.partial_obs)
+        
+        # Draw trail at the ball's previous position
+        trail_center_x = state.last_x * cell_size + cell_size // 2
+        trail_center_y = state.last_y * cell_size + cell_size // 2
+        trail_radius = cell_size // 4  # Smaller than ball
+        
+        # Create trail mask using distance calculation
+        trail_dist = jnp.sqrt((x_coords - trail_center_x) ** 2 + 
+                             (y_coords - trail_center_y) ** 2)
+        trail_mask = jnp.logical_and(trail_dist <= trail_radius, should_show_trail)
+        
+        # Use dedicated trail color
+        small_canvas = jnp.where(trail_mask[:, :, None], self.color["ball_trail"], small_canvas)
 
         # Draw score and name (these are less performance critical)
         canvas = draw_number(

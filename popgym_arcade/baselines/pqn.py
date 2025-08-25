@@ -428,7 +428,7 @@ def evaluate(model, config):
 
     wandb.init(project=f'{config["PROJECT"]}')
     frames = []
-    for i in range(500):
+    for i in range(1000):
         rng, rng_act, rng_step, _rng = jax.random.split(_rng, 4)
         q_val = model(obs)
         action = jnp.argmax(q_val, axis=-1)
@@ -436,7 +436,7 @@ def evaluate(model, config):
         state = new_state
         frame = np.asarray(obs[0])
         frames.append(frame)
-    frames = np.array(frames, dtype=np.uint8)
+    frames = np.array(frames * 255, dtype=np.uint8)
     frames = frames.transpose((0, 3, 1, 2))
     wandb.log(
         {
