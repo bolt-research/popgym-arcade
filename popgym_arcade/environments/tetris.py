@@ -548,9 +548,9 @@ class Tetris(environment.Environment[EnvState, EnvParams]):
             
             # Calculate reward based on lines cleared
             # reward = lines_cleared.astype(jnp.float32) / params.max_steps_in_episode
-            max_lines = params.max_steps_in_episode // 2
+            max_lines = params.max_steps_in_episode // 15
             reward =  (lines_cleared ** 2) / max_lines
-            reward -= 0.0001
+            # reward -= 0.0001
             # Update state with cleared board
             state = state.replace(
                 board=new_board,
@@ -613,7 +613,7 @@ class Tetris(environment.Environment[EnvState, EnvParams]):
         # Check termination
         done = self.is_terminal(state, params)
         state = state.replace(terminal=done)
-        reward = jax.lax.select(done, reward - 0.1, reward)
+        reward = jax.lax.select(done, reward - 1.0, reward)
         info = {"discount": self.discount(state, params)}
         return (
             jax.lax.stop_gradient(self.get_obs(state)),
