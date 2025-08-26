@@ -1,0 +1,19 @@
+Traceback (most recent call last):
+  File "F:\Desktop\ML\popgym-arcade\popgym_arcade\train.py", line 399, in <module>
+    main()
+  File "F:\Desktop\ML\popgym-arcade\popgym_arcade\train.py", line 395, in main
+    pqn_rnn_run(args_dict)
+  File "f:\desktop\ml\popgym-arcade\popgym_arcade\baselines\pqn_rnn.py", line 821, in pqn_rnn_run
+    single_run(config)
+  File "f:\desktop\ml\popgym-arcade\popgym_arcade\baselines\pqn_rnn.py", line 751, in single_run
+    model = eqx.tree_deserialise_leaves(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "F:\Anaconda\envs\JaxEnv\Lib\site-packages\equinox\_serialisation.py", line 319, in tree_deserialise_leaves
+    with _maybe_open(path_or_file, "rb") as f:
+  File "F:\Anaconda\envs\JaxEnv\Lib\contextlib.py", line 137, in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+  File "F:\Anaconda\envs\JaxEnv\Lib\site-packages\equinox\_serialisation.py", line 156, in _maybe_open
+    file = open(_with_suffix(path_or_file), mode)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'PQN_RNN_lru_SkittlesEasy_model_Partial=False_SEED=0.pkl'

@@ -394,9 +394,9 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
             action_tl, action_br, render_config["action_clr"], sub_canvas
         )
 
-        sub_canvas = draw_grid(
-            square_size, grid_px, render_config["grid_clr"], sub_canvas
-        )
+        # sub_canvas = draw_grid(
+        #     square_size, grid_px, render_config["grid_clr"], sub_canvas
+        # )
 
         canvas = draw_number(
             render_config["sc_t_l"],
@@ -431,14 +431,14 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
 
 class SkittlesEasy(Skittles):
     def __init__(self, **kwargs):
-        super().__init__(max_steps_in_episode=300, grid_size=12, p=0.7, enemy_num=1, **kwargs)
+        super().__init__(max_steps_in_episode=300, grid_size=10, p=0.5, enemy_num=1, **kwargs)
 
 
 class SkittlesMedium(Skittles):
     def __init__(self, **kwargs):
-        super().__init__(max_steps_in_episode=300, grid_size=10, p=0.5, enemy_num=1, **kwargs)
+        super().__init__(max_steps_in_episode=300, grid_size=8, p=0.5, enemy_num=1, **kwargs)
 
 
 class SkittlesHard(Skittles):
     def __init__(self, **kwargs):
-        super().__init__(max_steps_in_episode=300, grid_size=8, p=0.3, enemy_num=1, **kwargs)
+        super().__init__(max_steps_in_episode=300, grid_size=6, p=0.5, enemy_num=1, **kwargs)

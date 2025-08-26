@@ -1,0 +1,100 @@
+_wandb:
+    value:
+        cli_version: 0.18.5
+        m: []
+        python_version: 3.11.9
+        t:
+            "1":
+                - 12
+                - 45
+                - 55
+            "2":
+                - 12
+                - 45
+                - 55
+            "3":
+                - 13
+                - 15
+                - 16
+                - 23
+                - 24
+                - 55
+            "4": 3.11.9
+            "5": 0.18.5
+            "8":
+                - 3
+                - 5
+            "12": 0.18.5
+            "13": windows-amd64
+ALG_NAME:
+    value: PQN_RNN
+ENTITY:
+    value: ""
+ENV_NAME:
+    value: BreakoutEasy
+EPS_DECAY:
+    value: 0.25
+EPS_FINISH:
+    value: 0.05
+EPS_START:
+    value: 1
+EPS_TEST:
+    value: 0
+GAMMA:
+    value: 0.99
+HIDDEN_SIZE:
+    value: 256
+HYP_TUNE:
+    value: false
+LAMBDA:
+    value: 0.95
+LR:
+    value: 5e-05
+LR_LINEAR_DECAY:
+    value: true
+MAX_GRAD_NORM:
+    value: 0.5
+MEMORY_TYPE:
+    value: lru
+MEMORY_WINDOW:
+    value: 4
+NORM_INPUT:
+    value: false
+NORM_TYPE:
+    value: layer_norm
+NUM_ENVS:
+    value: 16
+NUM_EPOCHS:
+    value: 4
+NUM_LAYERS:
+    value: 2
+NUM_MINIBATCHES:
+    value: 16
+NUM_SEEDS:
+    value: 1
+NUM_STEPS:
+    value: 128
+OBS_SIZE:
+    value: 128
+PARTIAL:
+    value: true
+PROJECT:
+    value: NavigatorEasy
+REW_SCALE:
+    value: 1
+SEED:
+    value: 0
+TEST_DURING_TRAINING:
+    value: false
+TEST_INTERVAL:
+    value: 0.05
+TEST_NUM_ENVS:
+    value: 128
+TOTAL_TIMESTEPS:
+    value: 3e+06
+TOTAL_TIMESTEPS_DECAY:
+    value: 1e+06
+TRAIN_TYPE:
+    value: PQN_RNN
+WANDB_MODE:
+    value: online

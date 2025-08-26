@@ -650,7 +650,7 @@ def evaluate(model, config):
 
     # Initialize frames array
     frame_shape = obs[0].shape
-    frames = jnp.zeros((1000, *frame_shape), dtype=jnp.uint8)
+    frames = jnp.zeros((500, *frame_shape), dtype=jnp.uint8)
 
     carry = (hs, obs, init_done, init_action, state, frames, _rng)
     wandb.init(project=f'{config["PROJECT"]}')
@@ -677,7 +677,7 @@ def evaluate(model, config):
         carry, _ = evaluate_step(carry, i)
         return carry
 
-    carry = lax.fori_loop(0, 1000, body_fun, carry)
+    carry = lax.fori_loop(0, 500, body_fun, carry)
     _, _, _, _, _, frames, _rng = carry
     frames = np.array(frames * 255, dtype=np.uint8)
     frames = frames.transpose((0, 3, 1, 2))

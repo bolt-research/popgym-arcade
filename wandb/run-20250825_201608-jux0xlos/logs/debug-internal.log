@@ -1,0 +1,16 @@
+{"time":"2025-08-25T20:16:08.4599404+08:00","level":"INFO","msg":"using version","core version":"0.18.5"}
+{"time":"2025-08-25T20:16:08.4599404+08:00","level":"INFO","msg":"created symlink","path":"F:\\Desktop\\ML\\popgym-arcade\\wandb\\run-20250825_201608-jux0xlos\\logs\\debug-core.log"}
+{"time":"2025-08-25T20:16:08.6031356+08:00","level":"INFO","msg":"created new stream","id":"jux0xlos"}
+{"time":"2025-08-25T20:16:08.6037479+08:00","level":"INFO","msg":"stream: started","id":"jux0xlos"}
+{"time":"2025-08-25T20:16:08.6037479+08:00","level":"INFO","msg":"sender: started","stream_id":"jux0xlos"}
+{"time":"2025-08-25T20:16:08.6037479+08:00","level":"INFO","msg":"writer: Do: started","stream_id":{"value":"jux0xlos"}}
+{"time":"2025-08-25T20:16:08.6037479+08:00","level":"INFO","msg":"handler: started","stream_id":{"value":"jux0xlos"}}
+{"time":"2025-08-25T20:16:09.2593712+08:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-08-25T20:16:13.2381316+08:00","level":"INFO","msg":"stream: closing","id":"jux0xlos"}
+{"time":"2025-08-25T20:16:13.2387953+08:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2025-08-25T20:16:13.2393589+08:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2025-08-25T20:16:14.4360741+08:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2025-08-25T20:16:14.7729175+08:00","level":"INFO","msg":"handler: closed","stream_id":{"value":"jux0xlos"}}
+{"time":"2025-08-25T20:16:14.7734213+08:00","level":"INFO","msg":"sender: closed","stream_id":"jux0xlos"}
+{"time":"2025-08-25T20:16:14.7734213+08:00","level":"INFO","msg":"writer: Close: closed","stream_id":{"value":"jux0xlos"}}
+{"time":"2025-08-25T20:16:14.7734213+08:00","level":"INFO","msg":"stream: closed","id":"jux0xlos"}

@@ -1,0 +1,16 @@
+{"time":"2025-08-25T20:17:24.5268205+08:00","level":"INFO","msg":"using version","core version":"0.18.5"}
+{"time":"2025-08-25T20:17:24.5268205+08:00","level":"INFO","msg":"created symlink","path":"F:\\Desktop\\ML\\popgym-arcade\\wandb\\run-20250825_201724-gkyo3p06\\logs\\debug-core.log"}
+{"time":"2025-08-25T20:17:24.6763289+08:00","level":"INFO","msg":"created new stream","id":"gkyo3p06"}
+{"time":"2025-08-25T20:17:24.6763289+08:00","level":"INFO","msg":"stream: started","id":"gkyo3p06"}
+{"time":"2025-08-25T20:17:24.6774374+08:00","level":"INFO","msg":"sender: started","stream_id":"gkyo3p06"}
+{"time":"2025-08-25T20:17:24.6774374+08:00","level":"INFO","msg":"handler: started","stream_id":{"value":"gkyo3p06"}}
+{"time":"2025-08-25T20:17:24.6774374+08:00","level":"INFO","msg":"writer: Do: started","stream_id":{"value":"gkyo3p06"}}
+{"time":"2025-08-25T20:17:25.1452757+08:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-08-25T20:17:29.0746635+08:00","level":"INFO","msg":"stream: closing","id":"gkyo3p06"}
+{"time":"2025-08-25T20:17:29.0752268+08:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2025-08-25T20:17:29.0762294+08:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2025-08-25T20:17:33.6522989+08:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2025-08-25T20:17:33.9811607+08:00","level":"INFO","msg":"handler: closed","stream_id":{"value":"gkyo3p06"}}
+{"time":"2025-08-25T20:17:33.9811607+08:00","level":"INFO","msg":"writer: Close: closed","stream_id":{"value":"gkyo3p06"}}
+{"time":"2025-08-25T20:17:33.9811607+08:00","level":"INFO","msg":"sender: closed","stream_id":"gkyo3p06"}
+{"time":"2025-08-25T20:17:33.9816871+08:00","level":"INFO","msg":"stream: closed","id":"gkyo3p06"}

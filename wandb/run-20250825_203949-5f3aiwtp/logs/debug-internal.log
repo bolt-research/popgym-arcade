@@ -1,0 +1,16 @@
+{"time":"2025-08-25T20:39:49.7378219+08:00","level":"INFO","msg":"using version","core version":"0.18.5"}
+{"time":"2025-08-25T20:39:49.7378219+08:00","level":"INFO","msg":"created symlink","path":"F:\\Desktop\\ML\\popgym-arcade\\wandb\\run-20250825_203949-5f3aiwtp\\logs\\debug-core.log"}
+{"time":"2025-08-25T20:39:49.9102283+08:00","level":"INFO","msg":"created new stream","id":"5f3aiwtp"}
+{"time":"2025-08-25T20:39:49.9102283+08:00","level":"INFO","msg":"stream: started","id":"5f3aiwtp"}
+{"time":"2025-08-25T20:39:49.9102283+08:00","level":"INFO","msg":"sender: started","stream_id":"5f3aiwtp"}
+{"time":"2025-08-25T20:39:49.9102283+08:00","level":"INFO","msg":"writer: Do: started","stream_id":{"value":"5f3aiwtp"}}
+{"time":"2025-08-25T20:39:49.9102283+08:00","level":"INFO","msg":"handler: started","stream_id":{"value":"5f3aiwtp"}}
+{"time":"2025-08-25T20:39:50.476035+08:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-08-25T20:40:05.5914425+08:00","level":"INFO","msg":"stream: closing","id":"5f3aiwtp"}
+{"time":"2025-08-25T20:40:05.5914425+08:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2025-08-25T20:40:05.592474+08:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2025-08-25T20:40:09.2101595+08:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2025-08-25T20:40:09.5163544+08:00","level":"INFO","msg":"sender: closed","stream_id":"5f3aiwtp"}
+{"time":"2025-08-25T20:40:09.5163544+08:00","level":"INFO","msg":"handler: closed","stream_id":{"value":"5f3aiwtp"}}
+{"time":"2025-08-25T20:40:09.5163544+08:00","level":"INFO","msg":"writer: Close: closed","stream_id":{"value":"5f3aiwtp"}}
+{"time":"2025-08-25T20:40:09.5318904+08:00","level":"INFO","msg":"stream: closed","id":"5f3aiwtp"}

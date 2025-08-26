@@ -1,0 +1,14 @@
+{"time":"2025-08-25T20:32:39.3528641+08:00","level":"INFO","msg":"using version","core version":"0.18.5"}
+{"time":"2025-08-25T20:32:39.3528641+08:00","level":"INFO","msg":"created symlink","path":"F:\\Desktop\\ML\\popgym-arcade\\wandb\\run-20250825_203239-17jpcb71\\logs\\debug-core.log"}
+{"time":"2025-08-25T20:32:39.5144143+08:00","level":"INFO","msg":"created new stream","id":"17jpcb71"}
+{"time":"2025-08-25T20:32:39.5144143+08:00","level":"INFO","msg":"stream: started","id":"17jpcb71"}
+{"time":"2025-08-25T20:32:39.5144143+08:00","level":"INFO","msg":"sender: started","stream_id":"17jpcb71"}
+{"time":"2025-08-25T20:32:39.5144143+08:00","level":"INFO","msg":"writer: Do: started","stream_id":{"value":"17jpcb71"}}
+{"time":"2025-08-25T20:32:39.5144143+08:00","level":"INFO","msg":"handler: started","stream_id":{"value":"17jpcb71"}}
+{"time":"2025-08-25T20:32:40.0971361+08:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-08-25T20:39:30.0980078+08:00","level":"ERROR","msg":"monitor: memory: error sampling metrics: The parameter is incorrect."}
+{"time":"2025-08-25T20:39:30.1075128+08:00","level":"ERROR","msg":"monitor: cpu: error sampling metrics: could not get CreationDate: The parameter is incorrect.\ncouldn't find pid: 31864"}
+{"time":"2025-08-26T10:52:12.5632704+08:00","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/files/bolt-um/NavigatorEasy/17jpcb71/file_stream\": dial tcp: lookup api.wandb.ai: no such host"}
+{"time":"2025-08-26T10:52:14.7577741+08:00","level":"INFO","msg":"api: retrying error","error":"Post \"https://api.wandb.ai/files/bolt-um/NavigatorEasy/17jpcb71/file_stream\": dial tcp: lookup api.wandb.ai: no such host"}
+{"time":"2025-08-26T14:04:41.793395+08:00","level":"ERROR","msg":"HTTP error","status":404,"method":"POST","url":"https://api.wandb.ai/files/bolt-um/NavigatorEasy/17jpcb71/file_stream"}
+{"time":"2025-08-26T14:04:41.793395+08:00","level":"ERROR+4","msg":"filestream: fatal error: filestream: failed to upload: 404 Not Found path=files/bolt-um/NavigatorEasy/17jpcb71/file_stream: {\"error\":\"run NavigatorEasy/17jpcb71 not found while streaming file\"}"}

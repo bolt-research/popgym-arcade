@@ -1,0 +1,46 @@
+{
+  "os": "Windows-10-10.0.26100-SP0",
+  "python": "3.11.9",
+  "startedAt": "2025-08-25T12:15:44.603348Z",
+  "args": [
+    "PQN_RNN"
+  ],
+  "program": "F:\\Desktop\\ML\\popgym-arcade\\popgym_arcade\\train.py",
+  "codePath": "popgym_arcade\\train.py",
+  "git": {
+    "remote": "https://github.com/bolt-research/popgym-arcade.git",
+    "commit": "38ebd54ab4dac39bcfee74530cec324eead52027"
+  },
+  "email": "icyzhe0@gmail.com",
+  "root": "F:\\Desktop\\ML\\popgym-arcade",
+  "host": "Icyzhe",
+  "username": "icyzhe",
+  "executable": "F:\\Anaconda\\envs\\JaxEnv\\python.exe",
+  "codePathLocal": "popgym_arcade\\train.py",
+  "cpu_count": 6,
+  "cpu_count_logical": 12,
+  "gpu": "NVIDIA GeForce RTX 3050 Laptop GPU",
+  "gpu_count": 1,
+  "disk": {
+    "/": {
+      "total": "524287995904",
+      "used": "396839546880"
+    }
+  },
+  "memory": {
+    "total": "17023950848"
+  },
+  "cpu": {
+    "count": 6,
+    "countLogical": 12
+  },
+  "gpu_nvidia": [
+    {
+      "name": "NVIDIA GeForce RTX 3050 Laptop GPU",
+      "memoryTotal": "4294967296",
+      "cudaCores": 2048,
+      "architecture": "Ampere"
+    }
+  ],
+  "cudaVersion": "12.3"
+}
