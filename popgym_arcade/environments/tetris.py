@@ -813,47 +813,11 @@ class Tetris(environment.Environment[EnvState, EnvParams]):
         lines_text_x = 1 * cell_size  # Position in left margin
         lines_text_y = 2 * cell_size  # Near the top
 
-        line_box_top_left = (lines_text_x + 1, lines_text_y)
-        line_box_bottom_right = (lines_text_x + 3 * cell_size - 5, lines_text_y + cell_size)
-        num_box_top_left = (lines_text_x, lines_text_y + cell_size + 2)
-        num_box_bottom_right = (lines_text_x + 3 * cell_size, lines_text_y + 2 * cell_size + 2)
-        next_piece_x = 16 * cell_size
-        next_piece_y = 2 * cell_size
-        next_box_top_left = (next_piece_x, next_piece_y)
-        next_box_bottom_right = (next_piece_x + 3 * cell_size, next_piece_y + cell_size)
+        next_piece_x, next_piece_y, next_label_height_cells = jnp.int32(16 * cell_size), jnp.int32(2 * cell_size), jnp.int32(1)
 
-        small_canvas = draw_str(
-            line_box_top_left,
-            line_box_bottom_right,
-            self.color["cyan"],
-            small_canvas,
-            "LINE",
-            horizontal=True,
-        )
-
-        # Draw lines cleared number
-        small_canvas = draw_number(
-            num_box_top_left,
-            num_box_bottom_right,
-            self.color["white"],
-            small_canvas,
-            state.lines_cleared,
-        )
-
-        # Draw "NEXT:" label
-        small_canvas = draw_str(
-            next_box_top_left,
-            next_box_bottom_right,
-            self.color["cyan"],
-            small_canvas,
-            "NEXT",
-            horizontal=True,
-        )
-        
-        # Draw multiple preview pieces (top one is the immediate next)
         def draw_preview_piece(canvas, piece_idx):
             # Calculate vertical offset for each preview piece
-            piece_offset_y = next_piece_y + cell_size + 2 + piece_idx * (3 * cell_size)
+            piece_offset_y = next_piece_y + next_label_height_cells * cell_size + 2 + piece_idx * (3 * cell_size)
             
             # Get the piece type for this preview position
             preview_piece_type = state.next_pieces[piece_idx]
@@ -879,20 +843,25 @@ class Tetris(environment.Environment[EnvState, EnvParams]):
                     # Draw filled square
                     c = draw_rectangle((x1, y1), (x2, y2), preview_piece_color, c)
                     
-                    # Draw border (make border thinner for preview)
-                    border_color = self.color["white"]
-                    # Only draw border if square is big enough
-                    border_size = jnp.maximum(1, (cell_size // 2) // 8)
-                    # Top border
-                    c = draw_rectangle((x1, y1), (x2, y1 + border_size), border_color, c)
-                    # Bottom border  
-                    c = draw_rectangle((x1, y2 - border_size), (x2, y2), border_color, c)
-                    # Left border
-                    c = draw_rectangle((x1, y1), (x1 + border_size, y2), border_color, c)
-                    # Right border
-                    c = draw_rectangle((x2 - border_size, y1), (x2, y2), border_color, c)
+                    # Draw border only if preview cells are big enough (>=4 pixels)
+                    # to avoid covering the entire colored area
+                    preview_cell_size = cell_size // 2
+                    should_draw_border = preview_cell_size >= 4
                     
-                    return c
+                    def draw_borders(canvas):
+                        border_color = self.color["white"]
+                        border_size = 1  # Always 1 pixel border
+                        # Top border
+                        canvas = draw_rectangle((x1, y1), (x2, y1 + border_size), border_color, canvas)
+                        # Bottom border  
+                        canvas = draw_rectangle((x1, y2 - border_size), (x2, y2), border_color, canvas)
+                        # Left border
+                        canvas = draw_rectangle((x1, y1), (x1 + border_size, y2), border_color, canvas)
+                        # Right border
+                        canvas = draw_rectangle((x2 - border_size, y1), (x2, y2), border_color, canvas)
+                        return canvas
+                    
+                    return jax.lax.cond(should_draw_border, draw_borders, lambda c: c, c)
                 
                 return jax.lax.cond(
                     cond,
