@@ -812,34 +812,38 @@ class Tetris(environment.Environment[EnvState, EnvParams]):
         # Show lines cleared on the left side (left of left wall)
         lines_text_x = 1 * cell_size  # Position in left margin
         lines_text_y = 2 * cell_size  # Near the top
-        
+
+        line_box_top_left = (lines_text_x + 1, lines_text_y)
+        line_box_bottom_right = (lines_text_x + 3 * cell_size - 5, lines_text_y + cell_size)
+        num_box_top_left = (lines_text_x, lines_text_y + cell_size + 2)
+        num_box_bottom_right = (lines_text_x + 3 * cell_size, lines_text_y + 2 * cell_size + 2)
+        next_piece_x = 16 * cell_size
+        next_piece_y = 2 * cell_size
+        next_box_top_left = (next_piece_x, next_piece_y)
+        next_box_bottom_right = (next_piece_x + 3 * cell_size, next_piece_y + cell_size)
 
         small_canvas = draw_str(
-            (lines_text_x + 1, lines_text_y),
-            (lines_text_x + 3 * cell_size - 5, lines_text_y + cell_size),
+            line_box_top_left,
+            line_box_bottom_right,
             self.color["cyan"],
             small_canvas,
             "LINE",
             horizontal=True,
         )
-        
+
         # Draw lines cleared number
         small_canvas = draw_number(
-            (lines_text_x, lines_text_y + cell_size + 2),
-            (lines_text_x + 3 * cell_size, lines_text_y + 2 * cell_size + 2),
+            num_box_top_left,
+            num_box_bottom_right,
             self.color["white"],
             small_canvas,
             state.lines_cleared,
         )
-        
-        # Show next pieces on the right side (right of right wall)
-        next_piece_x = 16 * cell_size  # Position in right margin
-        next_piece_y = 2 * cell_size   # Near the top
-        
+
         # Draw "NEXT:" label
         small_canvas = draw_str(
-            (next_piece_x, next_piece_y),
-            (next_piece_x + 3 * cell_size, next_piece_y + cell_size),
+            next_box_top_left,
+            next_box_bottom_right,
             self.color["cyan"],
             small_canvas,
             "NEXT",
