@@ -1,3 +1,0 @@
-F:\Anaconda\envs\JaxEnv\Lib\site-packages\jax\_src\ops\scatter.py:93: FutureWarning: scatter inputs have incompatible types: cannot safely cast value from dtype=float32 to dtype=uint8 with jax_numpy_dtype_promotion='standard'. In future JAX releases this will result in an error.
-  warnings.warn(
-[0m
