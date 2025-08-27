@@ -456,7 +456,7 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
 class SkittlesEasy(Skittles):
     def __init__(self, **kwargs):
         super().__init__(
-            max_steps_in_episode=300,
+            max_steps_in_episode=100,
             grid_size=10,
             p=0.5,
             enemy_num=1,
@@ -469,7 +469,7 @@ class SkittlesEasy(Skittles):
 class SkittlesMedium(Skittles):
     def __init__(self, **kwargs):
         super().__init__(
-            max_steps_in_episode=300,
+            max_steps_in_episode=100,
             grid_size=10,
             p=0.5,
             enemy_num=1,
@@ -482,7 +482,7 @@ class SkittlesMedium(Skittles):
 class SkittlesHard(Skittles):
     def __init__(self, **kwargs):
         super().__init__(
-            max_steps_in_episode=300,
+            max_steps_in_episode=100,
             grid_size=10,
             p=0.5,
             enemy_num=1,
