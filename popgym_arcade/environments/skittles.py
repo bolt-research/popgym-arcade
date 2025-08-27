@@ -78,6 +78,8 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
     - obs_size: Size of the observation space, choose between 128 and 256.
     - partial_obs: Whether to use partial observation or not.
     - enemy_num: Number of enemies in the difficulty level.
+    - enemy_spawn_width: Number of columns at the top row where enemies can spawn (<= grid_size). Smaller makes a narrow lane.
+    - enemy_spawn_offset: Left offset (column index) of the spawn region.
 
     """
 
@@ -175,6 +177,8 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
             partial_obs = False,
             enemy_num: int = 2,
             p: float = 0.5,
+            enemy_spawn_width: Optional[int] = None,
+            enemy_spawn_offset: int = 0,
             ):
         super().__init__()
         self.obs_size = obs_size
@@ -182,7 +186,13 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
         self.reward_scale = (1.0 / max_steps_in_episode)
         self.grid_size = grid_size
         self.partial_obs = partial_obs
-        self.enemy_num = enemy_num
+
+        enemy_spawn_offset = int(max(0, min(enemy_spawn_offset, grid_size - 1)))
+        enemy_spawn_width = int(max(1, min(enemy_spawn_width, grid_size - enemy_spawn_offset)))
+        self.enemy_spawn_width = enemy_spawn_width
+        self.enemy_spawn_offset = enemy_spawn_offset
+
+        self.enemy_num = int(min(enemy_num, self.enemy_spawn_width))
         self.p = p
 
 
@@ -202,36 +212,40 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
         xp = state.xp
         over = state.over
         x = state.x
-        x = jnp.clip(jnp.where(action == 2, x-1, x), 0, self.grid_size-1)
-        x = jnp.clip(jnp.where(action == 3, x+1, x), 0, self.grid_size-1)
-        
+        min_x = jnp.int32(self.enemy_spawn_offset)
+        max_x = jnp.int32(self.enemy_spawn_offset + self.enemy_spawn_width - 1)
+        x = jnp.clip(jnp.where(action == 2, x - 1, x), min_x, max_x)
+        x = jnp.clip(jnp.where(action == 3, x + 1, x), min_x, max_x)
+
         matrix_state = state.matrix_state
-        xp = matrix_state[self.grid_size-1, x]
-        over = xp 
-        # each row moves down by one, and the first row is replaced by a new enemy row
-        matrix_state = matrix_state.at[1:self.grid_size, :].set(matrix_state[0:self.grid_size-1, :])
+        xp = matrix_state[self.grid_size - 1, x]
+        over = xp
+
+        matrix_state = matrix_state.at[1:self.grid_size, :].set(
+            matrix_state[0:self.grid_size - 1, :]
+        )
 
         newkey, enemy_key = jax.random.split(newkey)
         enemy_new = self.random_enemy(enemy_key)
         enemy_new = jnp.squeeze(enemy_new)
 
         matrix_state = matrix_state.at[0, :].set(enemy_new)
-        xp = matrix_state[self.grid_size-1, x]
+        xp = matrix_state[self.grid_size - 1, x]
 
         new_color_idx = (state.color_indexes[0] + 1) % 7
 
         new_color_indexes = jnp.roll(state.color_indexes, shift=1)
         new_color_indexes = new_color_indexes.at[0].set(new_color_idx)
         state = EnvState(
-            matrix_state = matrix_state,
-            x = x,
-            xp = matrix_state[self.grid_size-1, x],
-            over = over,
-            time = state.time + 1,
-            score = state.score + 1,
-            color_indexes = new_color_indexes,
+            matrix_state=matrix_state,
+            x=x,
+            xp=matrix_state[self.grid_size - 1, x],
+            over=over,
+            time=state.time + 1,
+            score=state.score + 1,
+            color_indexes=new_color_indexes,
         )
-        
+
         done = self.is_terminal(state, params)
 
         return (
@@ -248,7 +262,12 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
         """Reset the environment to an initial state."""
         key, subkey1 = jax.random.split(key)
         matrix_state = jnp.zeros((self.grid_size, self.grid_size), dtype=jnp.int32)
-        x = jax.random.randint(subkey1, shape=(), minval=0, maxval=self.grid_size).astype(jnp.int32) 
+        x = jax.random.randint(
+            subkey1,
+            shape=(),
+            minval=self.enemy_spawn_offset,
+            maxval=self.enemy_spawn_offset + self.enemy_spawn_width,
+        ).astype(jnp.int32)
 
         state = EnvState(
             matrix_state = matrix_state,
@@ -265,7 +284,12 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
         """Generate a random enemy row."""
         key, subkey2 = jax.random.split(key)
         enemy_row = jnp.zeros(self.grid_size, dtype=jnp.int32)
-        indices = jax.random.choice(subkey2, jnp.arange(self.grid_size), shape=(self.enemy_num,), replace=False)
+        spawn_cols = jnp.arange(
+            self.enemy_spawn_offset, self.enemy_spawn_offset + self.enemy_spawn_width
+        )
+        indices = jax.random.choice(
+            subkey2, spawn_cols, shape=(self.enemy_num,), replace=False
+        )
         enemy_row = enemy_row.at[indices].set(1)
         enemy_row = enemy_row.reshape(1, -1)
         return enemy_row
@@ -431,14 +455,38 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
 
 class SkittlesEasy(Skittles):
     def __init__(self, **kwargs):
-        super().__init__(max_steps_in_episode=300, grid_size=10, p=0.5, enemy_num=1, **kwargs)
+        super().__init__(
+            max_steps_in_episode=300,
+            grid_size=10,
+            p=0.5,
+            enemy_num=1,
+            enemy_spawn_width=8,
+            enemy_spawn_offset=1,
+            **kwargs,
+        )
 
 
 class SkittlesMedium(Skittles):
     def __init__(self, **kwargs):
-        super().__init__(max_steps_in_episode=300, grid_size=8, p=0.5, enemy_num=1, **kwargs)
+        super().__init__(
+            max_steps_in_episode=300,
+            grid_size=10,
+            p=0.5,
+            enemy_num=1,
+            enemy_spawn_width=7,
+            enemy_spawn_offset=2,
+            **kwargs,
+        )
 
 
 class SkittlesHard(Skittles):
     def __init__(self, **kwargs):
-        super().__init__(max_steps_in_episode=300, grid_size=6, p=0.5, enemy_num=1, **kwargs)
+        super().__init__(
+            max_steps_in_episode=300,
+            grid_size=10,
+            p=0.5,
+            enemy_num=1,
+            enemy_spawn_width=6,
+            enemy_spawn_offset=2,
+            **kwargs,
+        )
