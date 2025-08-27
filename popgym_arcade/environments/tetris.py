@@ -546,20 +546,21 @@ class Tetris(environment.Environment[EnvState, EnvParams]):
             # Clear completed lines now (after showing the piece for one frame)
             new_board, lines_cleared = clear_lines(state.board)
             
-            # Calculate reward based on lines cleared
-            # reward = lines_cleared.astype(jnp.float32) / params.max_steps_in_episode
-            max_lines = params.max_steps_in_episode // 15
-            reward =  (lines_cleared ** 2) / max_lines
-            # reward -= 0.0001
+            # each line cleared gives 0.1 reward, 10 lines = 1.0 total
+            reward = lines_cleared.astype(jnp.float32) * 0.1
+            
             # Update state with cleared board
+            new_lines_cleared = state.lines_cleared + lines_cleared
             state = state.replace(
                 board=new_board,
-                lines_cleared=state.lines_cleared + lines_cleared,
+                lines_cleared=new_lines_cleared,
                 score=state.score + lines_cleared,
                 just_locked=False,
             )
             
-            # Spawn new piece
+            success = new_lines_cleared >= 10
+            state = state.replace(terminal=jnp.logical_or(state.terminal, success))
+            
             new_state = spawn_new_piece(state, key, self.preview_num)
             return new_state, reward
         
@@ -613,8 +614,17 @@ class Tetris(environment.Environment[EnvState, EnvParams]):
         # Check termination
         done = self.is_terminal(state, params)
         state = state.replace(terminal=done)
-        reward = jax.lax.select(done, reward - 1.0, reward)
-        info = {"discount": self.discount(state, params)}
+        
+        # Apply collision penalty only when game ends due to collision (not truncation or success)
+        done_steps = state.time >= params.max_steps_in_episode  # Truncation
+        done_lines = state.lines_cleared >= 10  # Success
+        done_collision = jnp.logical_and(done, jnp.logical_not(jnp.logical_or(done_steps, done_lines)))  # Collision
+        
+        # Only penalize collision, not truncation or success
+        reward = jax.lax.select(done_collision, reward - 1.0, reward)
+        info = {"discount": self.discount(state, params),
+                "truncated": done_steps,
+                "terminated": state.terminal}
         return (
             jax.lax.stop_gradient(self.get_obs(state)),
             jax.lax.stop_gradient(state),
@@ -657,61 +667,13 @@ class Tetris(environment.Environment[EnvState, EnvParams]):
 
     def get_obs(self, state: EnvState, params=None, key=None) -> jax.Array:
         """Return observation from raw state transformation."""
-        # obs = jnp.zeros(self.obs_shape, dtype=jnp.float32)
-        
-        # # Channel 0: Board state
-        # obs = obs.at[:, :, 0].set(state.board.astype(jnp.float32))
-        
-        # # Channel 1: Current piece
-        # current_piece_shape = TETROMINOES[state.current_piece, state.current_rotation]
-        
-        # # Place current piece on observation using JAX-compatible operations
-        # # Create coordinate grids for the 4x4 piece
-        # py_coords, px_coords = jnp.meshgrid(jnp.arange(4), jnp.arange(4), indexing='ij')
-        
-        # # Calculate board positions for each piece cell
-        # board_y_coords = state.current_y + py_coords
-        # board_x_coords = state.current_x + px_coords
-        
-        # # Check if each position is valid and has a piece block
-        # valid_y = jnp.logical_and(board_y_coords >= 0, board_y_coords < 20)
-        # valid_x = jnp.logical_and(board_x_coords >= 0, board_x_coords < 10)
-        # valid_pos = jnp.logical_and(valid_y, valid_x)
-        # has_block = current_piece_shape == 1
-        # should_update = jnp.logical_and(valid_pos, has_block)
-        
-        # # Clamp coordinates to valid ranges for safe indexing
-        # safe_y = jnp.clip(board_y_coords, 0, 19)
-        # safe_x = jnp.clip(board_x_coords, 0, 9)
-        
-        # # Create update values - 1.0 where we should place piece, 0.0 elsewhere
-        # updates = should_update.astype(jnp.float32)
-        
-        # # Use a loop-free approach: create indices and use scatter_add
-        # # Flatten the coordinates and updates
-        # flat_y = safe_y.flatten()
-        # flat_x = safe_x.flatten()
-        # flat_updates = updates.flatten()
-        
-        # # Create linear indices for the observation array
-        # linear_indices = flat_y * 10 + flat_x
-        
-        # # Create a flat view of the current piece channel
-        # current_piece_channel = obs[:, :, 1].flatten()
-        
-        # # Use scatter_add to accumulate the updates (this handles overlaps correctly)
-        # updated_channel = current_piece_channel.at[linear_indices].add(flat_updates)
-        
-        # # Reshape back and update the observation
-        # obs = obs.at[:, :, 1].set(updated_channel.reshape(20, 10))
-        
-        # Return rendered observation
         return self.render(state)
 
     def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
         """Check whether state is terminal."""
         done_steps = state.time >= params.max_steps_in_episode
-        return jnp.logical_or(done_steps, state.terminal)
+        done_lines = state.lines_cleared >= 10
+        return jnp.logical_or(jnp.logical_or(done_steps, done_lines), state.terminal)
 
     @property
     def name(self) -> str:
