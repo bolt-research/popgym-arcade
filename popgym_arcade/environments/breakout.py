@@ -1,8 +1,8 @@
 """JAX implementation of Breakout MinAtar environment."""
 """
 Breakout
-    Nonstationary: Random initial ball location or random block values (e.g.,1 vs 2 hit to break)
-    POMDP: Hide blocks, paddle, or ball
+    Nonstationary: Random initial ball location
+    POMDP: Hide last position/velocity and hide ball when falling back down
 """
 import functools
 from typing import Any
@@ -44,19 +44,16 @@ class EnvParams(environment.EnvParams):
 def step_agent(
     state: EnvState,
     action: jax.Array,
+    paddle_width: int = 1,
 ) -> tuple[EnvState, jax.Array, jax.Array]:
     """Helper that steps the agent and checks boundary conditions."""
-    # Update player position
+    max_pos = 20 - paddle_width
     pos = (
-        # Action left & border condition
         jnp.maximum(0, state.pos - 1) * (action == 1)
-        # Action right & border condition
-        + jnp.minimum(19, state.pos + 1) * (action == 3)
-        # Don't move player if not l/r chosen
+        + jnp.minimum(max_pos, state.pos + 1) * (action == 3)
         + state.pos * jnp.logical_and(action != 1, action != 3)
     )
 
-    # Update ball position - based on direction of movement
     last_x = state.ball_x
     last_y = state.ball_y
     new_x = (
@@ -72,10 +69,9 @@ def step_agent(
         + (state.ball_y + 1) * (state.ball_dir == 3)
     )
 
-    # Boundary conditions for x position
     border_cond_x = jnp.logical_or(new_x < 0, new_x > 19)
-    new_x = jax.lax.select(border_cond_x, (0 * (new_x < 0) + 20 * (new_x > 19)), new_x)
-    # Reflect ball direction if bounced off at x border
+    new_x = jax.lax.select(border_cond_x, (0 * (new_x < 0) + 19 * (new_x > 19)), new_x)
+
     ball_dir = jax.lax.select(
         border_cond_x, jnp.array([1, 0, 3, 2])[state.ball_dir], state.ball_dir
     )
@@ -98,44 +94,31 @@ def step_ball_brick(
 
     reward = 0
 
-    # Reflect ball direction if bounced off at y border
     border_cond1_y = new_y < 0
     new_y = jax.lax.select(border_cond1_y, 0, new_y)
     ball_dir = jax.lax.select(
         border_cond1_y, jnp.array([3, 2, 1, 0])[state.ball_dir], state.ball_dir
     )
 
-    # 1st NASTY ELIF BEGINS HERE... = Brick collision
     strike_toggle = jnp.logical_and(
         1 - border_cond1_y, state.brick_map[new_y, new_x] == 1
     )
     strike_bool = jnp.logical_and((1 - state.strike), strike_toggle)
-    # Variable reward system: harder-to-reach bricks give more reward
-    # Rows 1-6 have bricks, with row 1 being hardest (top) and row 6 being easiest (bottom)
-    # Total reward = 1.0 when all bricks cleared (6 rows * 20 columns * average reward)
-    row_rewards = jnp.linspace(0.015, 0.005, 6)  # from hard (top) to easy (bottom)
-    row_index = jnp.clip(new_y - 1, 0, 5)  # rows 1-6 map to indices 0-5
+
+    row_rewards = jnp.linspace(0.015, 0.005, 6)
+    row_index = jnp.clip(new_y - 1, 0, 5) 
     reward += strike_bool * row_rewards[row_index]
-    # next line wasn't used anywhere
-    # strike = jax.lax.select(strike_toggle, strike_bool, False)
 
     brick_map = jax.lax.select(
-        strike_bool, state.brick_map.at[new_y, new_x].set(0), state.brick_map
+        strike_toggle, state.brick_map.at[new_y, new_x].set(0), state.brick_map
     )
     new_y = jax.lax.select(strike_bool, state.last_y, new_y)
     ball_dir = jax.lax.select(strike_bool, jnp.array([3, 2, 1, 0])[ball_dir], ball_dir)
 
-    # 2nd NASTY ELIF BEGINS HERE... = Wall collision
     brick_cond = jnp.logical_and(1 - strike_toggle, new_y == 19)
 
-    # # Spawn new bricks if there are no more around - everything is collected
-    # spawn_bricks = jnp.logical_and(brick_cond, jnp.count_nonzero(brick_map) == 0)
-    # brick_map = jax.lax.select(spawn_bricks, brick_map.at[1:7, :].set(1), brick_map)
-
-    # Check if all bricks are cleared for termination
     all_bricks_cleared = jnp.count_nonzero(brick_map) == 0
 
-    # Redirect ball because it collided with old player position
     ball_in_paddle_range = jnp.logical_and(state.ball_x >= state.pos, 
                                           state.ball_x < state.pos + paddle_width)
     redirect_ball1 = jnp.logical_and(brick_cond, ball_in_paddle_range)
@@ -144,7 +127,6 @@ def step_ball_brick(
     )
     new_y = jax.lax.select(redirect_ball1, state.last_y, new_y)
 
-    # Redirect ball because it collided with new player position
     redirect_ball2a = jnp.logical_and(brick_cond, 1 - redirect_ball1)
     new_ball_in_paddle_range = jnp.logical_and(new_x >= state.pos, 
                                               new_x < state.pos + paddle_width)
@@ -155,11 +137,11 @@ def step_ball_brick(
     new_y = jax.lax.select(redirect_ball2, state.last_y, new_y)
     redirect_cond = jnp.logical_and(1 - redirect_ball1, 1 - redirect_ball2)
     terminal = jnp.logical_or(
-        jnp.logical_and(brick_cond, redirect_cond),  # Ball hits bottom
-        all_bricks_cleared  # All bricks cleared
+        jnp.logical_and(brick_cond, redirect_cond),
+        all_bricks_cleared
     )
 
-    strike = jax.lax.select(1 - strike_toggle == 1, False, True)
+    strike = strike_toggle
     return (
         state.replace(
             ball_dir=ball_dir,
@@ -237,7 +219,7 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
     size = {
         256: {
             "canvas_size": 256,
-            "small_canvas_size": 192,
+            "small_canvas_size": 200,
             "name_pos": {
                 "top_left": (0, 231),
                 "bottom_right": (256, 256),
@@ -249,7 +231,7 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
         },
         128: {
             "canvas_size": 128,
-            "small_canvas_size": 96,
+            "small_canvas_size": 100,
             "name_pos": {
                 "top_left": (0, 115),
                 "bottom_right": (128, 128),
@@ -264,9 +246,7 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
     def __init__(self, obs_size: int = 128, partial_obs=False, paddle_width=3, max_steps_in_episode=1000):
         super().__init__()
         self.obs_shape = (20, 20, 4)
-        # Full action set: ['n','l','u','r','d','f']
         self.full_action_set = jnp.array([0, 1, 2, 3, 4, 5])
-        # Minimal action set: ['n', 'l', 'r']
         self.minimal_action_set = jnp.array([0, 1, 3])
         self.action_set = jnp.array([2, 4, 1, 3, 0])
 
@@ -279,7 +259,6 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
 
     @property
     def default_params(self) -> EnvParams:
-        # Default environment parameters
         return EnvParams(max_steps_in_episode=self.max_steps_in_episode)
 
     def step_env(
@@ -291,19 +270,15 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
     ) -> tuple[jax.Array, EnvState, jnp.ndarray, jnp.ndarray, dict[Any, Any]]:
         """Perform single timestep state transition."""
         a = self.action_set[action]
-        state, new_x, new_y = step_agent(state, a)
+        state, new_x, new_y = step_agent(state, a, self.paddle_width)
         state, reward = step_ball_brick(state, new_x, new_y, params, self.paddle_width)
 
-        # Add negative reward if game terminates due to ball hitting bottom
-        # Penalty is proportional to fraction of bricks remaining
-        # This ensures total reward stays in [-1, 1] range
         ball_hit_bottom = jnp.logical_and(state.terminal, jnp.count_nonzero(state.brick_map) > 0)
         negative_reward = jax.lax.select(ball_hit_bottom, 
                                         -jnp.count_nonzero(state.brick_map) / 120.0, 
                                         0.0)
         reward = reward + negative_reward
-        # jax.debug.print("Reward: {}", reward)
-        # Check game condition & no. steps for termination condition
+
         state = state.replace(time=state.time + 1)
         done = self.is_terminal(state, params)
         state = state.replace(terminal=done)
@@ -323,7 +298,7 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
         ball_start = jax.random.choice(key, jnp.array([0, 1]), shape=())
         state = EnvState(
             ball_y=jnp.array(13),
-            ball_x=jnp.array([0, 19])[ball_start],
+            ball_x=jnp.array([0, 19])[ball_start]+1,
             ball_dir=jnp.array([2, 3])[ball_start],
             pos=9,
             brick_map=jnp.zeros((20, 20)).at[1:7, :].set(1),
@@ -338,12 +313,6 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
 
     def get_obs(self, state: EnvState, params=None, key=None) -> jax.Array:
         """Return observation from raw state trafo."""
-        # obs = jnp.zeros(self.obs_shape, dtype=jnp.bool)
-        # # Set the position of the player paddle, paddle, trail & brick map
-        # obs = obs.at[19, state.pos, 0].set(True)
-        # obs = obs.at[state.ball_y, state.ball_x, 1].set(True)
-        # obs = obs.at[state.last_y, state.last_x, 2].set(True)
-        # obs = obs.at[:, :, 3].set(state.brick_map.astype(jnp.bool))
         return self.render(state)
 
     def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
@@ -359,7 +328,6 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
      
     @functools.partial(jax.jit, static_argnums=(0,))
     def render(self, state: EnvState) -> jax.Array:
-        # Initialize canvases
         canvas = jnp.zeros(
             (self.size[self.obs_size]["canvas_size"], self.size[self.obs_size]["canvas_size"], 3)
         ) + self.color["gray"]
@@ -368,97 +336,73 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
             (self.size[self.obs_size]["small_canvas_size"], self.size[self.obs_size]["small_canvas_size"], 3),
             self.color["black"]
         )
-        
-        # Calculate scaling factors for rendering the 20x20 game grid on the small canvas
-        cell_size = self.size[self.obs_size]["small_canvas_size"] // 20
-        
-        # Vectorized brick rendering - much more efficient than loops
+
+        grid_size = 20
+        cell_size = self.size[self.obs_size]["small_canvas_size"] // grid_size
+
         y_coords, x_coords = jnp.meshgrid(
             jnp.arange(self.size[self.obs_size]["small_canvas_size"]), 
             jnp.arange(self.size[self.obs_size]["small_canvas_size"]), 
             indexing='ij'
         )
-        
-        # Calculate which brick each pixel belongs to
-        brick_y = y_coords // cell_size
-        brick_x = x_coords // cell_size
-        
-        # Ensure indices are within bounds
-        brick_y = jnp.clip(brick_y, 0, 19)
-        brick_x = jnp.clip(brick_x, 0, 19)
-        
-        # Get brick values for each pixel and create mask
+
+        brick_y = jnp.minimum(jnp.floor(y_coords / cell_size).astype(jnp.int32), grid_size - 1)
+        brick_x = jnp.minimum(jnp.floor(x_coords / cell_size).astype(jnp.int32), grid_size - 1)
+
         brick_values = state.brick_map[brick_y, brick_x]
         brick_mask = brick_values == 1
-        
-        # Pre-compute brick colors array for all rows
+
         brick_colors = jnp.array([
             self.color["brick1"], self.color["brick2"], self.color["brick3"],
             self.color["brick4"], self.color["brick5"], self.color["brick6"],
         ])
-        
-        # Get color index for each pixel based on its brick row (rows 1-6 map to indices 0-5)
+
         color_indices = jnp.clip(brick_y - 1, 0, 5)
         pixel_colors = brick_colors[color_indices]
-        
-        # Apply brick colors where mask is true
+
         small_canvas = jnp.where(brick_mask[:, :, None], pixel_colors, small_canvas)
 
-        # Efficient paddle rendering using vectorized rectangle drawing
         paddle_y_start = 19 * cell_size
         paddle_y_end = 20 * cell_size
         paddle_x_start = state.pos * cell_size
         paddle_x_end = jnp.minimum((state.pos + self.paddle_width) * cell_size, 
                                   self.size[self.obs_size]["small_canvas_size"])
         
-        # Create paddle mask
         paddle_mask = jnp.logical_and(
             jnp.logical_and(y_coords >= paddle_y_start, y_coords < paddle_y_end),
             jnp.logical_and(x_coords >= paddle_x_start, x_coords < paddle_x_end)
         )
         
-        # Apply paddle color
         small_canvas = jnp.where(paddle_mask[:, :, None], 
                                 self.color["ball_and_paddle"], small_canvas)
 
-        # Efficient ball rendering using vectorized circle
         ball_center_x = state.ball_x * cell_size + cell_size // 2
         ball_center_y = state.ball_y * cell_size + cell_size // 2
-        ball_radius = cell_size // 3
-        
-        # Create ball mask using distance calculation
+        ball_radius = jnp.floor(cell_size // 3)
+
         ball_dist = jnp.sqrt((x_coords - ball_center_x) ** 2 + 
                            (y_coords - ball_center_y) ** 2)
         ball_mask = ball_dist <= ball_radius
-        
-        # POMDP: Hide ball when it's falling down (direction 2 or 3)
+
         ball_falling_down = jnp.logical_or(state.ball_dir == 2, state.ball_dir == 3)
         should_hide_ball = jnp.logical_and(self.partial_obs, ball_falling_down)
-        
-        # Apply ball color conditionally
+
         ball_mask = jnp.logical_and(ball_mask, jnp.logical_not(should_hide_ball))
         small_canvas = jnp.where(ball_mask[:, :, None], 
                                 self.color["ball_and_paddle"], small_canvas)
 
         # Draw ball trail/track to show velocity direction
-        # Only show trail in MDP mode (not in POMDP mode)
-        # In POMDP, agent should learn to infer velocity from previous observations
         should_show_trail = jnp.logical_not(self.partial_obs)
-        
-        # Draw trail at the ball's previous position
+
         trail_center_x = state.last_x * cell_size + cell_size // 2
         trail_center_y = state.last_y * cell_size + cell_size // 2
         trail_radius = cell_size // 4  # Smaller than ball
         
-        # Create trail mask using distance calculation
         trail_dist = jnp.sqrt((x_coords - trail_center_x) ** 2 + 
                              (y_coords - trail_center_y) ** 2)
         trail_mask = jnp.logical_and(trail_dist <= trail_radius, should_show_trail)
-        
-        # Use dedicated trail color
         small_canvas = jnp.where(trail_mask[:, :, None], self.color["ball_trail"], small_canvas)
 
-        # Draw score and name (these are less performance critical)
         canvas = draw_number(
             self.size[self.obs_size]["score"]["top_left"],
             self.size[self.obs_size]["score"]["bottom_right"],
@@ -475,7 +419,6 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
             self.name,
         )
         
-        # Combine canvases
         return draw_sub_canvas(small_canvas, canvas)
 
 
@@ -512,12 +455,12 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
 
 class BreakoutEasy(Breakout):
     def __init__(self, **kwargs):
-        super().__init__(max_steps_in_episode=6000, paddle_width=4, **kwargs)
+        super().__init__(max_steps_in_episode=6000, paddle_width=6, **kwargs)
 
 
 class BreakoutMedium(Breakout):
     def __init__(self, **kwargs):
-        super().__init__(max_steps_in_episode=4000, paddle_width=3, **kwargs)
+        super().__init__(max_steps_in_episode=4000, paddle_width=4, **kwargs)
 
 
 class BreakoutHard(Breakout):
