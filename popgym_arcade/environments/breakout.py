@@ -298,7 +298,7 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
         ball_start = jax.random.choice(key, jnp.array([0, 1]), shape=())
         state = EnvState(
             ball_y=jnp.array(13),
-            ball_x=jnp.array([0, 19])[ball_start]+1,
+            ball_x=jnp.array([0, 19])[ball_start],
             ball_dir=jnp.array([2, 3])[ball_start],
             pos=9,
             brick_map=jnp.zeros((20, 20)).at[1:7, :].set(1),
