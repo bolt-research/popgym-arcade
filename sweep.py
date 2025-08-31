@@ -149,6 +149,21 @@ environments_config = {
         "PQN": int(2e7),
         "TOTAL_TIMESTEPS_DECAY": int(2e6)
     },
+    "BreakoutEasy": {
+        "PPO": int(2e7),
+        "PQN": int(2e7),
+        "TOTAL_TIMESTEPS_DECAY": int(2e6)
+    },
+    "BreakoutMedium": {
+        "PPO": int(2e7),
+        "PQN": int(2e7),
+        "TOTAL_TIMESTEPS_DECAY": int(2e6)
+    },
+    "BreakoutHard": {
+        "PPO": int(2e7),
+        "PQN": int(2e7),
+        "TOTAL_TIMESTEPS_DECAY": int(2e6)
+    },
 }
 partial_flags = [True, False]
 
