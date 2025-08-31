@@ -8,7 +8,7 @@ from typing import Dict, Any
 WANDB_PROJECT = "Arcade-NIPS"
 WANDB_ENTITY = "bolt-um"  # Optional, unless you're in a team
 MAX_JOBS = 7 # Maximum number of jobs to run before terminating (useful for HPC/SLURM)
-TRAIN_PATH = "/home/mc45189/breakouttetris/popgym-arcade/train.py"
+TRAIN_PATH = "/home/mc45189/breakouttetris/popgym-arcade/popgym_arcade/train.py"
 
 algorithm_families = ['PQN']
 models = ['mlp', 'lru', 'mingru', 'gru']
