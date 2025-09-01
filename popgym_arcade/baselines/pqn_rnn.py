@@ -667,7 +667,7 @@ def evaluate(model, config):
         action = jnp.argmax(q_val, axis=-1)
         obs, new_state, reward, done, info = vmap_step(2)(rng_step, state, action)
         state = new_state
-        frame = jnp.asarray(obs[0])
+        frame = jnp.asarray(obs[0]) * 255.0
         # Update frames array at index i
         frames = frames.at[i].set(frame)
         carry = (hs, obs, done, action, state, frames, _rng)
@@ -679,7 +679,7 @@ def evaluate(model, config):
 
     carry = lax.fori_loop(0, 500, body_fun, carry)
     _, _, _, _, _, frames, _rng = carry
-    frames = np.array(frames * 255, dtype=np.uint8)
+    frames = np.array(frames, dtype=np.uint8)
     frames = frames.transpose((0, 3, 1, 2))
     # imageio.mimsave('{}_{}_{}_Partial={}_SEED={}.gif'.format(config["TRAIN_TYPE"], config["MEMORY_TYPE"], config["ENV_NAME"], config["PARTIAL"], config["SEED"]), frames)
     wandb.log(
