@@ -47,7 +47,7 @@ def step_agent(
     paddle_width: int = 1,
 ) -> tuple[EnvState, jax.Array, jax.Array]:
     """Helper that steps the agent and checks boundary conditions."""
-    max_pos = 20 - paddle_width
+    max_pos = 10 - paddle_width
     pos = (
         jnp.maximum(0, state.pos - 1) * (action == 1)
         + jnp.minimum(max_pos, state.pos + 1) * (action == 3)
@@ -69,8 +69,8 @@ def step_agent(
         + (state.ball_y + 1) * (state.ball_dir == 3)
     )
 
-    border_cond_x = jnp.logical_or(new_x < 0, new_x > 19)
-    new_x = jax.lax.select(border_cond_x, (0 * (new_x < 0) + 19 * (new_x > 19)), new_x)
+    border_cond_x = jnp.logical_or(new_x < 0, new_x > 9)
+    new_x = jax.lax.select(border_cond_x, (0 * (new_x < 0) + 9 * (new_x > 9)), new_x)
 
     ball_dir = jax.lax.select(
         border_cond_x, jnp.array([1, 0, 3, 2])[state.ball_dir], state.ball_dir
@@ -176,7 +176,7 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
     - Ball direction is indicated by a trail channel.
     - There is no difficulty increase.
     - Channels are encoded as follows: 'paddle':0, 'ball':1, 'trail':2, 'brick':3
-    - Observation has dimensionality (10, 10, 4)
+    - Observation has dimensionality (20, 10, 4)
     - Actions are encoded as follows: ['n','l','r']
     """
     # color = {
@@ -245,7 +245,7 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
 
     def __init__(self, obs_size: int = 128, partial_obs=False, paddle_width=3, max_steps_in_episode=1000):
         super().__init__()
-        self.obs_shape = (20, 20, 4)
+        self.obs_shape = (20, 10, 4)
         self.full_action_set = jnp.array([0, 1, 2, 3, 4, 5])
         self.minimal_action_set = jnp.array([0, 1, 3])
         self.action_set = jnp.array([2, 4, 1, 3, 0])
@@ -275,10 +275,9 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
 
         # ball_hit_bottom = jnp.logical_and(state.terminal, jnp.count_nonzero(state.brick_map) > 0)
         # negative_reward = jax.lax.select(ball_hit_bottom, 
-        #                                 -jnp.count_nonzero(state.brick_map) / 120.0, 
+        #                                 -jnp.count_nonzero(state.brick_map) / 60.0, 
         #                                 0.0)
         # reward = reward + negative_reward
-
         state = state.replace(time=state.time + 1)
         done = self.is_terminal(state, params)
         state = state.replace(terminal=done)
@@ -298,13 +297,13 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
         ball_start = jax.random.choice(key, jnp.array([0, 1]), shape=())
         state = EnvState(
             ball_y=jnp.array(13),
-            ball_x=jnp.array([0, 19])[ball_start],
+            ball_x=jnp.array([0, 9])[ball_start],
             ball_dir=jnp.array([0, 1])[ball_start],
-            pos=9,
-            brick_map=jnp.zeros((20, 20)).at[1:7, :].set(1),
+            pos=5,
+            brick_map=jnp.zeros((20, 10)).at[1:7, :].set(1),
             strike=False,
             last_y=jnp.array(13),
-            last_x=jnp.array([0, 19])[ball_start],
+            last_x=jnp.array([0, 9])[ball_start],
             time=0,
             terminal=False,
             score=0,
@@ -337,8 +336,10 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
             self.color["black"]
         )
 
-        grid_size = 20
-        cell_size = self.size[self.obs_size]["small_canvas_size"] // grid_size
+        grid_height = 20
+        grid_width = 10
+        cell_height = self.size[self.obs_size]["small_canvas_size"] // grid_height
+        cell_width = self.size[self.obs_size]["small_canvas_size"] // grid_width
 
         y_coords, x_coords = jnp.meshgrid(
             jnp.arange(self.size[self.obs_size]["small_canvas_size"]), 
@@ -346,8 +347,8 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
             indexing='ij'
         )
 
-        brick_y = jnp.minimum(jnp.floor(y_coords / cell_size).astype(jnp.int32), grid_size - 1)
-        brick_x = jnp.minimum(jnp.floor(x_coords / cell_size).astype(jnp.int32), grid_size - 1)
+        brick_y = jnp.minimum(jnp.floor(y_coords / cell_height).astype(jnp.int32), grid_height - 1)
+        brick_x = jnp.minimum(jnp.floor(x_coords / cell_width).astype(jnp.int32), grid_width - 1)
 
         brick_values = state.brick_map[brick_y, brick_x]
         brick_mask = brick_values == 1
@@ -362,10 +363,10 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
 
         small_canvas = jnp.where(brick_mask[:, :, None], pixel_colors, small_canvas)
 
-        paddle_y_start = 19 * cell_size
-        paddle_y_end = 20 * cell_size
-        paddle_x_start = state.pos * cell_size
-        paddle_x_end = jnp.minimum((state.pos + self.paddle_width) * cell_size, 
+        paddle_y_start = 19 * cell_height
+        paddle_y_end = 20 * cell_height
+        paddle_x_start = state.pos * cell_width
+        paddle_x_end = jnp.minimum((state.pos + self.paddle_width) * cell_width, 
                                   self.size[self.obs_size]["small_canvas_size"])
         
         paddle_mask = jnp.logical_and(
@@ -376,9 +377,9 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
         small_canvas = jnp.where(paddle_mask[:, :, None], 
                                 self.color["ball_and_paddle"], small_canvas)
 
-        ball_center_x = state.ball_x * cell_size + cell_size // 2
-        ball_center_y = state.ball_y * cell_size + cell_size // 2
-        ball_radius = jnp.floor(cell_size // 3)
+        ball_center_x = state.ball_x * cell_width + cell_width // 2
+        ball_center_y = state.ball_y * cell_height + cell_height // 2
+        ball_radius = jnp.floor(jnp.minimum(cell_width, cell_height) // 3)
 
         ball_dist = jnp.sqrt((x_coords - ball_center_x) ** 2 + 
                            (y_coords - ball_center_y) ** 2)
@@ -394,9 +395,9 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
         # Draw ball trail/track to show velocity direction
         should_show_trail = jnp.logical_not(self.partial_obs)
 
-        trail_center_x = state.last_x * cell_size + cell_size // 2
-        trail_center_y = state.last_y * cell_size + cell_size // 2
-        trail_radius = cell_size // 4  # Smaller than ball
+        trail_center_x = state.last_x * cell_width + cell_width // 2
+        trail_center_y = state.last_y * cell_height + cell_height // 2
+        trail_radius = jnp.minimum(cell_width, cell_height) // 4  # Smaller than ball
         
         trail_dist = jnp.sqrt((x_coords - trail_center_x) ** 2 + 
                              (y_coords - trail_center_y) ** 2)
@@ -441,13 +442,13 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
         return spaces.Dict(
             {
                 "ball_y": spaces.Discrete(20),
-                "ball_x": spaces.Discrete(20),
+                "ball_x": spaces.Discrete(10),
                 "ball_dir": spaces.Discrete(10),
-                "pos": spaces.Discrete(20),
-                "brick_map": spaces.Box(0, 1, (20, 20)),
+                "pos": spaces.Discrete(10),
+                "brick_map": spaces.Box(0, 1, (20, 10)),
                 "strike": spaces.Discrete(2),
                 "last_y": spaces.Discrete(20),
-                "last_x": spaces.Discrete(20),
+                "last_x": spaces.Discrete(10),
                 "time": spaces.Discrete(params.max_steps_in_episode),
                 "terminal": spaces.Discrete(2),
             }
@@ -455,14 +456,14 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
 
 class BreakoutEasy(Breakout):
     def __init__(self, **kwargs):
-        super().__init__(max_steps_in_episode=6000, paddle_width=10, **kwargs)
+        super().__init__(max_steps_in_episode=2000, paddle_width=6, **kwargs)
 
 
 class BreakoutMedium(Breakout):
     def __init__(self, **kwargs):
-        super().__init__(max_steps_in_episode=4000, paddle_width=8, **kwargs)
+        super().__init__(max_steps_in_episode=2000, paddle_width=5, **kwargs)
 
 
 class BreakoutHard(Breakout):
     def __init__(self, **kwargs):
-        super().__init__(max_steps_in_episode=3000, paddle_width=6, **kwargs)
+        super().__init__(max_steps_in_episode=2000, paddle_width=4, **kwargs)
