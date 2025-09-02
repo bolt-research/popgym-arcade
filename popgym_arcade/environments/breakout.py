@@ -273,11 +273,11 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
         state, new_x, new_y = step_agent(state, a, self.paddle_width)
         state, reward = step_ball_brick(state, new_x, new_y, params, self.paddle_width)
 
-        # ball_hit_bottom = jnp.logical_and(state.terminal, jnp.count_nonzero(state.brick_map) > 0)
-        # negative_reward = jax.lax.select(ball_hit_bottom, 
-        #                                 -jnp.count_nonzero(state.brick_map) / 60.0, 
-        #                                 0.0)
-        # reward = reward + negative_reward
+        ball_hit_bottom = jnp.logical_and(state.terminal, jnp.count_nonzero(state.brick_map) > 0)
+        negative_reward = jax.lax.select(ball_hit_bottom, 
+                                        -jnp.count_nonzero(state.brick_map) / 60.0, 
+                                        0.0)
+        reward = reward + negative_reward
         state = state.replace(time=state.time + 1)
         done = self.is_terminal(state, params)
         state = state.replace(terminal=done)
