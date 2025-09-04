@@ -3,31 +3,23 @@
 [![Tests](https://github.com/bolt-research/popgym-arcade/actions/workflows/python_app.yaml/badge.svg)](https://github.com/bolt-research/popgym-arcade/actions/workflows/python_app.yaml)
 
 <div style="display: flex; flex-direction: column; align-items: center; gap: 20px;">
-    <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between;
-                border: 2px solid #3498db; border-radius: 10px; 
-                padding: 10px;  
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
-                background: linear-gradient(135deg, #ffffff, #ffe4e1);">
-        <img src="imgs/minesweeper_f.gif" alt="GIF 1" style="width: 100px; height: 100px; border-radius: 5px;">
-        <img src="imgs/countrecall_f.gif" alt="GIF 2" style="width: 100px; height: 100px; border-radius: 5px;">
-        <img src="imgs/battleship_f.gif" alt="GIF 3" style="width: 100px; height: 100px; border-radius: 5px;">
-        <img src="imgs/cartpole_f.gif" alt="GIF 4" style="width: 100px; height: 100px; border-radius: 5px;">
-        <img src="imgs/ncartpole_f.gif" alt="GIF 5" style="width: 100px; height: 100px; border-radius: 5px;">
-        <img src="imgs/autoencode_f.gif" alt="GIF 6" style="width: 100px; height: 100px; border-radius: 5px;">
-        <img src="imgs/navigator_f.gif" alt="GIF 7" style="width: 100px; height: 100px; border-radius: 5px;">
+    <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; padding: 10px;">
+        <img src="imgs/minesweeper_f.gif" alt="GIF 1" style="width: 100px; height: 100px;">
+        <img src="imgs/countrecall_f.gif" alt="GIF 2" style="width: 100px; height: 100px;">
+        <img src="imgs/battleship_f.gif" alt="GIF 3" style="width: 100px; height: 100px;">
+        <img src="imgs/cartpole_f.gif" alt="GIF 4" style="width: 100px; height: 100px;">
+        <img src="imgs/ncartpole_f.gif" alt="GIF 5" style="width: 100px; height: 100px;">
+        <img src="imgs/autoencode_f.gif" alt="GIF 6" style="width: 100px; height: 100px;">
+        <img src="imgs/navigator_f.gif" alt="GIF 7" style="width: 100px; height: 100px;">
     </div>
-    <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between;
-                border: 2px solid #e74c3c; border-radius: 10px; 
-                padding: 10px; 
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
-                background: linear-gradient(135deg, #ffffff, #ffe4e1);">
-        <img src="imgs/minesweeper_p.gif" alt="GIF 1" style="width: 100px; height: 100px; border-radius: 5px;">
-        <img src="imgs/countrecall_p.gif" alt="GIF 2" style="width: 100px; height: 100px; border-radius: 5px;">
-        <img src="imgs/battleship_p.gif" alt="GIF 3" style="width: 100px; height: 100px; border-radius: 5px;">
-        <img src="imgs/cartpole_p.gif" alt="GIF 4" style="width: 100px; height: 100px; border-radius: 5px;">
-        <img src="imgs/ncartpole_p.gif" alt="GIF 5" style="width: 100px; height: 100px; border-radius: 5px;">
-        <img src="imgs/autoencode_p.gif" alt="GIF 6" style="width: 100px; height: 100px; border-radius: 5px;">
-        <img src="imgs/navigator_p.gif" alt="GIF 7" style="width: 100px; height: 100px; border-radius: 5px;">
+    <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; padding: 10px;">
+        <img src="imgs/minesweeper_p.gif" alt="GIF 1" style="width: 100px; height: 100px;">
+        <img src="imgs/countrecall_p.gif" alt="GIF 2" style="width: 100px; height: 100px;">
+        <img src="imgs/battleship_p.gif" alt="GIF 3" style="width: 100px; height: 100px;">
+        <img src="imgs/cartpole_p.gif" alt="GIF 4" style="width: 100px; height: 100px;">
+        <img src="imgs/ncartpole_p.gif" alt="GIF 5" style="width: 100px; height: 100px;">
+        <img src="imgs/autoencode_p.gif" alt="GIF 6" style="width: 100px; height: 100px;">
+        <img src="imgs/navigator_p.gif" alt="GIF 7" style="width: 100px; height: 100px;">
     </div>
 </div>
 
