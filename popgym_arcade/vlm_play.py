@@ -14,6 +14,7 @@ import popgym_arcade
 output_filename = "vlm_game_results.csv"
 seeds_per_env = [0] # seeds to run
 environments_to_play = popgym_arcade.registration.REGISTERED_ENVIRONMENTS 
+max_context = 80 # some models give errors if you go beyond max context, so truncate
     
 
 # --- Configuration ---
@@ -88,6 +89,8 @@ def query_vlm_for_action_conversational(
 
     # Append the new user message to the history to form the request
     payload_messages = messages_history + [user_message]
+    # Truncate history if necessary
+    payload_messages = payload_messages[0:1] + payload_messages[:-max_context + 1]
 
     payload = {
         "model": VLM_MODEL,
@@ -144,7 +147,7 @@ def play_episode(env_name: str, seed: int, pomdp: bool) -> float:
     # Construct the full system prompt for the VLM
     system_prompt = (
         "You are playing a game described by the below prompt:\n"
-        + docstring #.replace('{', '{{').replace('}','}}') # Escape or requests lib will format
+        + docstring 
         + "\nYour goal is to achieve a high-score in the game. Note that the game may be"
         + " partially observable. At each timestep, you will"
         + " receive an observation and must output an action as a single integer from (0, 1, 2, 3, 4)."
@@ -195,7 +198,15 @@ def play_episode(env_name: str, seed: int, pomdp: bool) -> float:
 
 
 def check_run(result_df, name, pomdp, seed):
-    return any((result_df['env_name'] == name) & (result_df['pomdp'] == pomdp) & (result_df['seed'] == seed))
+    search = (result_df['env_name'] == name) & (result_df['pomdp'] == pomdp) & (result_df['seed'] == seed)
+    if not any(search):
+        return False
+    
+    if any(result_df[search]["episode_length"] == -1):
+        return False
+    
+    return True
+
 
 def main():
     """Main function to run experiments and save results."""
@@ -210,6 +221,9 @@ def main():
     for env_name in environments_to_play:
         for pomdp in [True, False]:
             for seed in tqdm(seeds_per_env, desc=f"Running {env_name}"):
+                if check_run(results_df, env_name, pomdp, seed):
+                    print(f"Found in dataset, skipping: {env_name} - {pomdp} - {seed}")
+                    continue
                 try:
                     episode_return, num_rand_actions, length = play_episode(env_name, seed, pomdp)
                     results.append({
