@@ -59,10 +59,10 @@ class LSTMMagma(SetAction):
     ) -> LSTMRecurrentState:
         x_t, _ = input
         c, h = carry
-        f_f = jax.nn.sigmoid(self.W_f(x_t) + self.U_f(h))
-        f_i = jax.nn.sigmoid(self.W_i(x_t) + self.U_i(h))
-        f_o = jax.nn.sigmoid(self.W_o(x_t) + self.U_o(h))
-        f_c = jax.nn.sigmoid(self.W_c(x_t) + self.U_c(h))
+        f_f = jax.nn.tanh(self.W_f(x_t) + self.U_f(h))
+        f_i = jax.nn.tanh(self.W_i(x_t) + self.U_i(h))
+        f_o = jax.nn.tanh(self.W_o(x_t) + self.U_o(h))
+        f_c = jax.nn.tanh(self.W_c(x_t) + self.U_c(h))
 
         c = f_f * c + f_i * f_c
         h = f_o * c
