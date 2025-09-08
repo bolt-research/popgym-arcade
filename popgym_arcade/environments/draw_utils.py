@@ -1678,15 +1678,12 @@ def draw_words_h(
         axis=1,
     )
 
-    def compute_delta(letter_code, top_left, bottom_right):
-        modified_canvas = draw_letter(
-            top_left, bottom_right, color, canvas, letter_code
+    def body_fn(i, canvas_acc):
+        return draw_letter(
+            top_left_letters[i], bottom_right_letters[i], color, canvas_acc, letters[i]
         )
-        return modified_canvas - canvas
 
-    deltas = jax.vmap(compute_delta)(letters, top_left_letters, bottom_right_letters)
-    final_canvas = canvas + jnp.sum(deltas, axis=0, dtype=jnp.uint8)
-    return final_canvas
+    return lax.fori_loop(0, num_letters, body_fn, canvas)
 
 
 def draw_words_v(
@@ -1726,16 +1723,12 @@ def draw_words_v(
         axis=1,
     )
 
-    def compute_delta(letter_code, top_left, bottom_right):
-        modified_canvas = draw_letter(
-            top_left, bottom_right, color, canvas, letter_code
+    def body_fn(i, canvas_acc):
+        return draw_letter(
+            top_left_letters[i], bottom_right_letters[i], color, canvas_acc, letters[i]
         )
-        return modified_canvas - canvas
 
-    deltas = jax.vmap(compute_delta)(letters, top_left_letters, bottom_right_letters)
-    final_canvas = canvas + jnp.sum(deltas, axis=0, dtype=jnp.uint8)
-    return final_canvas
-
+    return lax.fori_loop(0, num_letters, body_fn, canvas)
 
 @partial(jax.jit, static_argnums=(4, 5))
 def draw_str(

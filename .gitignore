@@ -12,3 +12,4 @@ build/
 .vscode/
 plotting/fpsdata/
 plotting/gradientdata/
+wandb/

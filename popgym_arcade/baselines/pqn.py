@@ -435,7 +435,7 @@ def evaluate(model, config):
         obs, new_state, reward, term, _ = vmap_step(2)(rng_step, state, action)
         state = new_state
         frame = np.asarray(obs[0])
-        frames.append(frame)
+        frames.append(frame * 255)
     frames = np.array(frames, dtype=np.uint8)
     frames = frames.transpose((0, 3, 1, 2))
     wandb.log(
