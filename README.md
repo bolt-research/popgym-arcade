@@ -4,64 +4,32 @@
 
 <div style="display: flex; flex-direction: column; align-items: center; gap: 20px;">
     <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; padding: 10px;">
-        <img src="imgs/minesweeper_f.gif" alt="GIF 1" style="width: 100px; height: 100px;">
-        <img src="imgs/countrecall_f.gif" alt="GIF 2" style="width: 100px; height: 100px;">
-        <img src="imgs/battleship_f.gif" alt="GIF 3" style="width: 100px; height: 100px;">
-        <img src="imgs/cartpole_f.gif" alt="GIF 4" style="width: 100px; height: 100px;">
-        <img src="imgs/ncartpole_f.gif" alt="GIF 5" style="width: 100px; height: 100px;">
-        <img src="imgs/autoencode_f.gif" alt="GIF 6" style="width: 100px; height: 100px;">
+        <img src="imgs/cartpole_f.gif" alt="GIF 1" style="width: 100px; height: 100px;">
+        <img src="imgs/autoencode_f.gif" alt="GIF 2" style="width: 100px; height: 100px;">
+        <img src="imgs/breakout_f.gif" alt="GIF 3" style="width: 100px; height: 100px;">
+        <img src="imgs/minesweeper_f.gif" alt="GIF 4" style="width: 100px; height: 100px;">
+        <img src="imgs/tetris_f.gif" alt="GIF 5" style="width: 100px; height: 100px;">
+        <img src="imgs/skittles_f.gif" alt="GIF 6" style="width: 100px; height: 100px;">
         <img src="imgs/navigator_f.gif" alt="GIF 7" style="width: 100px; height: 100px;">
+        <img src="imgs/countrecall_f.gif" alt="GIF 8" style="width: 100px; height: 100px;">
+        <img src="imgs/battleship_f.gif" alt="GIF 9" style="width: 100px; height: 100px;">
+        <img src="imgs/ncartpole_f.gif" alt="GIF 10" style="width: 100px; height: 100px;">
     </div>
     <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; padding: 10px;">
-        <img src="imgs/minesweeper_p.gif" alt="GIF 1" style="width: 100px; height: 100px;">
-        <img src="imgs/countrecall_p.gif" alt="GIF 2" style="width: 100px; height: 100px;">
-        <img src="imgs/battleship_p.gif" alt="GIF 3" style="width: 100px; height: 100px;">
-        <img src="imgs/cartpole_p.gif" alt="GIF 4" style="width: 100px; height: 100px;">
-        <img src="imgs/ncartpole_p.gif" alt="GIF 5" style="width: 100px; height: 100px;">
-        <img src="imgs/autoencode_p.gif" alt="GIF 6" style="width: 100px; height: 100px;">
+        <img src="imgs/cartpole_p.gif" alt="GIF 1" style="width: 100px; height: 100px;">
+        <img src="imgs/autoencode_p.gif" alt="GIF 2" style="width: 100px; height: 100px;">
+        <img src="imgs/breakout_p.gif" alt="GIF 3" style="width: 100px; height: 100px;">
+        <img src="imgs/minesweeper_p.gif" alt="GIF 4" style="width: 100px; height: 100px;">
+        <img src="imgs/tetris_p.gif" alt="GIF 5" style="width: 100px; height: 100px;">
+        <img src="imgs/skittles_p.gif" alt="GIF 6" style="width: 100px; height: 100px;">
         <img src="imgs/navigator_p.gif" alt="GIF 7" style="width: 100px; height: 100px;">
+        <img src="imgs/countrecall_p.gif" alt="GIF 8" style="width: 100px; height: 100px;">
+        <img src="imgs/battleship_p.gif" alt="GIF 9" style="width: 100px; height: 100px;">
+        <img src="imgs/ncartpole_p.gif" alt="GIF 10" style="width: 100px; height: 100px;">
     </div>
 </div>
 
-
-[//]: # (<p float="left">)
-
-[//]: # (    <img src="imgs/minesweeper_f.gif" width="96" height="96" /> )
-
-[//]: # (    <img src="imgs/countrecall_f.gif" width="96" height="96" /> )
-
-[//]: # (    <img src="imgs/battleship_f.gif" width="96" height="96" /> )
-
-[//]: # (    <img src="imgs/cartpole_f.gif" width="96" height="96" /> )
-
-[//]: # (    <img src="imgs/ncartpole_f.gif" width="96" height="96" /> )
-
-[//]: # (    <img src="imgs/autoencode_f.gif" width="96" height="96" /> )
-
-[//]: # (    <img src="imgs/navigator_f.gif" width="96" height="96" /> )
-
-[//]: # (</p>)
-
-[//]: # ()
-[//]: # (<p float="left">)
-
-[//]: # (    <img src="imgs/minesweeper_p.gif" width="96" height="96" /> )
-
-[//]: # (    <img src="imgs/countrecall_p.gif" width="96" height="96" /> )
-
-[//]: # (    <img src="imgs/battleship_p.gif" width="96" height="96" /> )
-
-[//]: # (    <img src="imgs/cartpole_p.gif" width="96" height="96" /> )
-
-[//]: # (    <img src="imgs/ncartpole_p.gif" width="96" height="96" /> )
-
-[//]: # (    <img src="imgs/autoencode_p.gif" width="96" height="96" /> )
-
-[//]: # (    <img src="imgs/navigator_p.gif" width="96" height="96" /> )
-
-[//]: # (</p>)
-
-POPGym Arcade contains 7 pixel-based POMDPs in the style of the [Arcade Learning Environment](https://github.com/Farama-Foundation/Arcade-Learning-Environment). Each environment provides:
+POPGym Arcade contains 10 pixel-based tasks in the style of the [Arcade Learning Environment](https://github.com/Farama-Foundation/Arcade-Learning-Environment). Each environment provides:
 - 3 Difficulty settings
 - Common observation and action space shared across all envs
 - Fully observable and partially observable configurations
@@ -69,7 +37,8 @@ POPGym Arcade contains 7 pixel-based POMDPs in the style of the [Arcade Learning
 
 ## Gradient Visualization
 We also provide tools to visualize how policies use memory. 
-<img src="imgs/grads_example.jpg" height="192" />
+
+<img src="imgs/grads_example.png" height="192" />
 
 See [below](#Memory-Introspection-Tools) for further instructions.
 
