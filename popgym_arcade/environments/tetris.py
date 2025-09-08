@@ -460,29 +460,29 @@ class Tetris(environment.Environment[EnvState, EnvParams]):
     """
     
     color = {
-        "black": jnp.array([0.0, 0.0, 0.0], dtype=jnp.float32),
-        "white": jnp.array([1.0, 1.0, 1.0], dtype=jnp.float32),
-        "gray": jnp.array([128/255.0, 128/255.0, 128/255.0], dtype=jnp.float32),
-        "red": jnp.array([1.0, 0.0, 0.0], dtype=jnp.float32),
-        "green": jnp.array([0.0, 1.0, 0.0], dtype=jnp.float32),
-        "blue": jnp.array([0.0, 0.0, 1.0], dtype=jnp.float32),
-        "yellow": jnp.array([1.0, 1.0, 0.0], dtype=jnp.float32),
-        "cyan": jnp.array([0.0, 1.0, 1.0], dtype=jnp.float32),
-        "magenta": jnp.array([1.0, 0.0, 1.0], dtype=jnp.float32),
-        "orange": jnp.array([1.0, 0.5, 0.0], dtype=jnp.float32),
-        "bright_red": jnp.array([1.0, 48/255.0, 71/255.0], dtype=jnp.float32),
+        "black": jnp.array([0, 0, 0], dtype=jnp.uint8),
+        "white": jnp.array([255, 255, 255], dtype=jnp.uint8),
+        "gray": jnp.array([128, 128, 128], dtype=jnp.uint8),
+        "red": jnp.array([255, 0, 0], dtype=jnp.uint8),
+        "green": jnp.array([0, 255, 0], dtype=jnp.uint8),
+        "blue": jnp.array([0, 0, 255], dtype=jnp.uint8),
+        "yellow": jnp.array([255, 255, 0], dtype=jnp.uint8),
+        "cyan": jnp.array([0, 255, 255], dtype=jnp.uint8),
+        "magenta": jnp.array([255, 0, 255], dtype=jnp.uint8),
+        "orange": jnp.array([255, 128, 0], dtype=jnp.uint8),
+        "bright_red": jnp.array([255, 48, 71], dtype=jnp.uint8),
     }
     
     # Colors for different tetromino types
     piece_colors = jnp.array([
-        [0, 203/255.0, 225/255.0],  # I - cyan
-        [225/255.0, 206/255.0, 0],  # O - yellow
-        [187/255.0, 0, 222/255.0],  # T - magenta
-        [0, 226/255.0, 64/255.0],  # S - green
-        [208/255.0, 0.0, 0.0],  # Z - red
-        [0, 119/255.0, 220/255.0],  # J - blue
-        [215/255.0, 144/255.0, 0.0],  # L - orange
-    ], dtype=jnp.float32)
+        [0, 203, 225],  # I - cyan
+        [225, 206, 0],  # O - yellow
+        [187, 0, 222],  # T - magenta
+        [0, 226, 64],  # S - green
+        [208, 0, 0],  # Z - red
+        [0, 119, 220],  # J - blue
+        [215, 144, 0],  # L - orange
+    ], dtype=jnp.uint8)
     
     size = {
         256: {
@@ -685,13 +685,13 @@ class Tetris(environment.Environment[EnvState, EnvParams]):
         """Render the current state."""
         canvas = jnp.zeros(
             (self.size[self.obs_size]["canvas_size"], self.size[self.obs_size]["canvas_size"], 3), 
-            dtype=jnp.float32
+            dtype=jnp.uint8
         ) + self.color["gray"]
         
         small_canvas = jnp.full(
             (self.size[self.obs_size]["small_canvas_size"], self.size[self.obs_size]["small_canvas_size"], 3),
             self.color["black"], 
-            dtype=jnp.float32
+            dtype=jnp.uint8
         )
         
         # Calculate cell size for rendering
@@ -938,7 +938,7 @@ class Tetris(environment.Environment[EnvState, EnvParams]):
 
     def observation_space(self, params: EnvParams) -> spaces.Box:
         """Observation space of the environment."""
-        return spaces.Box(0, 1, self.obs_shape)
+        return spaces.Box(0, 255, (self.obs_size, self.obs_size, 3), dtype=jnp.uint8)
 
     def state_space(self, params: EnvParams) -> spaces.Dict:
         """State space of the environment."""

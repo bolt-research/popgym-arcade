@@ -16,8 +16,6 @@ from popgym_arcade.environments.draw_utils import (
     draw_number,
     draw_str,
     draw_sub_canvas,
-    draw_rectangle,
-    draw_circle,
 )
 
 
@@ -179,42 +177,27 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
     - Observation has dimensionality (20, 10, 4)
     - Actions are encoded as follows: ['n','l','r']
     """
-    # color = {
-    #     "red": jnp.array([255, 0, 0], dtype=jnp.float32),
-    #     "dark_red": jnp.array([191, 26, 26], dtype=jnp.float32),
-    #     "bright_red": jnp.array([255, 48, 71], dtype=jnp.float32),
-    #     "black": jnp.array([0, 0, 0], dtype=jnp.float32),
-    #     "white": jnp.array([255, 255, 255], dtype=jnp.float32),
-    #     "metallic_gold": jnp.array([217, 166, 33], dtype=jnp.float32),
-    #     "light_gray": jnp.array([245, 245, 245], dtype=jnp.float32),
-    #     "light_blue": jnp.array([173, 217, 230], dtype=jnp.float32),
-    #     "electric_blue": jnp.array([0, 115, 189], dtype=jnp.float32),
-    #     "neon_pink": jnp.array([255, 105, 186], dtype=jnp.float32),
-    #     "gray": jnp.array([128, 128, 128], dtype=jnp.float32),
-    # }
     color = {
-        "red": jnp.array([1.0, 0.0, 0.0], dtype=jnp.float32),
-        "dark_red": jnp.array([191/255.0, 26/255.0, 26/255.0], dtype=jnp.float32),
-        "bright_red": jnp.array([1.0, 48/255.0, 71/255.0], dtype=jnp.float32),
-        "black": jnp.array([0.0, 0.0, 0.0], dtype=jnp.float32),
-        "white": jnp.array([1.0, 1.0, 1.0], dtype=jnp.float32),
-        "metallic_gold": jnp.array([217/255.0, 166/255.0, 33/255.0], dtype=jnp.float32),
-        "light_gray": jnp.array([245/255.0, 245/255.0, 245/255.0], dtype=jnp.float32),
-        "light_blue": jnp.array([173/255.0, 217/255.0, 230/255.0], dtype=jnp.float32),
-        "electric_blue": jnp.array([0.0, 115/255.0, 189/255.0], dtype=jnp.float32),
-        "neon_pink": jnp.array([1.0, 105/255.0, 186/255.0], dtype=jnp.float32),
-
-        "yellow": jnp.array([1.0, 1.0, 0.0], dtype=jnp.float32),
-        # "gray": jnp.array([128/255.0, 128/255.0, 128/255.0], dtype=jnp.float32),
-        "gray": jnp.array([119, 122, 127], dtype=jnp.float32) / 255.0,
-        "ball_and_paddle": jnp.array([200/255.0, 72/255.0, 72/255.0], dtype=jnp.float32),
-        "ball_trail": jnp.array([150/255.0, 50/255.0, 50/255.0], dtype=jnp.float32),  # Dimmer version for trail
-        "brick1": jnp.array([200, 72, 72], dtype=jnp.float32) / 255.0,
-        "brick2": jnp.array([198, 108, 58], dtype=jnp.float32) / 255.0,
-        "brick3": jnp.array([180, 122, 48], dtype=jnp.float32) / 255.0,
-        "brick4": jnp.array([162, 162, 42], dtype=jnp.float32) / 255.0,
-        "brick5": jnp.array([72, 160, 72], dtype=jnp.float32) / 255.0,
-        "brick6": jnp.array([66, 72, 200], dtype=jnp.float32) / 255.0,
+        "red": jnp.array([255, 0, 0], dtype=jnp.uint8),
+        "dark_red": jnp.array([191, 26, 26], dtype=jnp.uint8),
+        "bright_red": jnp.array([255, 48, 71], dtype=jnp.uint8),
+        "black": jnp.array([0, 0, 0], dtype=jnp.uint8),
+        "white": jnp.array([255, 255, 255], dtype=jnp.uint8),
+        "metallic_gold": jnp.array([217, 166, 33], dtype=jnp.uint8),
+        "light_gray": jnp.array([245, 245, 245], dtype=jnp.uint8),
+        "light_blue": jnp.array([173, 217, 230], dtype=jnp.uint8),
+        "electric_blue": jnp.array([0, 115, 189], dtype=jnp.uint8),
+        "neon_pink": jnp.array([255, 105, 186], dtype=jnp.uint8),
+        "yellow": jnp.array([255, 255, 0], dtype=jnp.uint8),
+        "gray": jnp.array([119, 122, 127], dtype=jnp.uint8),
+        "ball_and_paddle": jnp.array([200, 72, 72], dtype=jnp.uint8),
+        "ball_trail": jnp.array([255, 50, 50], dtype=jnp.uint8),  # Dimmer version for trail
+        "brick1": jnp.array([200, 72, 72], dtype=jnp.uint8),
+        "brick2": jnp.array([198, 108, 58], dtype=jnp.uint8),
+        "brick3": jnp.array([255, 122, 48], dtype=jnp.uint8),
+        "brick4": jnp.array([162, 162, 42], dtype=jnp.uint8),
+        "brick5": jnp.array([72, 255, 72], dtype=jnp.uint8),
+        "brick6": jnp.array([66, 72, 200], dtype=jnp.uint8),
     }
     size = {
         256: {
@@ -435,7 +418,7 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
 
     def observation_space(self, params: EnvParams) -> spaces.Box:
         """Observation space of the environment."""
-        return spaces.Box(0, 1, self.obs_shape)
+        return spaces.Box(0, 255, (self.obs_size, self.obs_size, 3), dtype=jnp.uint8)
 
     def state_space(self, params: EnvParams) -> spaces.Dict:
         """State space of the environment."""

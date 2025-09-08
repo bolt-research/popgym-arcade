@@ -205,7 +205,7 @@ class ActorCritic(eqx.Module):
 
     def __call__(self, x: Array) -> Tuple:
         """Expects image in [0, 255]"""
-        x = x.transpose((0, 3, 1, 2))
+        x = x.transpose((0, 3, 1, 2)) / 255.0
         actor_embedding = eqx.filter_vmap(self.actor_cnn)(x)
         critic_embedding = eqx.filter_vmap(self.critic_cnn)(x)
 
@@ -567,7 +567,7 @@ class QNetwork(eqx.Module):
 
     def __call__(self, x: jax.Array):
         """Expects image in [0, 255]"""
-        x = x.transpose((0, 3, 1, 2))
+        x = x.transpose((0, 3, 1, 2)) / 255.0
         x = eqx.filter_vmap(self.cnn)(x)
         x = x.reshape(x.shape[0], -1)
         x = eqx.filter_vmap(self.trunk)(x)
@@ -678,7 +678,7 @@ class QNetworkRNN(eqx.Module):
 
     def __call__(self, hidden_state, x, done, last_action):
         """Expects image in [0, 255]"""
-        x = x.transpose((0, 1, 4, 2, 3))
+        x = x.transpose((0, 1, 4, 2, 3)) / 255.0
         x = eqx.filter_vmap(eqx.filter_vmap(self.cnn))(x)
 
         x = x.reshape((x.shape[0], x.shape[1], -1))

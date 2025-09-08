@@ -334,7 +334,7 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
                     render_config["blue"],
                     render_config["indigo"],
                     render_config["violet"],
-                ]
+                ], dtype=jnp.uint8
             )
             color_idx = jnp.int32(state.color_indexes[x])
             enemy_color = rainbow_colors[color_idx % len(rainbow_colors)]
