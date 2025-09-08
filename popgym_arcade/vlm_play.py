@@ -155,7 +155,7 @@ def play_episode(env_name: str, seed: int, pomdp: bool) -> float:
     )
 
     # Initialize environment
-    key = jax.random.PRNGKey(0)
+    key = jax.random.PRNGKey(seed)
     key, reset_key = jax.random.split(key)
     observation, env_state = reset(reset_key, env_params)
 
@@ -198,11 +198,16 @@ def play_episode(env_name: str, seed: int, pomdp: bool) -> float:
 
 
 def check_run(result_df, name, pomdp, seed):
+    if result_df is None:
+        return False
     search = (result_df['env_name'] == name) & (result_df['pomdp'] == pomdp) & (result_df['seed'] == seed)
     if not any(search):
         return False
     
     if any(result_df[search]["episode_length"] == -1):
+        return False
+
+    if any(result_df[search]["num_rand_actions"] == result_df[search]["episode_length"]):
         return False
     
     return True
@@ -214,8 +219,10 @@ def main():
         results_df = pd.read_csv(output_filename)
         results = results_df.to_dict(orient='records')
         print("Loaded CSV")
+        print(results_df)
     except Exception:
         print("Failed to load CSV")
+        results_df = None
         results = []
 
     for env_name in environments_to_play:
