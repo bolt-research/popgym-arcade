@@ -14,16 +14,22 @@ plt.rcParams['axes.titlesize'] = 22
 
 # 1. Load the data from the provided CSV structure
 # Using the original io.StringIO for reproducibility, but this works with your file path.
-df = pd.read_csv("/Users/smorad/Downloads/finalpqn128model_group.csv")
+df = pd.read_csv("/Users/smorad/Downloads/finalpqn20250909model_group.csv")
+
+algos = {
+    "MLP": "MLP",
+    "Fart": "FART",
+    "Mingru": "MinGRU",
+    "Gru": "GRU",
+    "Lru": "LRU",
+}
 # Drop FART
 #df = df[df["Algorithm"] != 'PQN_RNN (Fart)']
 
 # Clean up algorithm names
 df['Algorithm'] = df['Algorithm'].str.replace('PQN_RNN \(', '', regex=True).str.replace('\)', '', regex=True)
 df['Algorithm'] = df['Algorithm'].str.replace('PQN (MLP', 'MLP')
-df['Algorithm'] = df['Algorithm'].str.replace('Fart', 'FART')
-df['Algorithm'] = df['Algorithm'].str.replace('Lru', 'LRU')
-df['Algorithm'] = df['Algorithm'].str.replace('Mingru', 'MinGRU')
+df['Algorithm'] = df['Algorithm'].replace(algos)
 
 # 2. Calculate derived metrics and propagate error
 df['sem'] = df['std'] / np.sqrt(df['count'])
@@ -54,8 +60,8 @@ pivoted.loc[mlp_index, 'bias'] = 0
 pivoted.loc[mlp_index, 'bias_sem'] = 0
 
 # Define a logical order for the plot and sort the data
-algo_order = ['MLP', 'FART', 'MinGRU', 'LRU']
-pivoted['Algorithm'] = pd.Categorical(pivoted['Algorithm'], categories=algo_order, ordered=True)
+#algo_order = ['MLP', 'FART', 'MinGRU', 'GRU', 'LRU']
+pivoted['Algorithm'] = pd.Categorical(pivoted['Algorithm'], categories=algos.values(), ordered=True)
 plot_data = pivoted.sort_values('Algorithm')
 
 # 3. Plotting
