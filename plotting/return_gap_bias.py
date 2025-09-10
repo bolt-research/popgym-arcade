@@ -41,10 +41,12 @@ pivoted = df.pivot_table(
 )
 pivoted.columns = [f'{val}_{col}' for val, col in pivoted.columns]
 pivoted.reset_index(inplace=True)
+pivoted['ci_True'] = 1.96 * pivoted['sem_True']
 
 # --- Calculate Observability Gap ---
 pivoted['gap'] = pivoted['mean_False'] - pivoted['mean_True']
 pivoted['gap_sem'] = np.sqrt(pivoted['sem_False']**2 + pivoted['sem_True']**2)
+pivoted['gap_ci'] = 1.96 * pivoted['gap_sem']
 
 # --- Calculate Memory Bias ---
 # Bias = J(pi, M) - J(f, pi, M). Positive bias = recurrent model is worse on MDP.
@@ -53,6 +55,7 @@ mlp_mdp_sem = pivoted.loc[pivoted['Algorithm'] == 'MLP', 'sem_False'].iloc[0]
 
 pivoted['bias'] = pivoted['mean_False'] - mlp_mdp_mean
 pivoted['bias_sem'] = np.sqrt(mlp_mdp_sem**2 + pivoted['sem_False']**2)
+pivoted['bias_ci'] = 1.96 * pivoted['bias_sem']
 
 # By definition, the bias of the baseline against itself is zero.
 mlp_index = pivoted[pivoted['Algorithm'] == 'MLP'].index
@@ -74,7 +77,7 @@ ax1 = axes[0]
 ax1.bar(
     algorithms,
     plot_data['mean_True'],
-    yerr=plot_data['sem_True'],
+    yerr=plot_data['ci_True'],
     capsize=15,
     color=colors,
     alpha=0.8
@@ -88,7 +91,7 @@ ax2 = axes[1]
 ax2.bar(
     algorithms,
     plot_data['gap'],
-    yerr=plot_data['gap_sem'],
+    yerr=plot_data['gap_ci'],
     capsize=15,
     color=colors,
     alpha=0.8
@@ -102,7 +105,7 @@ ax3 = axes[2]
 ax3.bar(
     algorithms,
     plot_data['bias'],
-    yerr=plot_data['bias_sem'],
+    yerr=plot_data['bias_ci'],
     capsize=15,
     color=colors,
     alpha=0.8
