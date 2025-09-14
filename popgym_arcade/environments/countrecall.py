@@ -139,21 +139,21 @@ class CountRecall(environment.Environment):
     """
 
     color = {
-        "red": jnp.array([255, 0, 0], dtype=jnp.uint8),
-        "dark_red": jnp.array([191, 26, 26], dtype=jnp.uint8),
-        "black": jnp.array([0, 0, 0], dtype=jnp.uint8),
-        "white": jnp.array([255, 255, 255], dtype=jnp.uint8),
-        "light_blue": jnp.array([74, 191, 240], dtype=jnp.uint8),
-        "dark_blue": jnp.array([31, 120, 196], dtype=jnp.uint8),
-        "soft_green": jnp.array([143, 237, 143], dtype=jnp.uint8),
-        "green": jnp.array([143, 237, 143], dtype=jnp.uint8),
-        "soft_beige": jnp.array([245, 224, 201], dtype=jnp.uint8),
-        "olive_green": jnp.array([128, 161, 99], dtype=jnp.uint8),
-        "maroon": jnp.array([176, 48, 97], dtype=jnp.uint8),
-        "teal": jnp.array([0, 128, 128], dtype=jnp.uint8),
-        "light_gray": jnp.array([245, 245, 245], dtype=jnp.uint8),
-        "bright_blue": jnp.array([74, 191, 240], dtype=jnp.uint8),
-        "muted_blue": jnp.array([153, 179, 204], dtype=jnp.uint8),
+        "red": jnp.array([255, 0, 0], dtype=jnp.float32) / 255.0,
+        "dark_red": jnp.array([191, 26, 26], dtype=jnp.float32) / 255.0,
+        "black": jnp.array([0, 0, 0], dtype=jnp.float32) / 255.0,
+        "white": jnp.array([255, 255, 255], dtype=jnp.float32) / 255.0,
+        "light_blue": jnp.array([74, 191, 240], dtype=jnp.float32) / 255.0,
+        "dark_blue": jnp.array([31, 120, 196], dtype=jnp.float32) / 255.0,
+        "soft_green": jnp.array([143, 237, 143], dtype=jnp.float32) / 255.0,
+        "green": jnp.array([143, 237, 143], dtype=jnp.float32) / 255.0,
+        "soft_beige": jnp.array([245, 224, 201], dtype=jnp.float32) / 255.0,
+        "olive_green": jnp.array([128, 161, 99], dtype=jnp.float32) / 255.0,
+        "maroon": jnp.array([176, 48, 97], dtype=jnp.float32) / 255.0,
+        "teal": jnp.array([0, 128, 128], dtype=jnp.float32) / 255.0,
+        "light_gray": jnp.array([245, 245, 245], dtype=jnp.float32) / 255.0,
+        "bright_blue": jnp.array([74, 191, 240], dtype=jnp.float32) / 255.0,
+        "muted_blue": jnp.array([153, 179, 204], dtype=jnp.float32) / 255.0,
     }
 
     size = {
@@ -272,12 +272,12 @@ class CountRecall(environment.Environment):
         self.small_canvas_size = self.size[obs_size]["small_canvas_size"]
         self.canvas_color = self.color["light_gray"]
         self.large_canvas = (
-            jnp.zeros((self.canvas_size, self.canvas_size, 3), dtype=jnp.uint8)
+            jnp.zeros((self.canvas_size, self.canvas_size, 3), dtype=jnp.float32)
             + self.canvas_color
         )
         self.small_canvas = (
             jnp.zeros(
-                (self.small_canvas_size, self.small_canvas_size, 3), dtype=jnp.uint8
+                (self.small_canvas_size, self.small_canvas_size, 3), dtype=jnp.float32
             )
             + self.color["muted_blue"]
         )
@@ -513,7 +513,7 @@ class CountRecall(environment.Environment):
 
     def observation_space(self, params: EnvParams) -> spaces.Box:
         """Observation space of the environment."""
-        return spaces.Box(0, 255, (256, 256, 3), dtype=jnp.uint8)
+        return spaces.Box(0, 255, (256, 256, 3), dtype=jnp.float32)
 
 
 class CountRecallEasy(CountRecall):

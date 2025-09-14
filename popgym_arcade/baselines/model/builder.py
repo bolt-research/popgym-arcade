@@ -668,7 +668,7 @@ class QNetworkRNN(eqx.Module):
             )
         self.rnn = get_residual_memory_model(
             input=517,
-            hidden=512,
+            hidden=256,
             output=256,
             num_layers=2,
             rnn_type=rnn_type,

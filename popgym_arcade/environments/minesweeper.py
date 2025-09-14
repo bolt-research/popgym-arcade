@@ -133,18 +133,18 @@ class MineSweeper(environment.Environment):
     """
 
     render_common = {
-        "clr": jnp.array([229, 234, 242], dtype=jnp.uint8),
-        "sub_clr": jnp.array([0, 0, 0], dtype=jnp.uint8),
+        "clr": jnp.array([229, 234, 242], dtype=jnp.float32) / 255.0,
+        "sub_clr": jnp.array([0, 0, 0], dtype=jnp.float32) / 255.0,
         # parameters for rendering numbers
-        "num_clr": jnp.array([255, 255, 255], dtype=jnp.uint8),
+        "num_clr": jnp.array([255, 255, 255], dtype=jnp.float32) / 255.0,
         # parameters for rendering current action position
-        "action_clr": jnp.array([255, 127, 0], dtype=jnp.uint8),
+        "action_clr": jnp.array([255, 127, 0], dtype=jnp.float32) / 255.0,
         # parameters for rendering grids
-        "grid_clr": jnp.array([102, 102, 102], dtype=jnp.uint8),
+        "grid_clr": jnp.array([102, 102, 102], dtype=jnp.float32) / 255.0,
         # parameters for rendering score
-        "sc_clr": jnp.array([153, 0, 204], dtype=jnp.uint8),
+        "sc_clr": jnp.array([153, 0, 204], dtype=jnp.float32) / 255.0,
         # parameters for rendering env name
-        "env_clr": jnp.array([0, 51, 102], dtype=jnp.uint8),
+        "env_clr": jnp.array([0, 51, 102], dtype=jnp.float32) / 255.0,
     }
     render_256x = {
         # parameters for rendering (256, 256, 3) canvas
@@ -361,7 +361,7 @@ class MineSweeper(environment.Environment):
         canvas = jnp.full(
             (render_config["size"], render_config["size"], 3),
             render_config["clr"],
-            dtype=jnp.uint8,
+            dtype=jnp.float32,
         )
         sub_canvas = jnp.full(
             (
@@ -370,7 +370,7 @@ class MineSweeper(environment.Environment):
                 3,
             ),
             render_config["sub_clr"],
-            dtype=jnp.uint8,
+            dtype=jnp.float32,
         )
 
         # Extract action coordinates
@@ -478,7 +478,7 @@ class MineSweeper(environment.Environment):
             0,
             255,
             (self.board_size, self.board_size, 3),
-            dtype=jnp.uint8,
+            dtype=jnp.float32,
         )
 
 

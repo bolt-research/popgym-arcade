@@ -450,7 +450,7 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
 
     def observation_space(self, params: EnvParams) -> spaces.Box:
         """Observation space of the environment."""
-        return spaces.Box(0, 255, (self.obs_size, self.obs_size, 3), dtype=jnp.uint8)
+        return spaces.Box(0, 255, (self.obs_size, self.obs_size, 3), dtype=jnp.float32)
 
 
 class SkittlesEasy(Skittles):

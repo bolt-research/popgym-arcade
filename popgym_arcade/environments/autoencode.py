@@ -112,16 +112,16 @@ class AutoEncode(environment.Environment):
     """
 
     color = {
-        "red": jnp.array([255, 0, 0], dtype=jnp.uint8),
-        "dark_red": jnp.array([191, 26, 26], dtype=jnp.uint8),
-        "bright_red": jnp.array([255, 48, 71], dtype=jnp.uint8),
-        "black": jnp.array([0, 0, 0], dtype=jnp.uint8),
-        "white": jnp.array([255, 255, 255], dtype=jnp.uint8),
-        "metallic_gold": jnp.array([217, 166, 33], dtype=jnp.uint8),
-        "light_gray": jnp.array([245, 245, 245], dtype=jnp.uint8),
-        "light_blue": jnp.array([173, 217, 230], dtype=jnp.uint8),
-        "electric_blue": jnp.array([0, 115, 189], dtype=jnp.uint8),
-        "neon_pink": jnp.array([255, 105, 186], dtype=jnp.uint8),
+        "red": jnp.array([255, 0, 0], dtype=jnp.float32) / 255.0,
+        "dark_red": jnp.array([191, 26, 26], dtype=jnp.float32) / 255.0,
+        "bright_red": jnp.array([255, 48, 71], dtype=jnp.float32) / 255.0,
+        "black": jnp.array([0, 0, 0], dtype=jnp.float32) / 255.0,
+        "white": jnp.array([255, 255, 255], dtype=jnp.float32) / 255.0,
+        "metallic_gold": jnp.array([217, 166, 33], dtype=jnp.float32) / 255.0,
+        "light_gray": jnp.array([245, 245, 245], dtype=jnp.float32) / 255.0,
+        "light_blue": jnp.array([173, 217, 230], dtype=jnp.float32) / 255.0,
+        "electric_blue": jnp.array([0, 115, 189], dtype=jnp.float32) / 255.0,
+        "neon_pink": jnp.array([255, 105, 186], dtype=jnp.float32) / 255.0,
     }
     size = {
         256: {
@@ -204,13 +204,13 @@ class AutoEncode(environment.Environment):
         self.canvas_size = self.size[obs_size]["canvas_size"]
         self.canvas_color = self.color["light_blue"]
         self.large_canvas = jnp.full(
-            (self.canvas_size, self.canvas_size, 3), self.canvas_color, dtype=jnp.uint8
+            (self.canvas_size, self.canvas_size, 3), self.canvas_color, dtype=jnp.float32
         )
         self.small_canvas_size = self.size[obs_size]["small_canvas_size"]
         self.small_canvas = jnp.full(
             (self.small_canvas_size, self.small_canvas_size, 3),
             self.canvas_color,
-            dtype=jnp.uint8,
+            dtype=jnp.float32,
         )
 
         self.max_steps_in_episode = self.decksize * self.num_decks * 2 * 5
@@ -469,7 +469,7 @@ class AutoEncode(environment.Environment):
 
     def observation_space(self, params: EnvParams) -> spaces.Box:
         """Observation space of the environment."""
-        return spaces.Box(0, 255, (256, 256, 3), dtype=jnp.uint8)
+        return spaces.Box(0, 255, (256, 256, 3), dtype=jnp.float32)
 
 
 class AutoEncodeEasy(AutoEncode):

@@ -162,18 +162,18 @@ class Navigator(environment.Environment):
 
     render_common = {
         # parameters for rendering (256, 256, 3) canvas
-        "clr": jnp.array([119, 122, 127], dtype=jnp.uint8),
-        "sub_clr": jnp.array([119, 112, 127], dtype=jnp.uint8),
+        "clr": jnp.array([119, 122, 127], dtype=jnp.float32) / 255.0,
+        "sub_clr": jnp.array([119, 112, 127], dtype=jnp.float32) / 255.0,
         # parameters for rendering grids
-        "grid_clr": jnp.array([255, 255, 255], dtype=jnp.uint8),
+        "grid_clr": jnp.array([255, 255, 255], dtype=jnp.float32) / 255.0,
         # parameters for current action position
-        "action_clr": jnp.array([255, 255, 0], dtype=jnp.uint8),
+        "action_clr": jnp.array([255, 255, 0], dtype=jnp.float32) / 255.0,
         # parameters for rendering treasure
-        "trea_clr": jnp.array([73, 214, 247], dtype=jnp.uint8),
+        "trea_clr": jnp.array([73, 214, 247], dtype=jnp.float32) / 255.0,
         # parameters for rendering score
-        "sc_clr": jnp.array([0, 0, 127], dtype=jnp.uint8),
+        "sc_clr": jnp.array([0, 0, 127], dtype=jnp.float32) / 255.0,
         # parameters for rendering env name
-        "env_clr": jnp.array([138, 0, 138], dtype=jnp.uint8),
+        "env_clr": jnp.array([138, 0, 138], dtype=jnp.float32) / 255.0,
     }
     render_256x = {
         **render_common,
@@ -531,7 +531,7 @@ class Navigator(environment.Environment):
 
     def observation_space(self, params: EnvParams) -> spaces.Box:
         """Observation space of the environment."""
-        return spaces.Box(0, 255, (self.obs_size, self.obs_size, 3), dtype=jnp.uint8)
+        return spaces.Box(0, 255, (self.obs_size, self.obs_size, 3), dtype=jnp.float32)
 
 
 class NavigatorEasy(Navigator):
