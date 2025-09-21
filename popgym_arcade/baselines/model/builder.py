@@ -426,7 +426,7 @@ class ActorCriticRNN(eqx.Module):
     def __call__(self, actor_state, critic_state, x):
         """Expects image in [0, 255]"""
         inputs, dones = x
-        inputs = inputs.transpose((0, 1, 4, 2, 3))
+        inputs = inputs.transpose((0, 1, 4, 2, 3)) / 255.0
         actor_embedding = eqx.filter_vmap(eqx.filter_vmap(self.actor_cnn))(inputs)
         critic_embedding = eqx.filter_vmap(eqx.filter_vmap(self.critic_cnn))(inputs)
 
