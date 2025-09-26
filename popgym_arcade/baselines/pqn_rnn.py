@@ -245,15 +245,6 @@ def make_train(config):
             train_state, memory_transitions, expl_state, test_metrics, rng = (
                 runner_state
             )
-            # hs, last_obs, last_done, last_action, env_state = expl_state
-            # hs = train_state.model.initialize_carry(key=rng_init)
-            # hs = add_batch_dim(hs, config["NUM_ENVS"])
-            # last_obs, env_state = vmap_reset(config["NUM_ENVS"])(_rng)
-            # last_done = jnp.zeros((config["NUM_ENVS"]), dtype=bool)
-            # last_action = jnp.zeros((config["NUM_ENVS"]), dtype=int)
-
-            # expl_state = (hs, last_obs, last_done, last_action, env_state)
-
             expl_state = tuple(expl_state)
 
             train_state = train_state.replace(
@@ -278,7 +269,6 @@ def make_train(config):
                     # with batch_size = num_envs/num_minibatches
 
                     train_state, rng = carry
-                    # hs = minibatch.last_hs[0]  # hs of oldest step (batch_size, hidden_size)
                     hs = jax.tree.map(lambda hs: hs[0], minibatch.last_hs)
                     agent_in = (
                         minibatch.obs,
@@ -316,7 +306,6 @@ def make_train(config):
                         return targets
 
                     def _loss_fn(network):
-                        # hs = jax.tree.map(lambda x: jnp.squeeze(x, axis=0), hs)
                         hidden_state, q_vals = network(
                             hs,
                             *agent_in,
@@ -415,16 +404,6 @@ def make_train(config):
             churn_ratio = (last_action != new_action).mean()
             metrics["churn_ratio"] = churn_ratio
 
-            # jax.debug.print("Metrics: {}", metrics)
-            # write info to file
-            with open("metrics.txt", "a") as f:
-                f.write(f"churn_ratio: {churn_ratio}\n")
-            jax.debug.print("churn_ratio: {}", churn_ratio)
-            # action: (128+4, 16)
-
-            # print(f"memory_transitions.shape: {memory_transitions}")
-            # jax.debug.print("transitions: {}", transitions)
-            # metrics = transitions.infos
             if config.get("TEST_DURING_TRAINING", False):
                 rng, _rng = jax.random.split(rng)
                 test_metrics = jax.lax.cond(
@@ -451,28 +430,6 @@ def make_train(config):
                     wandb.log(metrics, step=metrics["update_steps"])
 
                 jax.debug.callback(callback, metrics, original_rng)
-                # jax.debug.print("Timesteps: {}, Returns: {}", metrics['env_step'], transitions.infos['returned_episode_returns'].mean())
-            # if config["WANDB_MODE"] != "disabled":
-
-            #     def callback(info):
-            #         return_values = info["returned_episode_returns"][
-            #             info["returned_episode"]
-            #         ]
-            #         timesteps = (
-            #             info["timestep"][info["returned_episode"]] * config["NUM_ENVS"]
-            #         )
-            #         for t in range(len(timesteps)):
-            #             log_dict = {
-            #                 "global step": timesteps[t],
-            #                 "episodic return": return_values[t],
-            #             }
-            #             print(
-            #                 f"global step={timesteps[t]}, episodic return={return_values[t]}"
-            #             )
-            #             if timesteps[t] % 100 == 0:
-            #                 wandb.log(log_dict)
-
-            #     jax.debug.callback(callback, metrics)
 
             runner_state = (
                 train_state,
@@ -520,9 +477,6 @@ def make_train(config):
             init_obs, env_state = vmap_reset(config["TEST_NUM_ENVS"])(_rng)
             init_done = jnp.zeros((config["TEST_NUM_ENVS"]), dtype=bool)
             init_action = jnp.zeros((config["TEST_NUM_ENVS"]), dtype=int)
-            # initialise_carry_fn = partial(network.apply, method="initialize_carry", mutable=["batch_stats"])
-            # init_hs = initialise_carry_fn({"params":train_state.params})
-            # init_hs = init_hs[0]
             init_hs = train_state.model.initialize_carry(key=_rng)
             init_hs = add_batch_dim(init_hs, config["TEST_NUM_ENVS"])
 
@@ -559,10 +513,7 @@ def make_train(config):
         init_dones = jnp.zeros((config["NUM_ENVS"]), dtype=bool)
         init_action = jnp.zeros((config["NUM_ENVS"]), dtype=int)
 
-        # init_hs = init_hs[0]
         expl_state = (hidden_state, obs, init_dones, init_action, env_state)
-
-        # expl_state = add_batch_dim(expl_state, 1, 1)
 
         # step randomly to have the initial memory window
         def _random_step(carry, _):
@@ -667,7 +618,7 @@ def evaluate(model, config):
         action = jnp.argmax(q_val, axis=-1)
         obs, new_state, reward, done, info = vmap_step(2)(rng_step, state, action)
         state = new_state
-        frame = jnp.asarray(obs[0])
+        frame = jnp.asarray(obs[0]) 
         # Update frames array at index i
         frames = frames.at[i].set(frame)
         carry = (hs, obs, done, action, state, frames, _rng)
@@ -681,7 +632,6 @@ def evaluate(model, config):
     _, _, _, _, _, frames, _rng = carry
     frames = np.array(frames, dtype=np.uint8)
     frames = frames.transpose((0, 3, 1, 2))
-    # imageio.mimsave('{}_{}_{}_Partial={}_SEED={}.gif'.format(config["TRAIN_TYPE"], config["MEMORY_TYPE"], config["ENV_NAME"], config["PARTIAL"], config["SEED"]), frames)
     wandb.log(
         {
             "{}_{}_{}_model_Partial={}_SEED={}".format(
@@ -696,8 +646,6 @@ def evaluate(model, config):
 
 
 def single_run(config):
-    # config = {**config, **config["alg"]}
-
     alg_name = config.get("ALG_NAME", "pqn_rnn")
     env_name = config["ENV_NAME"]
 

@@ -567,9 +567,7 @@ class QNetwork(eqx.Module):
 
     def __call__(self, x: jax.Array):
         """Expects image in [0, 255]"""
-        print(jnp.max(x), jnp.min(x))
         x = x.transpose((0, 3, 1, 2)) / 255.0
-        print(jnp.max(x), jnp.min(x))
         x = eqx.filter_vmap(self.cnn)(x)
         x = x.reshape(x.shape[0], -1)
         x = eqx.filter_vmap(self.trunk)(x)

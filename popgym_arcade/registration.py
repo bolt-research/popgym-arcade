@@ -23,6 +23,12 @@ from popgym_arcade.environments import (
     SkittlesEasy,
     SkittlesHard,
     SkittlesMedium,
+    BreakoutEasy,
+    BreakoutMedium,
+    BreakoutHard,
+    TetrisEasy,
+    TetrisMedium,
+    TetrisHard,
 )
 
 
@@ -75,6 +81,18 @@ def make(env_id: str, **env_kwargs):
         env = SkittlesMedium(**env_kwargs)
     elif env_id == "SkittlesHard":
         env = SkittlesHard(**env_kwargs)
+    elif env_id == "BreakoutEasy":
+        env = BreakoutEasy(**env_kwargs)
+    elif env_id == "BreakoutMedium":
+        env = BreakoutMedium(**env_kwargs)
+    elif env_id == "BreakoutHard":
+        env = BreakoutHard(**env_kwargs)
+    elif env_id == "TetrisEasy":
+        env = TetrisEasy(**env_kwargs)
+    elif env_id == "TetrisMedium":
+        env = TetrisMedium(**env_kwargs)
+    elif env_id == "TetrisHard":
+        env = TetrisHard(**env_kwargs)
     else:
         raise ValueError("Environment ID is not registered")
 
@@ -106,4 +124,10 @@ REGISTERED_ENVIRONMENTS = [
     "SkittlesEasy",
     "SkittlesMedium",
     "SkittlesHard",
+    "BreakoutEasy",
+    "BreakoutMedium",
+    "BreakoutHard",
+    "TetrisEasy",
+    "TetrisMedium",
+    "TetrisHard"
 ]
