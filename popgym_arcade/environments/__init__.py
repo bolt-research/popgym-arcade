@@ -46,3 +46,8 @@ from popgym_arcade.environments.tetris import (
     TetrisHard,
     TetrisMedium,
 )
+from popgym_arcade.environments.snake import (
+    SnakeEasy,
+    SnakeMedium,
+    SnakeHard,
+)
