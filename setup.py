@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="popgym-arcade",
-    version="0.0.4",
+    version="0.0.5",
     author="Wang Zekang, He Zhe, Steven Morad",
     author_email="",
     description="POMDP Arcade Environments on the GPU",
