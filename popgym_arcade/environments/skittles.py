@@ -225,14 +225,16 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
             color_indexes=new_color_indexes,
         )
 
-        done = self.is_terminal(state, params)
+        terminated, truncated, done = self.is_terminal(state, params)
 
         return (
             lax.stop_gradient(self.get_obs(state)),
             lax.stop_gradient(state),
             jnp.array(self.reward_scale),
             done,
-            {"discount": self.discount(state, params)},
+            {"discount": self.discount(state, params),
+             "terminated": terminated,
+             "truncated": truncated},
         )
 
     def reset_env(
@@ -279,10 +281,10 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
 
     def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
         """Check if the episode is done."""
-        done_crash = state.xp + state.over
-        done_steps = state.time >= self.max_steps_in_episode
-        done = jnp.logical_or(done_crash, done_steps)
-        return done
+        terminated = state.xp + state.over
+        truncated = state.time >= self.max_steps_in_episode
+        done = jnp.logical_or(terminated, truncated)
+        return terminated, truncated, done
 
     @functools.partial(jax.jit, static_argnums=(0,))
     def render(self, state: EnvState) -> chex.Array:

@@ -103,10 +103,8 @@ def analyze_model_saliency(
     return result_paths
 
 
-# Example usage
 if __name__ == "__main__":
     configs = [
-        # fart models
         {
             "ENV_NAME": "AutoEncodeEasy",
             "PARTIAL": False,
@@ -405,7 +403,6 @@ if __name__ == "__main__":
         },
     ]
 
-    # Example usage
     seeds = [0, 1, 2, 3, 4]
 
     for config in configs:
@@ -416,4 +413,3 @@ if __name__ == "__main__":
         results = analyze_model_saliency(
             config=config, seeds=seeds, max_steps=200, visualize=True
         )
-        print(f"Successfully analyzed: {results}")

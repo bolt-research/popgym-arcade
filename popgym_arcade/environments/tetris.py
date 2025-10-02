@@ -543,13 +543,10 @@ class Tetris(environment.Environment[EnvState, EnvParams]):
         # Handle spawning new piece and clearing lines from previous frame
         def spawn_and_clear(state_and_key):
             state, key = state_and_key
-            # Clear completed lines now (after showing the piece for one frame)
             new_board, lines_cleared = clear_lines(state.board)
             
-            # each line cleared gives 0.1 reward, 10 lines = 1.0 total
-            reward = lines_cleared.astype(jnp.float32) * 0.1
-            
-            # Update state with cleared board
+            reward = lines_cleared.astype(jnp.int32) * 0.1
+
             new_lines_cleared = state.lines_cleared + lines_cleared
             state = state.replace(
                 board=new_board,
@@ -574,23 +571,19 @@ class Tetris(environment.Environment[EnvState, EnvParams]):
             no_spawn_clear,
             (state, key)
         )
-        # jax.debug.print("Reward: {}", reward)
-        # Step the current piece
+
         state, should_lock = step_piece(state, action, params)
         
-        # Increment frames since spawn (but don't go beyond a reasonable limit)
         state = state.replace(
             frames_since_spawn=jnp.minimum(state.frames_since_spawn + 1, 10)
         )
         
-        # Handle piece locking using JAX conditional
+
         def lock_piece(state_and_key):
             state, key = state_and_key
-            # Place piece on board (but don't clear lines yet - do that next frame)
             piece_shape = TETROMINOES[state.current_piece, state.current_rotation]
             new_board = place_piece(state.board, piece_shape, state.current_x, state.current_y, state.current_piece)
             
-            # Update state with new board but set just_locked=True to clear lines next frame
             state = state.replace(
                 board=new_board,
                 just_locked=True,
@@ -609,18 +602,16 @@ class Tetris(environment.Environment[EnvState, EnvParams]):
             (state, key)
         )
         
-        # Update time
+
         state = state.replace(time=state.time + 1)
-        # Check termination
+
         done = self.is_terminal(state, params)
         state = state.replace(terminal=done)
         
-        # Apply collision penalty only when game ends due to collision (not truncation or success)
         done_steps = state.time >= params.max_steps_in_episode  # Truncation
         done_lines = state.lines_cleared >= 10  # Success
         done_collision = jnp.logical_and(done, jnp.logical_not(jnp.logical_or(done_steps, done_lines)))  # Collision
         
-        # Only penalize collision, not truncation or success
         reward = jax.lax.select(done_collision, reward - 1.0, reward)
         info = {"discount": self.discount(state, params),
                 "truncated": done_steps,
@@ -639,11 +630,9 @@ class Tetris(environment.Environment[EnvState, EnvParams]):
         """Reset environment state."""
         key1, key2 = jax.random.split(key)
         
-        # Initialize with shuffled piece queue for nonstationarity
         piece_queue = jax.random.permutation(key1, jnp.arange(7))
         initial_piece = piece_queue[0]
         
-        # Initialize next_pieces array with the required number of preview pieces
         next_pieces = jnp.array([piece_queue[(i + 1) % 7] for i in range(self.preview_num)])
         
         state = EnvState(

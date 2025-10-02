@@ -10,7 +10,7 @@ import jax.numpy as jnp
 
 import sys
 
-sys.path.extend(["/home/ubuntu-user/popjym-main"])
+sys.path.extend([""])
 
 # import matplotlib.pyplot as plt
 

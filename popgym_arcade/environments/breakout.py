@@ -104,6 +104,7 @@ def step_ball_brick(
     strike_bool = jnp.logical_and((1 - state.strike), strike_toggle)
 
     row_rewards = jnp.linspace(0.015, 0.005, 6)
+    row_rewards = row_rewards * (0.1 / jnp.sum(row_rewards))
     row_index = jnp.clip(new_y - 1, 0, 5) 
     reward += strike_bool * row_rewards[row_index]
 
@@ -262,9 +263,11 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
                                         0.0)
         reward = reward + negative_reward
         state = state.replace(time=state.time + 1)
-        done = self.is_terminal(state, params)
+        truncated, done = self.is_terminal(state, params)
         state = state.replace(terminal=done)
-        info = {"discount": self.discount(state, params)}
+        info = {"discount": self.discount(state, params),
+                "terminated": state.terminal,
+                "truncated": truncated}
         return (
             jax.lax.stop_gradient(self.get_obs(state)),
             jax.lax.stop_gradient(state),
@@ -300,7 +303,7 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
     def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
         """Check whether state is terminal."""
         done_steps = state.time >= params.max_steps_in_episode
-        return jnp.logical_or(done_steps, state.terminal)
+        return done_steps, jnp.logical_or(done_steps, state.terminal)
     
 
     @property

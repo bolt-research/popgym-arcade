@@ -249,11 +249,11 @@ class Navigator(environment.Environment):
             action_y = lax.max(state.action_y - 1, 0)
             new_timestep = state.timestep + 1
             new_state = state.replace(action_y=action_y, timestep=new_timestep)
-            done = state.board[new_state.action_x, new_state.action_y] == 1
+            terminated = state.board[new_state.action_x, new_state.action_y] == 1
             truncated = new_timestep >= self.max_steps_in_episode
-            terminated = jnp.logical_or(done, truncated)
+            done = jnp.logical_or(terminated, truncated)
             reward = lax.cond(
-                done,
+                terminated,
                 lambda _: -self.reward_die,
                 lambda _: -self.reward_step,
                 operand=None,
@@ -264,20 +264,20 @@ class Navigator(environment.Environment):
             )
             new_state = new_state.replace(score=new_score)
             infos = {
-                "terminated": done,
+                "terminated": terminated,
                 "truncated": truncated,
             }
-            return self.get_obs(new_state), new_state, reward, terminated, infos
+            return self.get_obs(new_state), new_state, reward, done, infos
 
         def move_down(state):
             action_y = lax.min(state.action_y + 1, self.board_size - 1)
             new_timestep = state.timestep + 1
             new_state = state.replace(action_y=action_y, timestep=new_timestep)
-            done = state.board[new_state.action_x, new_state.action_y] == 1
+            terminated = state.board[new_state.action_x, new_state.action_y] == 1
             truncated = new_timestep >= self.max_steps_in_episode
-            terminated = jnp.logical_or(done, truncated)
+            done = jnp.logical_or(terminated, truncated)
             reward = lax.cond(
-                done,
+                terminated,
                 lambda _: -self.reward_die,
                 lambda _: -self.reward_step,
                 operand=None,
@@ -288,20 +288,20 @@ class Navigator(environment.Environment):
             )
             new_state = new_state.replace(score=new_score)
             infos = {
-                "terminated": done,
+                "terminated": terminated,
                 "truncated": truncated,
             }
-            return self.get_obs(new_state), new_state, reward, terminated, infos
+            return self.get_obs(new_state), new_state, reward, done, infos
 
         def move_left(state):
             action_x = lax.max(state.action_x - 1, 0)
             new_timestep = state.timestep + 1
             new_state = state.replace(action_x=action_x, timestep=new_timestep)
-            done = state.board[new_state.action_x, new_state.action_y] == 1
+            terminated = state.board[new_state.action_x, new_state.action_y] == 1
             truncated = new_timestep >= self.max_steps_in_episode
-            terminated = jnp.logical_or(done, truncated)
+            done = jnp.logical_or(terminated, truncated)
             reward = lax.cond(
-                done,
+                terminated,
                 lambda _: -self.reward_die,
                 lambda _: -self.reward_step,
                 operand=None,
@@ -312,20 +312,20 @@ class Navigator(environment.Environment):
             )
             new_state = new_state.replace(score=new_score)
             infos = {
-                "terminated": done,
+                "terminated": terminated,
                 "truncated": truncated,
             }
-            return self.get_obs(new_state), new_state, reward, terminated, infos
+            return self.get_obs(new_state), new_state, reward, done, infos
 
         def move_right(state):
             action_x = lax.min(state.action_x + 1, self.board_size - 1)
             new_timestep = state.timestep + 1
             new_state = state.replace(action_x=action_x, timestep=new_timestep)
-            done = state.board[new_state.action_x, new_state.action_y] == 1
+            terminated = state.board[new_state.action_x, new_state.action_y] == 1
             truncated = new_timestep >= self.max_steps_in_episode
-            terminated = jnp.logical_or(done, truncated)
+            done = jnp.logical_or(terminated, truncated)
             reward = lax.cond(
-                done,
+                terminated,
                 lambda _: -self.reward_die,
                 lambda _: -self.reward_step,
                 operand=None,
@@ -336,10 +336,11 @@ class Navigator(environment.Environment):
             )
             new_state = new_state.replace(score=new_score)
             infos = {
-                "terminated": done,
+                "terminated": terminated,
                 "truncated": truncated,
             }
-            return self.get_obs(new_state), new_state, reward, terminated, infos
+            return self.get_obs(new_state), new_state, reward, done, infos
+
 
         def hit(state):
             action_x, action_y = state.action_x, state.action_y

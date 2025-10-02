@@ -3,10 +3,6 @@ Compute the average steps per second of the environment.
 
 """
 
-import sys
-
-sys.path.extend(["/home/ubuntu-user/popjym-main"])
-
 import csv
 import os
 import sys

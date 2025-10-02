@@ -651,10 +651,9 @@ def draw_tnt_block(
     )
     inner_block_mask = jnp.outer(inner_mask_y, inner_mask_x)
 
-    # Prepare color arrays
-    red_color = jnp.array([255, 0, 0], dtype=jnp.uint8)  # Bright red
-    white_color = jnp.array([255, 255, 255], dtype=jnp.uint8)  # White
-    black_color = jnp.array([0, 0, 0], dtype=jnp.uint8)  # Black
+    red_color = jnp.array([255, 0, 0], dtype=jnp.uint8)
+    white_color = jnp.array([255, 255, 255], dtype=jnp.uint8)
+    black_color = jnp.array([0, 0, 0], dtype=jnp.uint8)
 
     # Create a preliminary canvas with the red background
     red_canvas = jnp.where(full_block_mask[:, :, None], red_color, canvas)

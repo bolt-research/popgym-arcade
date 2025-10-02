@@ -81,8 +81,10 @@ def get_saliency_maps(
     )(jax.random.split(rng, n_envs), env_state, action, env_params)
     if initial_state_and_obs is None:
         obs_seq, env_state = vmap_reset(n_envs)(_rng)
+        obs_seq = obs_seq / 255.0
     else:
         env_state, obs_seq = initial_state_and_obs
+        obs_seq = obs_seq / 255.0
     done_seq = jnp.zeros(n_envs, dtype=bool)
     action_seq = jnp.zeros(n_envs, dtype=int)
     obs_seq = obs_seq[jnp.newaxis, :].astype(jnp.float32)
@@ -104,6 +106,7 @@ def get_saliency_maps(
             new_obs, new_state, reward, new_done, info = vmap_step(n_envs)(
                 seed, env_state, action
             )
+            new_obs = new_obs / 255.0
             return q_val[-1].sum(), (new_state, new_obs, action, new_done)
 
         grads_obs, (new_state, new_obs, action, new_done) = jax.grad(
@@ -142,10 +145,10 @@ def get_terminal_saliency_maps(
     if initial_state_and_obs is None:
         seed, _rng = jax.random.split(seed)
         obs, env_state = reset(_rng)
-        obs = obs.astype(jnp.float32)
+        obs = obs.astype(jnp.float32) / 255.0
     else:
         env_state, obs = initial_state_and_obs
-        obs = obs.astype(jnp.float32)
+        obs = obs.astype(jnp.float32) / 255.0
 
     # Step 1: Compute rollout until terminal state
 
@@ -159,6 +162,7 @@ def get_terminal_saliency_maps(
         q_val = jnp.squeeze(q_val, (0, 1))
         action = jnp.argmax(q_val, axis=-1)
         obs, env_state, reward, done, info = step(step_key, env_state, action)
+        obs = obs.astype(jnp.float32) / 255.0
         return (hs, env_state, obs, done, action, seed)
 
     seed, rng = jax.random.split(seed)
