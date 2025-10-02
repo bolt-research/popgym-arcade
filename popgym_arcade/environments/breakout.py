@@ -263,8 +263,10 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
                                         0.0)
         reward = reward + negative_reward
         state = state.replace(time=state.time + 1)
-        truncated, done = self.is_terminal(state, params)
+        done = self.is_terminal(state, params)
         state = state.replace(terminal=done)
+        truncated = state.time >= params.max_steps_in_episode
+
         info = {"discount": self.discount(state, params),
                 "terminated": state.terminal,
                 "truncated": truncated}
@@ -302,9 +304,8 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
 
     def is_terminal(self, state: EnvState, params: EnvParams) -> jnp.ndarray:
         """Check whether state is terminal."""
-        done_steps = state.time >= params.max_steps_in_episode
-        return done_steps, jnp.logical_or(done_steps, state.terminal)
-    
+        truncated = state.time >= params.max_steps_in_episode
+        return jnp.logical_or(truncated, state.terminal)
 
     @property
     def name(self) -> str:

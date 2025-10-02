@@ -225,8 +225,10 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
             color_indexes=new_color_indexes,
         )
 
-        terminated, truncated, done = self.is_terminal(state, params)
-
+        done = self.is_terminal(state, params)
+        terminated = state.xp + state.over
+        truncated = state.time >= self.max_steps_in_episode
+        
         return (
             lax.stop_gradient(self.get_obs(state)),
             lax.stop_gradient(state),
@@ -284,7 +286,7 @@ class Skittles(environment.Environment[EnvState, EnvParams]):
         terminated = state.xp + state.over
         truncated = state.time >= self.max_steps_in_episode
         done = jnp.logical_or(terminated, truncated)
-        return terminated, truncated, done
+        return done
 
     @functools.partial(jax.jit, static_argnums=(0,))
     def render(self, state: EnvState) -> chex.Array:
