@@ -114,7 +114,7 @@ for t in range(10):
     actions = jax.vmap(env.action_space(env_params).sample)(action_keys)
     # Step the env to the next state
     # No need to reset after initial reset, gymnax automatically resets when done
-    observation, env_state, reward, done, info = step(step_keys, env_state, actions, params)
+    observation, env_state, reward, done, info = step(step_keys, env_state, actions, env_params)
 
 # POMDP and MDP variants share states
 # We can plug the POMDP states into the MDP and continue playing
