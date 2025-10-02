@@ -1,84 +1,63 @@
-# POPGym Arcade - GPU-Accelerated POMDPs 
+# POPGym Arcade - GPU-Accelerated MDPs and POMDPs 
+
+POPGym Arcade is a GPU-accelerated Atari-style benchmark and suite of analysis tools for reinforcement learning.
 
 [![Tests](https://github.com/bolt-research/popgym-arcade/actions/workflows/python_app.yaml/badge.svg)](https://github.com/bolt-research/popgym-arcade/actions/workflows/python_app.yaml)
 
-<div style="display: flex; gap: 20px; justify-content: center;">
+## Tasks
+POPGym Arcade contains pixel-based tasks in the style of the [Arcade Learning Environment](https://github.com/Farama-Foundation/Arcade-Learning-Environment).
 
-  <div style="flex: 1; border: 2px solid #b2b2b2; border-radius: 10px; padding: 10px; background-color: #f9f9f9;">
-    <h3 style="
-    text-align: center;
-    background-color: #404040;
-    color: white;
-    border-radius: 6px 6px 0 0;
-    padding: 6px;
-    margin: -10px -10px 10px -10px;
-    ">
-    MDP Environments
-    </h3>
-    <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
-      <img src="imgs/cartpole_f.gif" alt="CartPole" style="width: 100px; height: 100px;">
-      <img src="imgs/autoencode_f.gif" alt="AutoEncode" style="width: 100px; height: 100px;">
-      <img src="imgs/breakout_f.gif" alt="Breakout" style="width: 100px; height: 100px;">
-      <img src="imgs/minesweeper_f.gif" alt="MineSweeper" style="width: 100px; height: 100px;">
-      <img src="imgs/tetris_f.gif" alt="Tetris" style="width: 100px; height: 100px;">
-      <img src="imgs/skittles_f.gif" alt="Skittles" style="width: 100px; height: 100px;">
-      <img src="imgs/navigator_f.gif" alt="Navigator" style="width: 100px; height: 100px;">
-      <img src="imgs/countrecall_f.gif" alt="CountRecall" style="width: 100px; height: 100px;">
-      <img src="imgs/battleship_f.gif" alt="BattleShip" style="width: 100px; height: 100px;">
-      <img src="imgs/ncartpole_f.gif" alt="NoisyCartPole" style="width: 100px; height: 100px;">
-    </div>
-  </div>
-
-  <div style="flex: 1; border: 2px solid #b2b2b2; border-radius: 10px; padding: 10px; background-color: #f9f9f9;">
-    <h3 style="
-    text-align: center;
-    background-color: #404040;
-    color: white;
-    border-radius: 6px 6px 0 0;
-    padding: 6px;
-    margin: -10px -10px 10px -10px;
-    ">
-    POMDP Environments
-    </h3>
-    <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
-      <img src="imgs/cartpole_p.gif" alt="CartPole" style="width: 100px; height: 100px;">
-      <img src="imgs/autoencode_p.gif" alt="AutoEncode" style="width: 100px; height: 100px;">
-      <img src="imgs/breakout_p.gif" alt="Breakout" style="width: 100px; height: 100px;">
-      <img src="imgs/minesweeper_p.gif" alt="MineSweeper" style="width: 100px; height: 100px;">
-      <img src="imgs/tetris_p.gif" alt="Tetris" style="width: 100px; height: 100px;">
-      <img src="imgs/skittles_p.gif" alt="Skittles" style="width: 100px; height: 100px;">
-      <img src="imgs/navigator_p.gif" alt="Navigator" style="width: 100px; height: 100px;">
-      <img src="imgs/countrecall_p.gif" alt="CountRecall" style="width: 100px; height: 100px;">
-      <img src="imgs/battleship_p.gif" alt="BattleShip" style="width: 100px; height: 100px;">
-      <img src="imgs/ncartpole_p.gif" alt="NoisyCartPole" style="width: 100px; height: 100px;">
-    </div>
-  </div>
-
+<div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; padding: 10px;">
+    <img src="imgs/cartpole_f.gif" alt="GIF 1" style="width: 100px; height: 100px;">
+    <img src="imgs/cartpole_p.gif" alt="GIF 1" style="width: 100px; height: 100px;">
+    <img src="imgs/autoencode_f.gif" alt="GIF 2" style="width: 100px; height: 100px;">
+    <img src="imgs/autoencode_p.gif" alt="GIF 2" style="width: 100px; height: 100px;">
+    <img src="imgs/breakout_f.gif" alt="GIF 3" style="width: 100px; height: 100px;">
+    <img src="imgs/breakout_p.gif" alt="GIF 3" style="width: 100px; height: 100px;">
+    <img src="imgs/minesweeper_f.gif" alt="GIF 4" style="width: 100px; height: 100px;">
+    <img src="imgs/minesweeper_p.gif" alt="GIF 4" style="width: 100px; height: 100px;">
+    <img src="imgs/tetris_f.gif" alt="GIF 5" style="width: 100px; height: 100px;">
+    <img src="imgs/tetris_p.gif" alt="GIF 5" style="width: 100px; height: 100px;">
+    <img src="imgs/skittles_f.gif" alt="GIF 6" style="width: 100px; height: 100px;">
+    <img src="imgs/skittles_p.gif" alt="GIF 6" style="width: 100px; height: 100px;">
+    <img src="imgs/navigator_f.gif" alt="GIF 7" style="width: 100px; height: 100px;">
+    <img src="imgs/navigator_p.gif" alt="GIF 7" style="width: 100px; height: 100px;">
+    <img src="imgs/countrecall_f.gif" alt="GIF 8" style="width: 100px; height: 100px;">
+    <img src="imgs/countrecall_p.gif" alt="GIF 8" style="width: 100px; height: 100px;">
+    <img src="imgs/battleship_f.gif" alt="GIF 9" style="width: 100px; height: 100px;">
+    <img src="imgs/battleship_p.gif" alt="GIF 9" style="width: 100px; height: 100px;">
+    <img src="imgs/ncartpole_f.gif" alt="GIF 10" style="width: 100px; height: 100px;">
+    <img src="imgs/ncartpole_p.gif" alt="GIF 10" style="width: 100px; height: 100px;">
 </div>
 
-POPGym Arcade contains 10 pixel-based tasks in the style of the [Arcade Learning Environment](https://github.com/Farama-Foundation/Arcade-Learning-Environment). Each environment provides:
-- 3 Difficulty settings
-- Common observation and action space shared across all envs
+Each environment provides:
+- Three difficulty settings
+- One observation and action space shared across all envs
 - Fully observable and partially observable configurations
-- Fast and easy GPU vectorization using `jax.vmap` and `jax.jit`
+- Fast and easy GPU vectorization using `jax`
+- Standardized returns in `[0,1]` or `[-1, 1]`
 
-## Gradient Visualization
-We also provide tools to visualize how policies use memory. 
 
-<img src="imgs/grads_example.png" height="192" />
-
-See [below](#Memory-Introspection-Tools) for further instructions.
-
-## Throughput
-You can expect millions of frames per second on a consumer-grade GPU. With `obs_size=128`, most policies converge within 30-60 minutes of training. 
+### Throughput
+Expect ~10M frames per second on an RTX4090. Most of our policies converge in less than 60 minutes of training. 
 
 <img src="imgs/fps.png" height="192" />  
-<img src="imgs/wandb.png" height="192" /> 
+<!-- img src="imgs/wandb.png" height="192" / --> 
+
+
+## Baselines
+We implement a simple on-policy Q learning algorithm known as [PQN](https://arxiv.org/abs/2407.04811). We also implement various memory models:
+
+**Log Complexity RNNs**
+- [Fast Autoregressive Transformer](https://arxiv.org/abs/2006.16236)
+- [Linear Recurrent Unit (State Space Model)](https://arxiv.org/abs/2303.06349)
+- [Minimal GRU](https://arxiv.org/abs/2410.01201)
+
+**Classical RNNs**
+- [GRU](https://arxiv.org/abs/1412.3555)
+- [LSTM](https://dl.acm.org/doi/10.1162/neco.1997.9.8.1735)
 
 ## Getting Started
-
-
-### Installation 
 
 To install the environments, run
 
@@ -91,8 +70,10 @@ If you plan to use our training scripts, install the baselines as well
 pip install 'popgym-arcade[baselines]'
 ```
 
+**Note:** If you do not already have `jax` installed, we install CPU `jax` by default. For GPU acceleration, run `pip install jax[cuda12]` after installing `popgym-arcade`.
+
 ### Human Play
-To best understand the environments, you should try and play them yourself. The [play script](popgym_arcade/play.py) lets you play the games yourself using the arrow keys and spacebar.
+The [play script](popgym_arcade/play.py) lets you play the games yourself using the arrow keys and spacebar.
 
 ```bash
 popgym-arcade-play NoisyCartPoleEasy        # play MDP 256 pixel version
@@ -100,22 +81,19 @@ popgym-arcade-play BattleShipEasy -p -o 128 # play POMDP 128 pixel version
 ```
 
 ### Creating and Stepping Environments
-Our envs are `gymnax` envs, so you can use your wrappers and code designed to work with `gymnax`. The following example demonstrates how to integrate POPGym Arcade into your code. 
+Our tasks are `gymnax` environments and work with wrappers and code designed to work with `gymnax`. The following example demonstrates how to integrate POPGym Arcade into your code. 
 
 ```python
 import popgym_arcade
 import jax
 
-# Create both POMDP and MDP env variants
-pomdp, pomdp_params = popgym_arcade.make("BattleShipEasy", partial_obs=True)
-mdp, mdp_params = popgym_arcade.make("BattleShipEasy", partial_obs=False)
+# Create POMDP env variant
+env, env_params = popgym_arcade.make("BattleShipEasy", partial_obs=True)
 
-# Let's vectorize and compile the envs
+# Let's vectorize and compile the env
 # Note when you are training a policy, it is better to compile your policy_update rather than the env_step
-pomdp_reset = jax.jit(jax.vmap(pomdp.reset, in_axes=(0, None)))
-pomdp_step = jax.jit(jax.vmap(pomdp.step, in_axes=(0, 0, 0, None)))
-mdp_reset = jax.jit(jax.vmap(mdp.reset, in_axes=(0, None)))
-mdp_step = jax.jit(jax.vmap(mdp.step, in_axes=(0, 0, 0, None)))
+reset = jax.jit(jax.vmap(env.reset, in_axes=(0, None)))
+step = jax.jit(jax.vmap(env.step, in_axes=(0, 0, 0, None)))
     
 # Initialize four vectorized environments
 n_envs = 4
@@ -124,22 +102,26 @@ key = jax.random.key(0)
 reset_keys = jax.random.split(key, n_envs)
     
 # Reset environments
-observation, env_state = pomdp_reset(reset_keys, pomdp_params)
+observation, env_state = reset(reset_keys, env_params)
 
-# Step the POMDPs
+# Step the POMDP
 for t in range(10):
     # Propagate some randomness
     action_key, step_key = jax.random.split(jax.random.key(t))
     action_keys = jax.random.split(action_key, n_envs)
     step_keys = jax.random.split(step_key, n_envs)
     # Pick actions at random
-    actions = jax.vmap(pomdp.action_space(pomdp_params).sample)(action_keys)
+    actions = jax.vmap(env.action_space(env_params).sample)(action_keys)
     # Step the env to the next state
-    # No need to reset, gymnax automatically resets when done
-    observation, env_state, reward, done, info = pomdp_step(step_keys, env_state, actions, pomdp_params)
+    # No need to reset after initial reset, gymnax automatically resets when done
+    observation, env_state, reward, done, info = step(step_keys, env_state, actions, env_params)
 
 # POMDP and MDP variants share states
-# We can plug the POMDP states into the MDP and continue playing 
+# We can plug the POMDP states into the MDP and continue playing
+mdp, mdp_params = popgym_arcade.make("BattleShipEasy", partial_obs=False)
+mdp_reset = jax.jit(jax.vmap(mdp.reset, in_axes=(0, None)))
+mdp_step = jax.jit(jax.vmap(mdp.step, in_axes=(0, 0, 0, None)))
+
 action_keys = jax.random.split(jax.random.key(t + 1), n_envs)
 step_keys = jax.random.split(jax.random.key(t + 2), n_envs)
 markov_state, env_state, reward, done, info = mdp_step(step_keys, env_state, actions, mdp_params)
@@ -147,7 +129,10 @@ markov_state, env_state, reward, done, info = mdp_step(step_keys, env_state, act
 
 ## Memory Introspection Tools 
 We implement visualization tools to probe which pixels persist in agent memory, and their
-impact on Q value predictions. Try code below or [vis example](plotting/plot_grads.ipynb) to visualize the memory your agent uses
+impact on Q value predictions. Try the code below or our [example script](plotting/plot_grads.ipynb) to under how your agent uses memory.
+
+<img src="imgs/grads_example.png" height="192" />
+
 
 ```python
 from popgym_arcade.baselines.model.builder import QNetworkRNN
@@ -183,8 +168,7 @@ vis_fn(grads, obs_seq, config, use_latex=False)
 ```
 
 ## Other Useful Libraries
-- [`gymnax`](https://github.com/RobertTLange/gymnax) - The (deprecated) `jax`-capable `gymnasium` API
-- [`stable-gymnax`](https://github.com/smorad/stable-gymnax) - A maintained and patched version of `gymnax`
+- [`gymnax`](https://github.com/RobertTLange/gymnax) - The `jax`-capable `gymnasium` API
 - [`popgym`](https://github.com/proroklab/popgym) - The original collection of POMDPs, implemented in `numpy`
 - [`popjaxrl`](https://github.com/luchris429/popjaxrl) - A `jax` version of `popgym`
 - [`popjym`](https://github.com/EdanToledo/popjym) - A more readable version of `popjaxrl` environments that served as a basis for our work
