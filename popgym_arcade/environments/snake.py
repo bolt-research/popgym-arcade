@@ -26,6 +26,7 @@ class EnvState(environment.EnvState):
 	length: jax.Array
 	apple_pos: jax.Array
 	apple_flash: jax.Array
+	body_visibility: jax.Array
 	time: jax.Array
 	terminal: jax.Array
 	score: jax.Array
@@ -133,7 +134,7 @@ class Snake(environment.Environment[EnvState, EnvParams]):
 
 		new_length = jnp.minimum(self.max_length, state.length + grow)
 
-		key, apple_key = jax.random.split(key)
+		key, apple_key, vis_key = jax.random.split(key, 3)
 		new_apple = jax.lax.cond(
 			eat_apple,
 			lambda _: self._spawn_apple(apple_key, new_body, new_length),
@@ -153,12 +154,18 @@ class Snake(environment.Environment[EnvState, EnvParams]):
 			jnp.maximum(state.apple_flash - 1, jnp.int32(0)),
 		)
 
+		if self.partial_obs:
+			new_visibility = self._sample_body_visibility(vis_key, new_length)
+		else:
+			new_visibility = self._full_visibility(new_length)
+
 		updated_state = state.replace(
 			snake_body=new_body,
 			direction=new_direction,
 			length=new_length,
 			apple_pos=new_apple,
 			apple_flash=new_flash,
+			body_visibility=new_visibility,
 			time=state.time + 1,
 			terminal=terminal_flag,
 			score=new_score,
@@ -186,7 +193,7 @@ class Snake(environment.Environment[EnvState, EnvParams]):
 	def reset_env(
 		self, key: jax.Array, params: EnvParams
 	) -> tuple[jax.Array, EnvState]:
-		key, apple_key = jax.random.split(key)
+		key, apple_key, vis_key = jax.random.split(key, 3)
 		mid = self.board_size // 2
 
 		base_body = jnp.zeros((self.max_length, 2), dtype=jnp.int32)
@@ -198,6 +205,10 @@ class Snake(environment.Environment[EnvState, EnvParams]):
 		direction = jnp.int32(3)  # Start moving right
 
 		apple_pos = self._spawn_apple(apple_key, base_body, length)
+		if self.partial_obs:
+			body_visibility = self._sample_body_visibility(vis_key, length)
+		else:
+			body_visibility = self._full_visibility(length)
 
 		state = EnvState(
 			snake_body=base_body,
@@ -205,6 +216,7 @@ class Snake(environment.Environment[EnvState, EnvParams]):
 			length=length,
 			apple_pos=apple_pos,
 			apple_flash=jnp.int32(1),
+			body_visibility=body_visibility,
 			time=jnp.int32(0),
 			terminal=jnp.bool_(False),
 			score=jnp.int32(0),
@@ -212,7 +224,7 @@ class Snake(environment.Environment[EnvState, EnvParams]):
 		return self.render(state), state
 
 	def get_obs(self, state: EnvState, params=None, key=None) -> jax.Array:
-		body_layer = self._body_layer(state.snake_body, state.length)
+		body_layer = self._body_layer(state.snake_body, state.length, state.body_visibility)
 		head_layer = jnp.zeros((self.board_size, self.board_size), dtype=jnp.float32)
 		head_layer = jax.lax.cond(
 			state.length > 0,
@@ -263,17 +275,17 @@ class Snake(environment.Environment[EnvState, EnvParams]):
 		rel_y = (y_coords - oy) % cell_size
 		border_x = jnp.logical_or(x_coords == ox, x_coords == ox + board_pixels - 1)
 		border_y = jnp.logical_or(y_coords == oy, y_coords == oy + board_pixels - 1)
-		grid_mask = jnp.logical_and(
-			board_mask,
-			jnp.logical_or(jnp.logical_or(rel_x == 0, rel_y == 0), jnp.logical_or(border_x, border_y)),
-		)
-		small_canvas = jnp.where(grid_mask[:, :, None], self.color["grid"], small_canvas)
+		# grid_mask = jnp.logical_and(
+		# 	board_mask,
+		# 	jnp.logical_or(jnp.logical_or(rel_x == 0, rel_y == 0), jnp.logical_or(border_x, border_y)),
+		# )
+		# small_canvas = jnp.where(grid_mask[:, :, None], self.color["grid"], small_canvas)
 
 		cell_size_arr = jnp.int32(cell_size)
 		board_y = jnp.clip(((y_coords - oy) // cell_size_arr).astype(jnp.int32), 0, self.board_size - 1)
 		board_x = jnp.clip(((x_coords - ox) // cell_size_arr).astype(jnp.int32), 0, self.board_size - 1)
 
-		body_layer = self._body_layer(state.snake_body, state.length)
+		body_layer = self._body_layer(state.snake_body, state.length, state.body_visibility)
 		body_present = body_layer[board_y, board_x] > 0
 		body_mask = jnp.logical_and(board_mask, body_present)
 
@@ -352,6 +364,12 @@ class Snake(environment.Environment[EnvState, EnvParams]):
 					dtype=jnp.int32,
 				),
 				"apple_flash": spaces.Discrete(2),
+				"body_visibility": spaces.Box(
+					0,
+					1,
+					(self.max_length,),
+					dtype=jnp.int32,
+				),
 				"time": spaces.Discrete(params.max_steps_in_episode),
 				"terminal": spaces.Discrete(2),
 				"score": spaces.Discrete(self.max_length + 1),
@@ -364,10 +382,17 @@ class Snake(environment.Environment[EnvState, EnvParams]):
 		valid_turn = jnp.logical_and(is_control, action != opposite)
 		return jax.lax.select(valid_turn, action, direction)
 
-	def _body_layer(self, snake_body: jax.Array, length: jax.Array) -> jax.Array:
+	def _body_layer(
+		self,
+		snake_body: jax.Array,
+		length: jax.Array,
+		visibility: jax.Array | None = None,
+	) -> jax.Array:
 		flat = jnp.zeros(self.board_size * self.board_size, dtype=jnp.float32)
 		indices = snake_body[:, 0] * self.board_size + snake_body[:, 1]
-		mask = (jnp.arange(self.max_length) < length).astype(jnp.float32)
+		mask = (jnp.arange(self.max_length, dtype=jnp.int32) < length).astype(jnp.float32)
+		if visibility is not None:
+			mask = mask * visibility.astype(jnp.float32)
 		flat = flat.at[indices].add(mask)
 		flat = jnp.clip(flat, 0.0, 1.0)
 		return flat.reshape(self.board_size, self.board_size)
@@ -395,6 +420,20 @@ class Snake(environment.Environment[EnvState, EnvParams]):
 			return snake_body[0]
 
 		return jax.lax.cond(available_sum > 0, sample, fallback, operand=None)
+
+	def _full_visibility(self, length: jax.Array) -> jax.Array:
+		indices = jnp.arange(self.max_length, dtype=jnp.int32)
+		return indices < length
+
+	def _sample_body_visibility(self, key: jax.Array, length: jax.Array) -> jax.Array:
+		indices = jnp.arange(self.max_length, dtype=jnp.int32)
+		active_mask = indices < length
+		random_mask = jax.random.bernoulli(key, 0.5, (self.max_length,))
+		random_body = jnp.logical_and(random_mask, indices > 0)
+		visibility = jnp.logical_and(active_mask, random_body)
+		head_active = length > 0
+		visibility = visibility.at[0].set(head_active)
+		return visibility
 
 class SnakeEasy(Snake):
     def __init__(self, **kwargs):
