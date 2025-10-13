@@ -176,7 +176,7 @@ vis_fn(grads, obs_seq, config, use_latex=False)
 ## Citation
 ```
 @article{wang2025popgym,
-  title={POPGym Arcade: Parallel Pixelated POMDPs},
+  title={Investigating Memory in RL with POPGym Arcade},
   author={Wang, Zekang and He, Zhe and Zhang, Borong and Toledo, Edan and Morad, Steven},
   journal={arXiv preprint arXiv:2503.01450},
   year={2025}
