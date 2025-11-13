@@ -25,6 +25,7 @@ from popgym_arcade.baselines.model.memorax.semigroups import (
     MinGRU,
     NAbs,
     NMax,
+    S6,
     PSpherical,
 )
 
@@ -167,6 +168,9 @@ def get_residual_memory_model(
         "lru": lambda recurrent_size, key: LRU(
             hidden_size=recurrent_size, recurrent_size=recurrent_size, key=key
         ),
+        "S6": lambda recurrent_size, key: S6(
+            hidden_size=recurrent_size, recurrent_size=recurrent_size, key=key
+        )
         "linear_rnn": lambda recurrent_size, key: LinearRecurrent(
             recurrent_size=recurrent_size, key=key
         ),
