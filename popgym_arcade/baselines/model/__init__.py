@@ -4,7 +4,8 @@ from popgym_arcade.baselines.model.builder import (
     QNetwork,
     QNetworkRNN,
 )
-from popgym_arcade.baselines.model.memorax import (
+
+from memorax.equinox.train_utils import (
     add_batch_dim,
-    get_residual_memory_model,
+    get_residual_memory_models,
 )

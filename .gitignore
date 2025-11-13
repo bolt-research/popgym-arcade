@@ -13,3 +13,4 @@ build/
 plotting/fpsdata/
 plotting/gradientdata/
 wandb/
+output/

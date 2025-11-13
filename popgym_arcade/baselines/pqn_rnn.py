@@ -662,7 +662,18 @@ def single_run(config):
         mode=config["WANDB_MODE"],
     )
     wandb.run.log_code(".")
+    from jax.lib import xla_client
 
+    def memory_debug_info():
+        """打印当前内存使用情况"""
+        for device in jax.devices():
+            stats = device.memory_stats()
+            print(f"Device {device}:")
+            print(f"  当前使用: {stats.get('bytes_in_use', 0) / 1024**3:.2f} GB")
+            print(f"  峰值使用: {stats.get('peak_bytes_in_use', 0) / 1024**3:.2f} GB")
+            print(f"  限制: {stats.get('limit', 0) / 1024**3:.2f} GB")
+
+    memory_debug_info()
     rng = jax.random.PRNGKey(config["SEED"])
 
     t0 = time.time()

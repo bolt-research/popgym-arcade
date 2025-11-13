@@ -7,7 +7,7 @@ import jax.numpy as jnp
 from distreqx import distributions
 from jaxtyping import Array, PRNGKeyArray
 
-from popgym_arcade.baselines.model.memorax import get_residual_memory_model
+from memorax.equinox.train_utils import get_residual_memory_models
 
 
 class ActorCritic(eqx.Module):
@@ -387,14 +387,15 @@ class ActorCriticRNN(eqx.Module):
                     nn.Lambda(jax.nn.leaky_relu),
                 ]
             )
-        self.actor_rnn = get_residual_memory_model(
+        actor_rnn_dict = get_residual_memory_models(
             input=512,
             hidden=512,
             output=256,
             num_layers=2,
-            rnn_type=rnn_type,
+            models=[rnn_type],
             key=key_array[4],
         )
+        self.actor_rnn = actor_rnn_dict[rnn_type]
         self.actor_trunk = nn.Sequential(
             [
                 nn.Linear(in_features=256, out_features=256, key=key_array[5]),
@@ -406,14 +407,15 @@ class ActorCriticRNN(eqx.Module):
             ]
         )
 
-        self.critic_rnn = get_residual_memory_model(
+        critic_rnn_dict = get_residual_memory_models(
             input=512,
             hidden=512,
             output=256,
             num_layers=1,
-            rnn_type=rnn_type,
+            models=[rnn_type],
             key=key_array[10],
         )
+        self.critic_rnn = critic_rnn_dict[rnn_type]
         self.critic_trunk = nn.Sequential(
             [
                 nn.Linear(in_features=256, out_features=256, key=key_array[5]),
@@ -664,14 +666,15 @@ class QNetworkRNN(eqx.Module):
                     nn.Lambda(jax.nn.leaky_relu),
                 ]
             )
-        self.rnn = get_residual_memory_model(
+        rnn_dict = get_residual_memory_models(
             input=517,
             hidden=512,
             output=256,
             num_layers=2,
-            rnn_type=rnn_type,
+            models=[rnn_type],
             key=keys[4],
         )
+        self.rnn = rnn_dict[rnn_type]
         self.trunk = nn.Sequential(
             [nn.Linear(in_features=256, out_features=self.action_dim, key=keys[7])]
         )
