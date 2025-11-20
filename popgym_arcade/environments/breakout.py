@@ -315,7 +315,7 @@ class Breakout(environment.Environment[EnvState, EnvParams]):
     @functools.partial(jax.jit, static_argnums=(0,))
     def render(self, state: EnvState) -> jax.Array:
         canvas = jnp.zeros(
-            (self.size[self.obs_size]["canvas_size"], self.size[self.obs_size]["canvas_size"], 3)
+            (self.size[self.obs_size]["canvas_size"], self.size[self.obs_size]["canvas_size"], 3), dtype=jnp.uint8
         ) + self.color["gray"]
         
         small_canvas = jnp.full(
