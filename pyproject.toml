@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "popgym-arcade"
+version = "0.0.6"
+description = "POMDP Arcade Environments on the GPU"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT License" }
+authors = [ { name = "Wang Zekang, He Zhe, Steven Morad" } ]
+
+dependencies = [
+  "stable-gymnax",
+  "dm_pix",
+  "jaxtyping",
+]
+
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+]
+
+[project.scripts]
+popgym-arcade-play = "popgym_arcade.play:main"
+
+[project.optional-dependencies]
+human = ["pygame-ce"]
+baselines = [
+  "optax",
+  "equinox",
+  "distreqx",
+  "wandb",
+  "beartype",
+  "jaxtyping",
+  "imageio",
+]
+tests = ["pytest"]
+
+# Combined extras for convenience: install with `pip install popgym-arcade[all]`
+all = [
+  "pygame-ce",
+  "optax",
+  "equinox",
+  "distreqx",
+  "wandb",
+  "beartype",
+  "jaxtyping",
+  "imageio",
+  "pytest",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
