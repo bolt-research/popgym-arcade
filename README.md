@@ -64,16 +64,16 @@ To install the environments, run
 ```bash
 pip install popgym-arcade
 ```
-If you plan to use our training scripts, install the baselines as well
+If you plan to use our training scripts, install the baselines as well. If you want to play the games yourself, also use the `human` flag.
 
 ```bash
-pip install 'popgym-arcade[baselines]'
+pip install 'popgym-arcade[baselines,human]'
 ```
 
 **Note:** If you do not already have `jax` installed, we install CPU `jax` by default. For GPU acceleration, run `pip install jax[cuda12]` after installing `popgym-arcade`.
 
 ### Human Play
-The [play script](popgym_arcade/play.py) lets you play the games yourself using the arrow keys and spacebar.
+The [play script](popgym_arcade/play.py) installed with `pip install popgym-arcade[human]` lets you play the games yourself using the arrow keys and spacebar.
 
 ```bash
 popgym-arcade-play NoisyCartPoleEasy        # play MDP 256 pixel version
@@ -168,7 +168,7 @@ vis_fn(grads, obs_seq, config, use_latex=False)
 ```
 
 ## Other Useful Libraries
-- [`gymnax`](https://github.com/RobertTLange/gymnax) - The `jax`-capable `gymnasium` API
+- [`stable-gymnax`](https://github.com/smorad/stable-gymnax) - A (stable) `jax`-capable `gymnasium` API
 - [`popgym`](https://github.com/proroklab/popgym) - The original collection of POMDPs, implemented in `numpy`
 - [`popjaxrl`](https://github.com/luchris429/popjaxrl) - A `jax` version of `popgym`
 - [`popjym`](https://github.com/EdanToledo/popjym) - A more readable version of `popjaxrl` environments that served as a basis for our work

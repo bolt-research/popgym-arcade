@@ -15,8 +15,13 @@ setup(
             "popgym-arcade-play = popgym_arcade.play:main",
         ],
     },
-    install_requires=["gymnax", "dm_pix", "jaxtyping", "pygame"],
+    install_requires=[
+        "stable-gymnax @ git+https://github.com/smorad/stable-gymnax@main",
+        "dm_pix",
+        "jaxtyping",
+    ],
     extras_require={
+        "human": ["pygame"],
         "baselines": [
             "optax",
             "equinox",
@@ -26,6 +31,7 @@ setup(
             "jaxtyping",
             "imageio",
         ],
+        "tests": ["pytest"],
     },
     classifiers=[
         "Programming Language :: Python :: 3",
