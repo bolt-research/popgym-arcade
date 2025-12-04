@@ -10,7 +10,8 @@ from jax import lax
 
 import popgym_arcade
 import wandb
-from popgym_arcade.baselines.model import ActorCriticRNN, add_batch_dim
+from memax.equinox.train_utils import add_batch_dim
+from popgym_arcade.baselines.model import ActorCriticRNN
 from popgym_arcade.baselines.utils import filter_scan
 from popgym_arcade.wrappers import LogWrapper
 

@@ -46,7 +46,12 @@ Expect ~10M frames per second on an RTX4090. Most of our policies converge in le
 
 
 ## Baselines
-We implement a simple on-policy Q learning algorithm known as [PQN](https://arxiv.org/abs/2407.04811). We also implement various memory models:
+We provide a [single training script](popgym_arcade/train.py) for all algorithms and memory models.
+
+**RL Algorithms**
+- [PQN](https://arxiv.org/abs/2407.04811) 
+- [PPO](https://arxiv.org/abs/1707.06347)
+- [DQN](https://arxiv.org/abs/1312.5602)
 
 **Log Complexity RNNs**
 - [Fast Autoregressive Transformer](https://arxiv.org/abs/2006.16236)

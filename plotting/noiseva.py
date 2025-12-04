@@ -10,7 +10,7 @@ import optax
 import equinox as eqx
 import popgym_arcade
 from popgym_arcade.wrappers import LogWrapper
-from popgym_arcade.baselines.model import add_batch_dim
+from memax.equinox.train_utils import add_batch_dim
 from popgym_arcade.baselines.model import QNetworkRNN
 import wandb
 from popgym_arcade.baselines.pqn_rnn import debug_shape

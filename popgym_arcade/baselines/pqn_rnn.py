@@ -12,7 +12,8 @@ from jax import lax
 
 import popgym_arcade
 import wandb
-from popgym_arcade.baselines.model import QNetworkRNN, add_batch_dim
+from popgym_arcade.baselines.model import QNetworkRNN
+from memax.equinox.train_utils import add_batch_dim
 from popgym_arcade.wrappers import LogWrapper
 
 
