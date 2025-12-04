@@ -46,6 +46,7 @@ all = [
   # Human
   "pygame-ce",
   # Baselines
+  "flashbax",
   "memax[equinox]",
   "optax",
   "equinox",
