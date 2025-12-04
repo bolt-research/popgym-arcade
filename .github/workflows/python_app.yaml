@@ -13,21 +13,41 @@ permissions:
   contents: read
 
 jobs:
-  build:
-
+  fast:
+    name: Train tests
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up Python 3.13
-      uses: actions/setup-python@v3
-      with:
-        python-version: "3.13"
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install pytest pytest-cov
-        pip install -e .[all]
-    - name: Test with pytest
-      run: |
-        pytest tests/test* --doctest-modules --junitxml=junit/test-results.xml --cov=. --cov-report=xml --cov-report=html
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.x
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.x"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov
+          pip install -e .[all]
+      - name: Run train tests
+        run: |
+          pytest -q tests/test_train.py
+
+  envs:
+    name: Env tests
+    runs-on: ubuntu-latest
+    # Single job that parallelizes within the runner using pytest-xdist (-n 4).
+    # This keeps the workflow YAML simple (no external scripts) while using 4 workers.
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.x
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.x"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov pytest-xdist
+          pip install -e .[all]
+      - name: Run env tests
+        run: |
+          # Use 4 workers to parallelize test_envs.py across processes on the runner
+          pytest -q tests/test_envs.py -n 4
