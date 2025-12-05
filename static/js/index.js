@@ -36,6 +36,18 @@ $(document).ready(function() {
 			infinite: true,
 			autoplay: false,
 			autoplaySpeed: 3000,
+      breakpoints: [
+        {
+          changePoint: 768,
+          slidesToShow: 1,
+          slidesToScroll: 1,
+        },
+        {
+          changePoint: 1024,
+          slidesToShow: 2,
+          slidesToScroll: 1,
+        }
+      ],
     }
 
 		// Initialize all div with carousel class
