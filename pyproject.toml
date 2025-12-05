@@ -30,7 +30,6 @@ popgym-arcade-play = "popgym_arcade.play:main"
 human = ["pygame-ce"]
 baselines = [
   "memax[equinox]",
-  "flashbax",
   "optax",
   "equinox",
   "distreqx",
@@ -46,7 +45,6 @@ all = [
   # Human
   "pygame-ce",
   # Baselines
-  "flashbax",
   "memax[equinox]",
   "optax",
   "equinox",
