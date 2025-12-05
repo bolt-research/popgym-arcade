@@ -311,15 +311,16 @@ def evaluate(model, config):
 
 
 def ppo_run(config: Dict[str, Any]):
-    # initialize the wandb
-    wandb.init(
-        entity=config["ENTITY"],
-        project=config["PROJECT"],
-        tags=["PPO", config["ENV_NAME"].upper(), f"jax_{jax.__version__}"],
-        name=f'{config["TRAIN_TYPE"]}_{config["ENV_NAME"]}_Partial={config["PARTIAL"]}_Seed={config["SEED"]}',
-        config=config,
-        mode=config["WANDB_MODE"],
-    )
+    if config["WANDB_MODE"] != "disabled":
+        # initialize the wandb
+        wandb.init(
+            entity=config["ENTITY"],
+            project=config["PROJECT"],
+            tags=["PPO", config["ENV_NAME"].upper(), f"jax_{jax.__version__}"],
+            name=f'{config["TRAIN_TYPE"]}_{config["ENV_NAME"]}_Partial={config["PARTIAL"]}_Seed={config["SEED"]}',
+            config=config,
+            mode=config["WANDB_MODE"],
+        )
 
     rng = jax.random.PRNGKey(config["SEED"])
     t0 = time.time()

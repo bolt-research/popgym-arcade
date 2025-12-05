@@ -656,7 +656,8 @@ def evaluate(model, config):
     frames = jnp.zeros((500, *frame_shape), dtype=jnp.uint8)
 
     carry = (hs, obs, init_done, init_action, state, frames, _rng)
-    wandb.init(project=f'{config["PROJECT"]}')
+    if config["WANDB_MODE"] != "disabled":
+        wandb.init(project=f'{config["PROJECT"]}')
 
     def evaluate_step(carry, i):
         hs, obs, done, action, state, frames, _rng = carry
@@ -701,19 +702,20 @@ def single_run(config):
     alg_name = config.get("ALG_NAME", "dqn_rnn")
     env_name = config["ENV_NAME"]
 
-    wandb.init(
-        entity=config["ENTITY"],
-        project=config["PROJECT"],
-        tags=[
-            alg_name.upper(),
-            env_name.upper(),
-            f"jax_{jax.__version__}",
-        ],
-        name=f'{config["TRAIN_TYPE"]}_{config["MEMORY_TYPE"]}_{config["ENV_NAME"]}_{"SEED="}{config["SEED"]}_{"Partial="}{config["PARTIAL"]}',
-        config=config,
-        mode=config["WANDB_MODE"],
-    )
-    wandb.run.log_code(".")
+    if config["WANDB_MODE"] != "disabled":
+        wandb.init(
+            entity=config["ENTITY"],
+            project=config["PROJECT"],
+            tags=[
+                alg_name.upper(),
+                env_name.upper(),
+                f"jax_{jax.__version__}",
+            ],
+            name=f'{config["TRAIN_TYPE"]}_{config["MEMORY_TYPE"]}_{config["ENV_NAME"]}_{"SEED="}{config["SEED"]}_{"Partial="}{config["PARTIAL"]}',
+            config=config,
+            mode=config["WANDB_MODE"],
+        )
+        wandb.run.log_code(".")
 
     rng = jax.random.PRNGKey(config["SEED"])
 
@@ -771,7 +773,8 @@ def tune(default_config):
     env_name = default_config["ENV_NAME"]
 
     def wrapped_make_train():
-        wandb.init(project=default_config["PROJECT"])
+        if default_config["WANDB_MODE"] != "disabled":
+            wandb.init(project=default_config["PROJECT"])
 
         config = copy.deepcopy(default_config)
         for k, v in dict(wandb.config).items():
