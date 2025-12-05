@@ -25,11 +25,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest pytest-cov
+          pip install pytest pytest-cov pytest-xdist
           pip install -e .[all]
       - name: Run train tests
         run: |
-          pytest -q tests/test_train.py
+          pytest -q tests/test_train.py -n 4
 
   envs:
     name: Env tests
