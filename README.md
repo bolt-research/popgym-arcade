@@ -2,7 +2,7 @@
 
 POPGym Arcade is a GPU-accelerated Atari-style benchmark and suite of analysis tools for reinforcement learning.
 
-[![Tests](https://github.com/bolt-research/popgym-arcade/actions/workflows/python_app.yaml/badge.svg)](https://github.com/bolt-research/popgym-arcade/actions/workflows/python_app.yaml)
+[![Tests](https://github.com/bolt-research/popgym-arcade/actions/workflows/run-tests.yaml/badge.svg)](https://github.com/bolt-research/popgym-arcade/actions/workflows/run-tests.yaml)
 
 ## Tasks
 POPGym Arcade contains pixel-based tasks in the style of the [Arcade Learning Environment](https://github.com/Farama-Foundation/Arcade-Learning-Environment).
