@@ -630,21 +630,22 @@ def evaluate(model, config):
         carry, _ = evaluate_step(carry, i)
         return carry
 
-    carry = lax.fori_loop(0, 500, body_fun, carry)
-    _, _, _, _, _, frames, _rng = carry
-    frames = np.array(frames, dtype=np.uint8)
-    frames = frames.transpose((0, 3, 1, 2))
-    wandb.log(
-        {
-            "{}_{}_{}_model_Partial={}_SEED={}".format(
-                config["TRAIN_TYPE"],
-                config["MEMORY_TYPE"],
-                config["ENV_NAME"],
-                config["PARTIAL"],
-                config["SEED"],
-            ): wandb.Video(frames, fps=4)
-        }
-    )
+    if config["WANDB_MODE"] != "disabled":
+        carry = lax.fori_loop(0, 500, body_fun, carry)
+        _, _, _, _, _, frames, _rng = carry
+        frames = np.array(frames, dtype=np.uint8)
+        frames = frames.transpose((0, 3, 1, 2))
+        wandb.log(
+            {
+                "{}_{}_{}_model_Partial={}_SEED={}".format(
+                    config["TRAIN_TYPE"],
+                    config["MEMORY_TYPE"],
+                    config["ENV_NAME"],
+                    config["PARTIAL"],
+                    config["SEED"],
+                ): wandb.Video(frames, fps=4)
+            }
+        )
 
 
 def single_run(config):

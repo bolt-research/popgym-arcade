@@ -473,7 +473,8 @@ def evaluate(model, config):
     _, _, _, _, _, _, frames, _rng = carry
     frames = np.array(frames, dtype=np.uint8)
     frames = frames.transpose((0, 3, 1, 2))
-    wandb.log({"{}".format(config["ENV_NAME"]): wandb.Video(frames, fps=4)})
+    if config["WANDB_MODE"] != "disabled":
+        wandb.log({"{}".format(config["ENV_NAME"]): wandb.Video(frames, fps=4)})
 
 
 def ppo_rnn_run(config):

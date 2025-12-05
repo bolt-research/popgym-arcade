@@ -428,28 +428,28 @@ def evaluate(model, config):
 
     if config["WANDB_MODE"] != "disabled":
         wandb.init(project=f'{config["PROJECT"]}')
-    frames = []
-    for i in range(500):
-        rng, rng_act, rng_step, _rng = jax.random.split(_rng, 4)
-        q_val = model(obs)
-        action = jnp.argmax(q_val, axis=-1)
-        obs, new_state, reward, term, _ = vmap_step(2)(rng_step, state, action)
-        state = new_state
-        frame = np.asarray(obs[0])
-        frames.append(frame)
-    frames = np.array(frames, dtype=np.uint8)
-    frames = frames.transpose((0, 3, 1, 2))
-    wandb.log(
-        {
-            "{}_{}_{}_model_Partial={}_SEED={}".format(
-                config["TRAIN_TYPE"],
-                config["MEMORY_TYPE"],
-                config["ENV_NAME"],
-                config["PARTIAL"],
-                config["SEED"],
-            ): wandb.Video(frames, fps=4)
-        }
-    )
+        frames = []
+        for i in range(500):
+            rng, rng_act, rng_step, _rng = jax.random.split(_rng, 4)
+            q_val = model(obs)
+            action = jnp.argmax(q_val, axis=-1)
+            obs, new_state, reward, term, _ = vmap_step(2)(rng_step, state, action)
+            state = new_state
+            frame = np.asarray(obs[0])
+            frames.append(frame)
+        frames = np.array(frames, dtype=np.uint8)
+        frames = frames.transpose((0, 3, 1, 2))
+        wandb.log(
+            {
+                "{}_{}_{}_model_Partial={}_SEED={}".format(
+                    config["TRAIN_TYPE"],
+                    config["MEMORY_TYPE"],
+                    config["ENV_NAME"],
+                    config["PARTIAL"],
+                    config["SEED"],
+                ): wandb.Video(frames, fps=4)
+            }
+        )
 
 
 def single_run(config):

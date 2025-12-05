@@ -291,21 +291,22 @@ def evaluate(model, config):
         env.step, in_axes=(0, 0, 0, None)
     )(jax.random.split(rng, n_envs), env_state, action, env_params)
 
-    obs, state = vmap_reset(2)(_rng)
+    if config["WANDB_MODE"] != "disabled":
+        obs, state = vmap_reset(2)(_rng)
 
-    frames = []
-    for i in range(1000):
-        rng, rng_act, rng_step, _rng = jax.random.split(_rng, 4)
-        pi, critic = model(obs)
-        action = pi.sample(_rng)
-        obs, new_state, reward, term, _ = vmap_step(2)(rng_step, state, action)
-        state = new_state
-        frame = jnp.asarray(obs[0])
-        frames.append(frame)
+        frames = []
+        for i in range(1000):
+            rng, rng_act, rng_step, _rng = jax.random.split(_rng, 4)
+            pi, critic = model(obs)
+            action = pi.sample(_rng)
+            obs, new_state, reward, term, _ = vmap_step(2)(rng_step, state, action)
+            state = new_state
+            frame = jnp.asarray(obs[0])
+            frames.append(frame)
 
-    frames = np.array(frames, dtype=np.uint8)
-    frames = frames.transpose((0, 3, 1, 2))
-    wandb.log({"Video": wandb.Video(frames, fps=4, format="gif")})
+        frames = np.array(frames, dtype=np.uint8)
+        frames = frames.transpose((0, 3, 1, 2))
+        wandb.log({"Video": wandb.Video(frames, fps=4, format="gif")})
 
     # imageio.mimsave(f"{config["TRAIN_TYPE"]}_{config["ENV_NAME"]}_Partial={config["PARTIAL"]}_Seed={config["SEED"]}.gif", frames)
 
