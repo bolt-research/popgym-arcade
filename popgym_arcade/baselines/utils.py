@@ -14,7 +14,7 @@ from jax import lax
 from matplotlib import pyplot as plt
 
 import popgym_arcade
-from popgym_arcade.baselines.model.memorax import add_batch_dim
+from memax.equinox.train_utils import add_batch_dim
 from popgym_arcade.wrappers import LogWrapper
 
 

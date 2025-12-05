@@ -46,16 +46,12 @@ Expect ~10M frames per second on an RTX4090. Most of our policies converge in le
 
 
 ## Baselines
-We implement a simple on-policy Q learning algorithm known as [PQN](https://arxiv.org/abs/2407.04811). We also implement various memory models:
+We provide a [single training script](popgym_arcade/train.py) for all algorithms and memory models. The [`memax`](https://github.com/smorad/memax) library provides 18 different memory models for use in our script.
 
-**Log Complexity RNNs**
-- [Fast Autoregressive Transformer](https://arxiv.org/abs/2006.16236)
-- [Linear Recurrent Unit (State Space Model)](https://arxiv.org/abs/2303.06349)
-- [Minimal GRU](https://arxiv.org/abs/2410.01201)
-
-**Classical RNNs**
-- [GRU](https://arxiv.org/abs/1412.3555)
-- [LSTM](https://dl.acm.org/doi/10.1162/neco.1997.9.8.1735)
+**RL Algorithms**
+- [PQN](https://arxiv.org/abs/2407.04811) 
+- [PPO](https://arxiv.org/abs/1707.06347)
+- [DQN](https://arxiv.org/abs/1312.5602)
 
 ## Getting Started
 
@@ -169,6 +165,7 @@ vis_fn(grads, obs_seq, config, use_latex=False)
 
 ## Other Useful Libraries
 - [`stable-gymnax`](https://github.com/smorad/stable-gymnax) - A (stable) `jax`-capable `gymnasium` API
+- [`memax`](https://github.com/smorad/memax) - Recurrent models for `jax` 
 - [`popgym`](https://github.com/proroklab/popgym) - The original collection of POMDPs, implemented in `numpy`
 - [`popjaxrl`](https://github.com/luchris429/popjaxrl) - A `jax` version of `popgym`
 - [`popjym`](https://github.com/EdanToledo/popjym) - A more readable version of `popjaxrl` environments that served as a basis for our work

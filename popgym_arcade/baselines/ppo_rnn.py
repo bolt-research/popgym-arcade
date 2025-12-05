@@ -10,7 +10,8 @@ from jax import lax
 
 import popgym_arcade
 import wandb
-from popgym_arcade.baselines.model import ActorCriticRNN, add_batch_dim
+from memax.equinox.train_utils import add_batch_dim
+from popgym_arcade.baselines.model import ActorCriticRNN
 from popgym_arcade.baselines.utils import filter_scan
 from popgym_arcade.wrappers import LogWrapper
 
@@ -441,7 +442,8 @@ def evaluate(model, config):
         frames,
         _rng,
     )
-    wandb.init(project=f'{config["PROJECT"]}')
+    if config["WANDB_MODE"] != "disabled":
+        wandb.init(project=f'{config["PROJECT"]}')
 
     def evaluate_step(carry, i):
         actor_hstate, critic_hstate, obs, done, action, state, frames, _rng = carry
@@ -471,19 +473,20 @@ def evaluate(model, config):
     _, _, _, _, _, _, frames, _rng = carry
     frames = np.array(frames, dtype=np.uint8)
     frames = frames.transpose((0, 3, 1, 2))
-    wandb.log({"{}".format(config["ENV_NAME"]): wandb.Video(frames, fps=4)})
+    if config["WANDB_MODE"] != "disabled":
+        wandb.log({"{}".format(config["ENV_NAME"]): wandb.Video(frames, fps=4)})
 
 
 def ppo_rnn_run(config):
-
-    wandb.init(
-        entity=config["ENTITY"],
-        project=config["PROJECT"],
-        tags=["PPO", config["ENV_NAME"].upper(), f"jax_{jax.__version__}"],
-        name=f'{config["TRAIN_TYPE"]}_{config["MEMORY_TYPE"]}_{config["ENV_NAME"]}_Partial={config["PARTIAL"]}_Seed={config["SEED"]}',
-        config=config,
-        mode=config["WANDB_MODE"],
-    )
+    if config["WANDB_MODE"] != "disabled":
+        wandb.init(
+            entity=config["ENTITY"],
+            project=config["PROJECT"],
+            tags=["PPO", config["ENV_NAME"].upper(), f"jax_{jax.__version__}"],
+            name=f'{config["TRAIN_TYPE"]}_{config["MEMORY_TYPE"]}_{config["ENV_NAME"]}_Partial={config["PARTIAL"]}_Seed={config["SEED"]}',
+            config=config,
+            mode=config["WANDB_MODE"],
+        )
 
     rng = jax.random.PRNGKey(config["SEED"])
     t0 = time.time()

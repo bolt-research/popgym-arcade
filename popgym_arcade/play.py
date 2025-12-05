@@ -9,8 +9,6 @@ import pygame
 import popgym_arcade
 import popgym_arcade.registration
 
-# Change these to play other games
-
 
 def parse_args():
     parser = argparse.ArgumentParser()

@@ -7,7 +7,7 @@ import jax.numpy as jnp
 from distreqx import distributions
 from jaxtyping import Array, PRNGKeyArray
 
-from popgym_arcade.baselines.model.memorax import get_residual_memory_model
+from memax.equinox.train_utils import get_residual_memory_models
 
 
 class ActorCritic(eqx.Module):
@@ -387,14 +387,14 @@ class ActorCriticRNN(eqx.Module):
                     nn.Lambda(jax.nn.leaky_relu),
                 ]
             )
-        self.actor_rnn = get_residual_memory_model(
+        self.actor_rnn = get_residual_memory_models(
             input=512,
             hidden=512,
             output=256,
             num_layers=2,
-            rnn_type=rnn_type,
+            models=[rnn_type],
             key=key_array[4],
-        )
+        )[rnn_type]
         self.actor_trunk = nn.Sequential(
             [
                 nn.Linear(in_features=256, out_features=256, key=key_array[5]),
@@ -406,14 +406,14 @@ class ActorCriticRNN(eqx.Module):
             ]
         )
 
-        self.critic_rnn = get_residual_memory_model(
+        self.critic_rnn = get_residual_memory_models(
             input=512,
             hidden=512,
             output=256,
             num_layers=1,
-            rnn_type=rnn_type,
+            models=[rnn_type],
             key=key_array[10],
-        )
+        )[rnn_type]
         self.critic_trunk = nn.Sequential(
             [
                 nn.Linear(in_features=256, out_features=256, key=key_array[5]),
@@ -664,14 +664,14 @@ class QNetworkRNN(eqx.Module):
                     nn.Lambda(jax.nn.leaky_relu),
                 ]
             )
-        self.rnn = get_residual_memory_model(
+        self.rnn = get_residual_memory_models(
             input=517,
             hidden=512,
             output=256,
             num_layers=2,
-            rnn_type=rnn_type,
+            models=[rnn_type],
             key=keys[4],
-        )
+        )[rnn_type]
         self.trunk = nn.Sequential(
             [nn.Linear(in_features=256, out_features=self.action_dim, key=keys[7])]
         )

@@ -29,10 +29,11 @@ popgym-arcade-play = "popgym_arcade.play:main"
 [project.optional-dependencies]
 human = ["pygame-ce"]
 baselines = [
+  "memax[equinox]",
   "optax",
   "equinox",
   "distreqx",
-  "wandb",
+  "wandb[media]",
   "beartype",
   "jaxtyping",
   "imageio",
@@ -41,14 +42,18 @@ tests = ["pytest"]
 
 # Combined extras for convenience: install with `pip install popgym-arcade[all]`
 all = [
+  # Human
   "pygame-ce",
+  # Baselines
+  "memax[equinox]",
   "optax",
   "equinox",
   "distreqx",
-  "wandb",
+  "wandb[media]",
   "beartype",
   "jaxtyping",
   "imageio",
+  # Test
   "pytest",
 ]
 

@@ -1,12 +1,5 @@
 import argparse
 
-from popgym_arcade.baselines.ppo import ppo_run
-from popgym_arcade.baselines.ppo_rnn import ppo_rnn_run
-from popgym_arcade.baselines.pqn import pqn_run
-from popgym_arcade.baselines.pqn_rnn import pqn_rnn_run
-from popgym_arcade.baselines.dqn import dqn_run
-from popgym_arcade.baselines.dqn_rnn import dqn_rnn_run
-
 def get_args():
     parser = argparse.ArgumentParser(description="Training configuration")
 
@@ -605,15 +598,22 @@ def main():
     args_dict = vars(args)
 
     if args.TRAIN_TYPE == "PPO":
+        from popgym_arcade.baselines.ppo import ppo_run
         ppo_run(args_dict)
     elif args.TRAIN_TYPE == "PPO_RNN":
+        from popgym_arcade.baselines.ppo_rnn import ppo_rnn_run
         ppo_rnn_run(args_dict)
     elif args.TRAIN_TYPE == "PQN":
+        from popgym_arcade.baselines.pqn import pqn_run
         pqn_run(args_dict)
     elif args.TRAIN_TYPE == "PQN_RNN":
+        from popgym_arcade.baselines.pqn_rnn import pqn_rnn_run
         pqn_rnn_run(args_dict)
     elif args.TRAIN_TYPE == "DQN_RNN":
-        dqn_rnn_run(args_dict)
+        from popgym_arcade.baselines.dqn_rnn import dqn_rnn_run
+    elif args.TRAIN_TYPE == "DQN":
+        from popgym_arcade.baselines.dqn import dqn_run
+        dqn_run(args_dict)
 
 
 if __name__ == "__main__":
