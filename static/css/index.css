@@ -155,3 +155,7 @@ body {
 #interpolation-image-wrapper img {
   border-radius: 5px;
 }
+
+#results-carousel .item img {
+  width: 100%;
+}
