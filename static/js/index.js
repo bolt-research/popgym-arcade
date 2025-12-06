@@ -38,12 +38,12 @@ $(document).ready(function() {
 			autoplaySpeed: 3000,
       breakpoints: [
         {
-          changePoint: 768,
+          changePoint: 850,
           slidesToShow: 1,
           slidesToScroll: 1,
         },
         {
-          changePoint: 1024,
+          changePoint: 1200,
           slidesToShow: 2,
           slidesToScroll: 1,
         }
