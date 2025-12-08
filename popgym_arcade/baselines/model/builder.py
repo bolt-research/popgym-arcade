@@ -393,6 +393,11 @@ class ActorCriticRNN(eqx.Module):
             output=256,
             num_layers=2,
             models=[rnn_type],
+            layer_kwargs={
+                "Attention": {"window_size": 128},
+                "Attention-RoPE": {"window_size": 128},
+                "Attention-ALiBi": {"window_size": 128},
+            },
             key=key_array[4],
         )[rnn_type]
         self.actor_trunk = nn.Sequential(
@@ -412,6 +417,11 @@ class ActorCriticRNN(eqx.Module):
             output=256,
             num_layers=1,
             models=[rnn_type],
+            layer_kwargs={
+                "Attention": {"window_size": 128},
+                "Attention-RoPE": {"window_size": 128},
+                "Attention-ALiBi": {"window_size": 128},
+            },
             key=key_array[10],
         )[rnn_type]
         self.critic_trunk = nn.Sequential(
@@ -669,6 +679,11 @@ class QNetworkRNN(eqx.Module):
             hidden=512,
             output=256,
             num_layers=2,
+            layer_kwargs={
+                "Attention": {"window_size": 128},
+                "Attention-RoPE": {"window_size": 128},
+                "Attention-ALiBi": {"window_size": 128},
+            },
             models=[rnn_type],
             key=keys[4],
         )[rnn_type]
