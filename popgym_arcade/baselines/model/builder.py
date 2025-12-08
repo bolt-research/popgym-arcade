@@ -415,7 +415,7 @@ class ActorCriticRNN(eqx.Module):
             input=512,
             hidden=512,
             output=256,
-            num_layers=1,
+            num_layers=2,
             models=[rnn_type],
             layer_kwargs={
                 "Attention": {"window_size": 128},
