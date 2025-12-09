@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "popgym-arcade"
-version = "0.0.5"
+version = "0.0.6"
 description = "POMDP Arcade Environments on the GPU"
 readme = "README.md"
 requires-python = ">=3.10"
