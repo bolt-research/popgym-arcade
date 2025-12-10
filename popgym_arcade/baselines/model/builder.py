@@ -7,7 +7,7 @@ import jax.numpy as jnp
 from distreqx import distributions
 from jaxtyping import Array, PRNGKeyArray
 
-from memorax.equinox.train_utils import get_residual_memory_models
+from memax.equinox.train_utils import get_residual_memory_models
 
 
 class ActorCritic(eqx.Module):

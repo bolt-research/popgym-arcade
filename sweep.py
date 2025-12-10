@@ -5,14 +5,14 @@ from wandb.apis.public import Api
 from typing import Dict, Any
 
 # Configuration - customize these mappings
-WANDB_PROJECT = "Arcade-NIPS"
+WANDB_PROJECT = "attention"
 WANDB_ENTITY = "bolt-um"  # Optional, unless you're in a team
 MAX_JOBS = 7 # Maximum number of jobs to run before terminating (useful for HPC/SLURM)
-TRAIN_PATH = "/home/user/mc45189/iclr2026/popgym-arcade/popgym_arcade/train.py"
+TRAIN_PATH = "/home/mc45189/iclr26/popgym-arcade/popgym_arcade/train.py"
 
 algorithm_families = ['PQN']
-models = ['Attention']
-seeds = [0]
+models = ['Attention-RoPE']
+seeds = [1, 2, 3, 4]
 environments_config = {
     "CartPoleEasy": {
         "PPO": int(1e7),
@@ -183,17 +183,22 @@ def get_wandb_runs() -> set:
     runs = api.runs(f"{WANDB_ENTITY}/{WANDB_PROJECT}") if WANDB_ENTITY else api.runs(WANDB_PROJECT)
 
     existing = set()
-    for run in runs:
-        config = {k: v for k, v in run.config.items() if not k.startswith('_')}
-        key = generate_experiment_key({
-            "algorithm": config["TRAIN_TYPE"].replace("_RNN", ""),
-            "model": config.get("MEMORY_TYPE", "mlp").lower(),
-            "seed": config["SEED"],
-            "environment": config["ENV_NAME"],
-            "partial": config["PARTIAL"]
-        })
-        if run.state in ["finished", "running"]:
-            existing.add(key)
+    try:
+        for run in runs:
+            config = {k: v for k, v in run.config.items() if not k.startswith('_')}
+            key = generate_experiment_key({
+                "algorithm": config["TRAIN_TYPE"].replace("_RNN", ""),
+                "model": config.get("MEMORY_TYPE", "mlp"),
+                "seed": config["SEED"],
+                "environment": config["ENV_NAME"],
+                "partial": config["PARTIAL"]
+            })
+            if run.state in ["finished", "running"]:
+                existing.add(key)
+    except ValueError:
+        print(f"Project {WANDB_PROJECT} not found. Creating it...")
+        api.create_project(WANDB_PROJECT, entity=WANDB_ENTITY)
+        return set()
     return existing
 
 

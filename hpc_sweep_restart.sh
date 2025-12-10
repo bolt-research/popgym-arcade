@@ -4,14 +4,14 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
 #SBATCH --mem=80G
-#SBATCH --partition=gbunchQ3
+#SBATCH --partition=h800_batch
 #SBATCH --output=output/output_%j.txt
 
 
 set -e
 export WANDB_API_KEY=7a8e49e11981e6fd8f3b4b0640616c6e93a05c86
 eval "$(conda shell.bash hook)"
-conda activate jaxenv
+conda activate nanojax
 
 python sweep.py
 # python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "lstm" --ENV_NAME "MineSweeperEasy" --PARTIAL  --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000
