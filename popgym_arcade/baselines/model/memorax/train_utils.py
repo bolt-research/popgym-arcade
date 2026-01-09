@@ -170,7 +170,7 @@ def get_residual_memory_model(
         ),
         "S6": lambda recurrent_size, key: S6(
             hidden_size=recurrent_size, recurrent_size=recurrent_size, key=key
-        )
+        ),
         "linear_rnn": lambda recurrent_size, key: LinearRecurrent(
             recurrent_size=recurrent_size, key=key
         ),
