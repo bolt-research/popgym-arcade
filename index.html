@@ -2,29 +2,25 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <meta name="description"
-        content="Investigating Memory in RL with POPGym Arcade">
+  <meta name="description" content="Investigating Memory in RL with POPGym Arcade">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>
-    Investigating Memory in RL with POPGym Arcade
-  </title>
+  <title>Investigating Memory in RL with POPGym Arcade</title>
 
   <link rel="icon" href="./static/images/favicon.ico">
-
+  <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro" rel="stylesheet">
 
-  <link rel="stylesheet" href="./static/css/bulma.min.css">
-  <link rel="stylesheet" href="./static/css/bulma-carousel.min.css">
-  <link rel="stylesheet" href="./static/css/bulma-slider.min.css">
-  <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  
+  <!-- Icons (CDN for reliability) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
-  <link rel="stylesheet" href="./static/css/index.css">
+  
+  <!-- Vue 3 -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-  <script defer src="./static/js/fontawesome.all.min.js"></script>
-  <script src="./static/js/bulma-carousel.min.js"></script>
-  <script src="./static/js/bulma-slider.min.js"></script>
-  <script src="./static/js/index.js"></script>
+  <!-- MathJax -->
   <script>
     MathJax = {
       tex: {
@@ -33,29 +29,156 @@
     };
   </script>
   <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <style>
+    body {
+      font-family: 'Noto Sans', sans-serif;
+      background-color: #f8f9fa; /* Light grey background for whole page */
+    }
+    .publication-title {
+      font-family: 'Google Sans', sans-serif;
+    }
+    .publication-authors {
+      font-family: 'Google Sans', sans-serif;
+    }
+    .author-block {
+      display: inline-block;
+      margin-right: 10px;
+    }
+    .author-block a {
+        text-decoration: none;
+        color: #0d6efd; 
+    }
+    .author-block a:hover {
+        text-decoration: underline;
+    }
+    
+    /* Carousel Styling */
+    .carousel {
+        /* Add padding to ensure arrows are outside the content area */
+        padding-left: 50px;
+        padding-right: 50px;
+    }
+    .carousel-control-prev,
+    .carousel-control-next {
+        /* Fixed width for controls, positioned in the padding area */
+        width: 50px;
+    }
+    .carousel-control-prev { left: 0; }
+    .carousel-control-next { right: 0; }
+
+    .carousel-control-prev-icon,
+    .carousel-control-next-icon {
+        background-color: rgba(0,0,0,0.3);
+        border-radius: 50%;
+        padding: 1.5rem;
+        background-size: 50%;
+    }
+    .carousel-control-prev-icon:hover,
+    .carousel-control-next-icon:hover {
+        background-color: rgba(0,0,0,0.6);
+    }
+    
+    /* Card/Image Styles */
+    .game-card img {
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        transition: transform 0.2s;
+    }
+    .game-card img:hover {
+        transform: scale(1.02);
+    }
+    
+    .btn-action {
+        background-color: #343a40;
+        color: white;
+        border-radius: 50rem;
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .btn-action:hover {
+        background-color: #000;
+        color: white;
+        transform: translateY(-2px);
+    }
+    
+    .section-title {
+        border-bottom: 2px solid #e9ecef;
+        padding-bottom: 1rem;
+        margin-bottom: 2rem;
+        display: inline-block;
+    }
+
+    .game-title-header {
+      font-weight: 700;
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+      color: #495057;
+    }
+    
+    /* Mobile tweaks */
+    @media (max-width: 576px) {
+        .display-5 {
+            font-size: 1.8rem;
+        }
+        .carousel-control-prev-icon,
+        .carousel-control-next-icon {
+            padding: 1rem;
+        }
+    }
+
+    /* Figure Styling */
+    .figure-block {
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+      margin-bottom: 3rem;
+      border: 1px solid #f1f3f5;
+    }
+    @media (max-width: 768px) {
+        .figure-block {
+            padding: 1rem;
+            margin-bottom: 2rem;
+        }
+    }
+    .figure-img {
+        border-radius: 6px;
+        /* box-shadow: 0 2px 8px rgba(0,0,0,0.05); */
+    }
+    .figure-caption-custom {
+      font-size: 1rem;
+      color: #495057; /* Gray-700 */
+      margin-top: 1rem;
+      line-height: 1.6;
+      text-align: center; 
+    }
+    .figure-title {
+        font-weight: 700;
+        margin-bottom: 1rem;
+        color: #212529;
+        text-align: center;
+        font-size: 1.25rem;
+    }
+  </style>
 </head>
 <body>
-
-<nav class="navbar" role="navigation" aria-label="main navigation">
-  <div class="navbar-brand">
-    <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
-      <span aria-hidden="true"></span>
-      <span aria-hidden="true"></span>
-      <span aria-hidden="true"></span>
-    </a>
-  </div>
-</nav>
-
-
-<section class="hero">
-  <div class="hero-body">
-    <div class="container is-max-desktop">
-      <div class="columns is-centered">
-        <div class="column has-text-centered">
-          <h1 class="title is-2 publication-title">
-            Investigating Memory in RL with POPGym Arcade
-          </h1>
-            <div class="is-size-5 publication-authors">
+  <div id="app">
+    
+    <!-- Hero / Header -->
+    <section class="py-5 bg-white">
+      <div class="container text-center">
+        <div class="row justify-content-center">
+          <div class="col-lg-10">
+            <h1 class="display-5 fw-bold publication-title mb-4">
+              Investigating Memory in RL with POPGym Arcade
+            </h1>
+            
+            <div class="publication-authors fs-5 mb-4">
               <span class="author-block"> 
                 <a href="https://aphlios.github.io/">Zekang Wang</a><sup>1</sup>,
               </span>
@@ -71,227 +194,216 @@
               <span class="author-block"> 
                 <a href="https://www.dangersteve.com/">Steven Morad</a><sup>1</sup>
               </span>
-              <br>
-              <span class="author-block"><sup>1</sup>University of Macau,</span>
-              <span class="author-block"><sup>2</sup>University College London</span>
-              <br>
-              
-              <!-- <br> -->
-              <div class="is-size-6 publication-authors">
-                <!-- <span style="font-size: 0.9em;">*Equal Contribution</span><br> -->
-                <!-- <span class="author-block">International Conference on Learning Representations (ICLR) 2025 <i><span class="achievement">[Oral]</span></i></span> -->
-              </div>
             </div>
-            <div class="column has-text-centered">
-              <div class="publication-links">
-                <span class="link-block">
-                  <a href="https://arxiv.org/abs/2503.01450" target="_blank" 
-                    class="external-link button is-normal is-rounded is-dark">
-                    <span class="icon">
-                        <i class="ai ai-arxiv"></i>
-                    </span>
-                    <span>arXiv</span>
-                  </a>
-                </span>
-                <span class="link-block"> 
-                  <a href="https://github.com/bolt-research/popgym-arcade" target="_blank" 
-                    class="external-link button is-normal is-rounded is-dark">
-                    <span class="icon">
-                        <i class="fab fa-github"></i>
-                    </span>
-                    <span>Code</span>
-                  </a>
-                </span>
-                <span class="link-block"> 
-                  <a href="./bibtex.txt" target="_blank"
-                    class="external-link button is-normal is-rounded is-dark">
-                    <span>BibTeX</span>
-                  </a>
-                </span>
-              </div>
+            
+            <div class="publication-authors fs-6 text-muted mb-4">
+              <span class="author-block ms-2"><sup>1</sup>University of Macau</span>
+              <span class="author-block ms-2"><sup>2</sup>University College London</span>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="publication-links d-flex flex-wrap justify-content-center gap-3">
+                <a href="https://arxiv.org/abs/2503.01450" target="_blank" class="btn btn-action text-decoration-none">
+                    <i class="ai ai-arxiv"></i> arXiv
+                </a>
+                <a href="https://github.com/bolt-research/popgym-arcade" target="_blank" class="btn btn-action text-decoration-none">
+                    <i class="fab fa-github"></i> Code
+                </a>
+                <a href="./bibtex.txt" target="_blank" class="btn btn-action text-decoration-none">
+                    <i class="fas fa-book"></i> BibTeX
+                </a>
             </div>
           </div>
         </div>
       </div>
-    </div>
-    <!-- <div class="container">
-      <div class="columns is-centered has-text-centered">
-        <div class="column is-four-fifths">
-          <h2 class="title is-3">Video</h2>
-          <div class="publication-video">
-            <iframe src="https://www.youtube.com/embed/z6BsJYY-5UU?rel=0&amp;showinfo=0" frameborder="0"
-                    allow="autoplay; encrypted-media" allowfullscreen></iframe>
-          </div>
-        </div>
-      </div>
-    </div> -->
-</section>
+    </section>
 
-<section class="hero teaser">
-  <div class="container is-max-desktop">
-    <div id="results-carousel" class="carousel results-carousel">
-      <div class="item">
-        <div class="columns is-mobile is-gapless" style="margin-bottom: 0;">
-          <div class="column">
-            <img src="./static/images/autoencode_f.gif" alt="Autoencode F">
-          </div>
-          <div class="column">
-            <img src="./static/images/autoencode_p.gif" alt="Autoencode P">
+    <!-- Carousel Section -->
+    <section class="py-5">
+      <div class="container-fluid px-0 px-lg-3">
+        <div class="row justify-content-center mx-0">
+            <div class="col-12 col-xl-11 position-relative">
+                
+                <!-- Custom Slider -->
+                <div class="px-5"> <!-- Padding for arrows -->
+                    <div class="overflow-hidden">
+                        <div class="d-flex" 
+                             :style="{ transform: `translateX(-${currentIndex * itemWidth}%)`, transition: 'transform 0.5s ease-in-out' }">
+                            
+                            <!-- Loop over ALL games flat -->
+                            <div v-for="game in games" :key="game.id" 
+                                 :style="{ flex: `0 0 ${itemWidth}%`, maxWidth: `${itemWidth}%` }" 
+                                 class="px-2"> <!-- Horizontal gap via padding -->
+                                 
+                                <div class="game-pair-wrapper">
+                                  <div class="row g-0 align-items-center">
+                                      <!-- Full Obs (MDP) -->
+                                      <div class="col-6 position-relative">
+                                          <img :src="'./static/images/' + game.id + '_f.gif'" class="img-fluid w-100" style="border-top-left-radius: 8px; border-bottom-left-radius: 8px;" :alt="game.name + ' MDP'">
+                                      </div>
+                                      <!-- Partial Obs (POMDP) -->
+                                      <div class="col-6 position-relative">
+                                          <img :src="'./static/images/' + game.id + '_p.gif'" class="img-fluid w-100" style="border-top-right-radius: 8px; border-bottom-right-radius: 8px;" :alt="game.name + ' POMDP'">
+                                      </div>
+                                  </div>
+                                </div>
+
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- Controls -->
+                    <button class="position-absolute top-50 start-0 translate-middle-y btn border-0 p-0" 
+                            style="width: 50px; z-index: 5; left: 0;" 
+                            @click="prevSlide">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Previous</span>
+                    </button>
+                    <button class="position-absolute top-50 end-0 translate-middle-y btn border-0 p-0" 
+                            style="width: 50px; z-index: 5; right: 0;" 
+                            @click="nextSlide">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Next</span>
+                    </button>
+                </div>
+
+                <div class="text-center mt-4 px-3">
+                    <p class="text-muted fst-italic mb-0 small">
+                        Observations from our environment twins. All environments share a unifying observation and action space, enabling counterfactual studies with observability as the sole independent variable.
+                    </p>
+                </div>
+
+            </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Content (Restored to reference style) -->
+    <section class="section py-5">
+      <div class="container" style="max-width: 960px;">
+        <div class="row justify-content-center">
+          <div class="col-12">
+            
+            <!-- Abstract -->
+            <div class="figure-block">
+              <div class="text-center">
+                <h2 class="h3 fw-bold mb-3">Abstract</h2>
+              </div>
+              <div class="mb-2" style="text-align: justify; font-size: 1.05rem; line-height: 1.8;">
+                <p class="mb-0">
+                  How should we analyze memory in deep RL? We introduce mathematical tools for fairly analyzing policies under partial observability and revealing how agents use memory to make decisions. To utilize these tools, we present POPGym Arcade, a collection of Atari-inspired, hardware-accelerated, pixel-based environments sharing a single observation and action space. Each environment provides fully and partially observable variants, enabling counterfactual studies on observability. We find that controlled studies are necessary for fair comparisons, and identify a pathology where value functions smear credit over irrelevant history. With this pathology, we demonstrate how out-of-distribution scenarios can contaminate memory, perturbing the policy far into the future, with implications for sim-to-real transfer and offline RL.
+                </p>
+              </div>
+            </div>
+
+            <!-- FPS Image -->
+            <div class="figure-block">
+              <h3 class="figure-title">Training Throughput</h3>
+              <img src="./static/images/fps.png" alt="FPS Comparison" class="img-fluid w-100 figure-img">
+              <p class="figure-caption-custom">
+                <b>Throughput:</b> Expect ~10M frames per second on an RTX4090. Most of our policies converge in less than 60 minutes of training.
+              </p>
+            </div>
+
+            <!-- Quad Image -->
+            <div class="figure-block">
+              <h3 class="figure-title">Value Function Smearing</h3>
+              <img src="./static/images/quad.png" alt="Value Smearing" class="img-fluid w-100 figure-img">
+              <p class="figure-caption-custom" style="text-align: justify;">
+                How do trained agents use memory? We plot pixelwise memory gradients for the LRU (top rows) and GRU (bottom rows), denoting how much each pixel contributes to future value estimate $V(s_t)$ through memory. In these MDPs, $V_*(s_{t})$ is independent of $s_{t-k} \dots s_{t-1}$, yet memory incorrectly smears value credit over uninformative past states, even with a residual connection bypassing the memory model. Smeared value attribution suggests value estimators may not generalize to new trajectories.
+              </p>
+            </div>
+
+            <!-- Gap Bias Plot -->
+            <div class="figure-block">
+              <h3 class="figure-title">Return Disentanglement</h3>
+              <img src="./static/images/gap_bias_plot.png" alt="Gap Bias Plot" class="img-fluid w-100 figure-img">
+              <p class="figure-caption-custom">
+                We disentangle the return using our memory analysis tools. We plot the POMDP returns $\in [0, 1]$, the Observability Gap, and Memory Bias. We aggregate scores over all environments and difficulty configurations. Whiskers represent the 95% confidence interval over five seeds.
+              </p>
+            </div>
+
           </div>
         </div>
       </div>
-      <div class="item">
-        <div class="columns is-mobile is-gapless" style="margin-bottom: 0;">
-          <div class="column">
-            <img src="./static/images/battleship_f.gif" alt="Battleship F">
-          </div>
-          <div class="column">
-            <img src="./static/images/battleship_p.gif" alt="Battleship P">
-          </div>
-        </div>
-      </div>
-      <div class="item">
-        <div class="columns is-mobile is-gapless" style="margin-bottom: 0;">
-          <div class="column">
-            <img src="./static/images/breakout_f.gif" alt="Breakout F">
-          </div>
-          <div class="column">
-            <img src="./static/images/breakout_p.gif" alt="Breakout P">
+    </section>
+
+    <footer class="footer py-5">
+      <div class="container">
+        <div class="row justify-content-center">
+          <div class="col-lg-8 text-center">
+            <p>
+              This website template is borrowed from <a href="https://github.com/nerfies/nerfies.github.io" class="text-decoration-none">Nerfies</a>
+            </p>
           </div>
         </div>
       </div>
-      <div class="item">
-        <div class="columns is-mobile is-gapless" style="margin-bottom: 0;">
-          <div class="column">
-            <img src="./static/images/cartpole_f.gif" alt="Cartpole F">
-          </div>
-          <div class="column">
-            <img src="./static/images/cartpole_p.gif" alt="Cartpole P">
-          </div>
-        </div>
-      </div>
-      <div class="item">
-        <div class="columns is-mobile is-gapless" style="margin-bottom: 0;">
-          <div class="column">
-            <img src="./static/images/countrecall_f.gif" alt="Count Recall F">
-          </div>
-          <div class="column">
-            <img src="./static/images/countrecall_p.gif" alt="Count Recall P">
-          </div>
-        </div>
-      </div>
-      <div class="item">
-        <div class="columns is-mobile is-gapless" style="margin-bottom: 0;">
-          <div class="column">
-            <img src="./static/images/minesweeper_f.gif" alt="Minesweeper F">
-          </div>
-          <div class="column">
-            <img src="./static/images/minesweeper_p.gif" alt="Minesweeper P">
-          </div>
-        </div>
-      </div>
-      <div class="item">
-        <div class="columns is-mobile is-gapless" style="margin-bottom: 0;">
-          <div class="column">
-            <img src="./static/images/navigator_f.gif" alt="Navigator F">
-          </div>
-          <div class="column">
-            <img src="./static/images/navigator_p.gif" alt="Navigator P">
-          </div>
-        </div>
-      </div>
-      <div class="item">
-        <div class="columns is-mobile is-gapless" style="margin-bottom: 0;">
-          <div class="column">
-            <img src="./static/images/ncartpole_f.gif" alt="Noisy Cartpole F">
-          </div>
-          <div class="column">
-            <img src="./static/images/ncartpole_p.gif" alt="Noisy Cartpole P">
-          </div>
-        </div>
-      </div>
-      <div class="item">
-        <div class="columns is-mobile is-gapless" style="margin-bottom: 0;">
-          <div class="column">
-            <img src="./static/images/skittles_f.gif" alt="Skittles F">
-          </div>
-          <div class="column">
-            <img src="./static/images/skittles_p.gif" alt="Skittles P">
-          </div>
-        </div>
-      </div>
-      <div class="item">
-        <div class="columns is-mobile is-gapless" style="margin-bottom: 0;">
-          <div class="column">
-            <img src="./static/images/tetris_f.gif" alt="Tetris F">
-          </div>
-          <div class="column">
-            <img src="./static/images/tetris_p.gif" alt="Tetris P">
-          </div>
-        </div>
-      </div>
-    </div>
-    <p style="font-size: 18px; text-align: center">
-      Observations from our environment twins. All environments share a unifying observation and
-action space, enabling counterfactual studies with observability as the sole independent variable.
-    </p>
+    </footer>
+
   </div>
-</section>
 
-<section class="section">
-  <div class="container is-max-desktop">
-    <div class="columns is-centered has-text-centered">
-      <div class="column">
+  <!-- Bootstrap Bundle with Popper -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-        <h2 class="title is-3">Abstract</h2>
-        <div class="content has-text-justified">
-          <p>
-            How should we analyze memory in deep RL? We introduce mathematical tools for fairly analyzing policies under partial observability and revealing how agents use memory to make decisions. To utilize these tools, we present POPGym Arcade, a collection of Atari-inspired, hardware-accelerated, pixel-based environments sharing a single observation and action space. Each environment provides fully and partially observable variants, enabling counterfactual studies on observability. We find that controlled studies are necessary for fair comparisons, and identify a pathology where value functions smear credit over irrelevant history. With this pathology, we demonstrate how out-of-distribution scenarios can contaminate memory, perturbing the policy far into the future, with implications for sim-to-real transfer and offline RL.
-          </p>
-          <br>
-          <br>
-        </div>
-<!-- <br><br><br> -->
-        <div class="container is-max-desktop">
-          <img src="./static/images/fps.png" alt="FPS Comparison" style="width: 100%;">
-          <p style="font-size: 18px; text-align: center; margin-top: 10px;">
-            <b>Throughput:</b> Expect ~10M frames per second on an RTX4090. Most of our policies converge in less than 60 minutes of training.
-          </p>
-        </div>
-<br><br><br>
-          <div class="container is-max-desktop">
-          <img src="./static/images/quad.png" alt="FPS Comparison" style="width: 100%;">
-          <p style="font-size: 18px; text-align: center; margin-top: 10px;">
-            How do trained agents use memory? We plot pixelwise memory gradients for the LRU (top rows) and GRU (bottom rows), denoting how much each pixel contributes to future value estimate $V(s_t)$ through memory. In these MDPs, $V_*(s_{t})$ is independent of $s_{t-k} \dots s_{t-1}$, yet memory incorrectly smears value credit over uninformative past states, even with a residual connection bypassing the memory model. Smeared value attribution suggests value estimators may not generalize to new trajectories.
-          </p>
-        </div>
+  <!-- Vue Application Logic -->
+  <script>
+    const { createApp, computed } = Vue;
 
-        <br><br><br>
-          <div class="container is-max-desktop">
-          <img src="./static/images/gap_bias_plot.png" alt="FPS Comparison" style="width: 100%;">
-          <p style="font-size: 18px; text-align: center; margin-top: 10px;">
-          We disentangle the return using our memory analysis tools. We plot the POMDP returns $\in [0, 1]$, the Observability Gap, and Memory Bias. We aggregate scores over all environments and difficulty configurations. Whiskers represent the 95% confidence interval over five seeds.          </p>
-        </div>
-
-<!-- End of content -->
-      <br/>
-    </div>
-  </div>
-</section>
-
-<footer class="footer">
-  <div class="container">
-    <div class="columns is-centered">
-      <div class="column is-8">
-        <div class="content">
-          <div class="columns is-centered"><p>
-            This website template is borrowed from <a href="https://github.com/nerfies/nerfies.github.io">Nerfies</a>
-          </p></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</footer>
-
+    createApp({
+      data() {
+        return {
+          windowWidth: window.innerWidth,
+          currentIndex: 0,
+          games: [
+            { id: 'autoencode', name: 'Autoencode' },
+            { id: 'battleship', name: 'Battleship' },
+            { id: 'breakout', name: 'Breakout' },
+            { id: 'cartpole', name: 'Cartpole' },
+            { id: 'countrecall', name: 'Count Recall' },
+            { id: 'minesweeper', name: 'Minesweeper' },
+            { id: 'navigator', name: 'Navigator' },
+            { id: 'ncartpole', name: 'Noisy Cartpole' },
+            { id: 'skittles', name: 'Skittles' },
+            { id: 'tetris', name: 'Tetris' }
+          ]
+        }
+      },
+      computed: {
+        chunkSize() {
+          // Responsive: 1 item (mobile), 2 items (tablet/desktop), 3 items (large screens)
+          if (this.windowWidth < 768) return 1;
+          if (this.windowWidth < 1200) return 2;
+          return 3;
+        },
+        itemWidth() {
+          return 100 / this.chunkSize;
+        }
+      },
+      methods: {
+        nextSlide() {
+          // Loop behavior
+          if (this.currentIndex < this.games.length - this.chunkSize) {
+            this.currentIndex++;
+          } else {
+            this.currentIndex = 0;
+          }
+        },
+        prevSlide() {
+          if (this.currentIndex > 0) {
+            this.currentIndex--;
+          } else {
+            this.currentIndex = this.games.length - this.chunkSize;
+          }
+        }
+      },
+      mounted() {
+        window.addEventListener('resize', () => {
+          this.windowWidth = window.innerWidth;
+        });
+        console.log('Vue App initialised.');
+      }
+    }).mount('#app');
+  </script>
 </body>
 </html>
