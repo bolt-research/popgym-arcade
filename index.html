@@ -270,7 +270,7 @@
 
                 <div class="text-center mt-4 px-3">
                     <p class="text-muted fst-italic mb-0 fs-5">
-                        <b>The "Environment Twin" Paradigm:</b> We pair every fully observable MDP with a partially observable counterpart (POMDP) that shares the exact same action and observation space. This unified structure allows us to isolate observability as the <i>sole</i> independent variable, enabling precise counterfactual analysis—essentially asking, "How much does memory (or the lack thereof) truly matter?"
+                        <b>The Environment Twin Paradigm:</b> We pair every fully observable MDP with a partially observable counterpart (POMDP) that shares the exact same action and observation space. This unified structure allows us to isolate observability as the <i>sole</i> independent variable, enabling precise counterfactual analysis and essentially asking: <b>How much does memory truly matter?</b>
                     </p>
                 </div>
 
@@ -292,7 +292,7 @@
               </div>
               <div class="mb-2" style="text-align: justify; font-size: 1.05rem; line-height: 1.8;">
                 <p class="mb-0">
-                  Memory is a critical yet often opaque component in Deep Reinforcement Learning. How can we rigorously analyze its role in decision-making? In this work, we introduce a novel mathematical framework designed to treat memory as a distinct, analyzable entity under partial observability. To facilitate this, we present <b>POPGym Arcade</b>: a high-throughput, hardware-accelerated suite of pixel-based environments. Unique to our benchmark, each task comes in matched "twins"—fully and partially observable variants that share identical action and observation spaces. This structure allows us to isolate observability as an independent variable for purely counterfactual analysis. Through this lens, we uncover a critical pathology: value functions tend to "smear" credit across irrelevant history. We show that this artifact can lead to catastrophic failures in out-of-distribution scenarios, where irrelevant past events contaminate future decisions—a finding with profound implications for offline RL and sim-to-real transfer.
+                  How should we analyze memory in deep RL? We introduce mathematical tools for fairly analyzing policies under partial observability and revealing how agents use memory to make decisions. To utilize these tools, we present POPGym Arcade, a collection of Atari-inspired, hardware-accelerated, pixel-based environments sharing a single observation and action space. Each environment provides fully and partially observable variants, enabling counterfactual studies on observability. We find that controlled studies are necessary for fair comparisons, and identify a pathology where value functions smear credit over irrelevant history. With this pathology, we demonstrate how out-of-distribution scenarios can contaminate memory, perturbing the policy far into the future, with implications for sim-to-real transfer and offline RL.
                 </p>
               </div>
             </div>
