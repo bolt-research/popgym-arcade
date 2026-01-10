@@ -33,7 +33,7 @@
   <style>
     body {
       font-family: 'Noto Sans', sans-serif;
-      background-color: #f8f9fa; /* Light grey background for whole page */
+      background-color: #ffffff;
     }
     .publication-title {
       font-family: 'Google Sans', sans-serif;
@@ -133,12 +133,12 @@
 
     /* Figure Styling */
     .figure-block {
-      background: white;
-      border-radius: 12px;
-      padding: 2rem;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+      /* background: white; */
+      /* border-radius: 12px; */
+      /* padding: 2rem; */
+      /* box-shadow: 0 4px 20px rgba(0,0,0,0.04); */
       margin-bottom: 3rem;
-      border: 1px solid #f1f3f5;
+      /* border: 1px solid #f1f3f5; */
     }
     @media (max-width: 768px) {
         .figure-block {
@@ -269,8 +269,8 @@
                 </div>
 
                 <div class="text-center mt-4 px-3">
-                    <p class="text-muted fst-italic mb-0 small">
-                        Observations from our environment twins. All environments share a unifying observation and action space, enabling counterfactual studies with observability as the sole independent variable.
+                    <p class="text-muted fst-italic mb-0 fs-5">
+                        <b>The "Environment Twin" Paradigm:</b> We pair every fully observable MDP with a partially observable counterpart (POMDP) that shares the exact same action and observation space. This unified structure allows us to isolate observability as the <i>sole</i> independent variable, enabling precise counterfactual analysis—essentially asking, "How much does memory (or the lack thereof) truly matter?"
                     </p>
                 </div>
 
@@ -281,7 +281,7 @@
 
     <!-- Main Content (Restored to reference style) -->
     <section class="section py-5">
-      <div class="container" style="max-width: 960px;">
+      <div class="container">
         <div class="row justify-content-center">
           <div class="col-12">
             
@@ -292,17 +292,17 @@
               </div>
               <div class="mb-2" style="text-align: justify; font-size: 1.05rem; line-height: 1.8;">
                 <p class="mb-0">
-                  How should we analyze memory in deep RL? We introduce mathematical tools for fairly analyzing policies under partial observability and revealing how agents use memory to make decisions. To utilize these tools, we present POPGym Arcade, a collection of Atari-inspired, hardware-accelerated, pixel-based environments sharing a single observation and action space. Each environment provides fully and partially observable variants, enabling counterfactual studies on observability. We find that controlled studies are necessary for fair comparisons, and identify a pathology where value functions smear credit over irrelevant history. With this pathology, we demonstrate how out-of-distribution scenarios can contaminate memory, perturbing the policy far into the future, with implications for sim-to-real transfer and offline RL.
+                  Memory is a critical yet often opaque component in Deep Reinforcement Learning. How can we rigorously analyze its role in decision-making? In this work, we introduce a novel mathematical framework designed to treat memory as a distinct, analyzable entity under partial observability. To facilitate this, we present <b>POPGym Arcade</b>: a high-throughput, hardware-accelerated suite of pixel-based environments. Unique to our benchmark, each task comes in matched "twins"—fully and partially observable variants that share identical action and observation spaces. This structure allows us to isolate observability as an independent variable for purely counterfactual analysis. Through this lens, we uncover a critical pathology: value functions tend to "smear" credit across irrelevant history. We show that this artifact can lead to catastrophic failures in out-of-distribution scenarios, where irrelevant past events contaminate future decisions—a finding with profound implications for offline RL and sim-to-real transfer.
                 </p>
               </div>
             </div>
 
             <!-- FPS Image -->
             <div class="figure-block">
-              <h3 class="figure-title">Training Throughput</h3>
+              <h3 class="figure-title">Throughput</h3>
               <img src="./static/images/fps.png" alt="FPS Comparison" class="img-fluid w-100 figure-img">
               <p class="figure-caption-custom">
-                <b>Throughput:</b> Expect ~10M frames per second on an RTX4090. Most of our policies converge in less than 60 minutes of training.
+                <b>High-Performance Training:</b> We specifically designed these environments for speed. On a standard consumer GPU (RTX 4090), POPGym Arcade achieves throughputs exceeding 10 million frames per second, allowing most experiments to converge in under an hour. This efficiency democratizes memory research, enabling rapid iteration without massive compute resources.
               </p>
             </div>
 
@@ -311,7 +311,7 @@
               <h3 class="figure-title">Value Function Smearing</h3>
               <img src="./static/images/quad.png" alt="Value Smearing" class="img-fluid w-100 figure-img">
               <p class="figure-caption-custom" style="text-align: justify;">
-                How do trained agents use memory? We plot pixelwise memory gradients for the LRU (top rows) and GRU (bottom rows), denoting how much each pixel contributes to future value estimate $V(s_t)$ through memory. In these MDPs, $V_*(s_{t})$ is independent of $s_{t-k} \dots s_{t-1}$, yet memory incorrectly smears value credit over uninformative past states, even with a residual connection bypassing the memory model. Smeared value attribution suggests value estimators may not generalize to new trajectories.
+                <b>The "Smearing" Pathology:</b> Here we visualize an unexpected failure mode in memory-based agents. We compute pixel-wise gradients to trace which parts of the history contribute to the agent's value estimate $V(s_t)$. In these tailored tasks, the optimal value should depend only on the immediate present, rendering the past irrelevant. Yet, as the visualization shows, both LRU and GRU models incorrectly "smear" credit across the entire history (highlighted regions). This indicates that the agents are memorizing noise rather than extracting state, a fragility that makes them highly susceptible to distributional shifts.
               </p>
             </div>
 
@@ -320,7 +320,7 @@
               <h3 class="figure-title">Return Disentanglement</h3>
               <img src="./static/images/gap_bias_plot.png" alt="Gap Bias Plot" class="img-fluid w-100 figure-img">
               <p class="figure-caption-custom">
-                We disentangle the return using our memory analysis tools. We plot the POMDP returns $\in [0, 1]$, the Observability Gap, and Memory Bias. We aggregate scores over all environments and difficulty configurations. Whiskers represent the 95% confidence interval over five seeds.
+                <b>Decomposing Performance:</b> Using our proposed toolkit, we can dissect an agent's performance into distinct components: the raw POMDP return, the <i>Observability Gap</i> (how much performance is lost due to missing information), and <i>Memory Bias</i>. The plot above aggregates these metrics across all difficulty levels and environments, providing a holistic view of where current memory architectures fall short relative to the theoretical optimum.
               </p>
             </div>
 
