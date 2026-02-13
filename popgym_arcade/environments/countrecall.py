@@ -258,6 +258,7 @@ class CountRecall(environment.Environment):
         partial_obs: bool = False,
         obs_size: int = 128,
     ):
+        self.obs_size = obs_size
         self.partial_obs = partial_obs
         self.decksize = 26
         self.num_decks = num_decks

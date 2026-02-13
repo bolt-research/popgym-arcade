@@ -197,6 +197,7 @@ class AutoEncode(environment.Environment):
         obs_size: int = 128,
     ):
         super().__init__()
+        self.obs_size = obs_size
         self.partial_obs = partial_obs
         self.num_suits = 4
         self.decksize = 26
