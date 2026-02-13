@@ -258,6 +258,7 @@ class CountRecall(environment.Environment):
         partial_obs: bool = False,
         obs_size: int = 128,
     ):
+        self.obs_size = obs_size
         self.partial_obs = partial_obs
         self.decksize = 26
         self.num_decks = num_decks
@@ -513,7 +514,7 @@ class CountRecall(environment.Environment):
 
     def observation_space(self, params: EnvParams) -> spaces.Box:
         """Observation space of the environment."""
-        return spaces.Box(0, 255, (256, 256, 3), dtype=jnp.uint8)
+        return spaces.Box(0, 255, (self.obs_size, self.obs_size, 3), dtype=jnp.uint8)
 
 
 class CountRecallEasy(CountRecall):

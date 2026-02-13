@@ -477,7 +477,7 @@ class MineSweeper(environment.Environment):
             # jnp.ones((self.num_mines,)),
             0,
             255,
-            (self.board_size, self.board_size, 3),
+            (self.obs_size, self.obs_size, 3),
             dtype=jnp.uint8,
         )
 

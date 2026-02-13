@@ -197,6 +197,7 @@ class AutoEncode(environment.Environment):
         obs_size: int = 128,
     ):
         super().__init__()
+        self.obs_size = obs_size
         self.partial_obs = partial_obs
         self.num_suits = 4
         self.decksize = 26
@@ -469,7 +470,7 @@ class AutoEncode(environment.Environment):
 
     def observation_space(self, params: EnvParams) -> spaces.Box:
         """Observation space of the environment."""
-        return spaces.Box(0, 255, (256, 256, 3), dtype=jnp.uint8)
+        return spaces.Box(0, 255, (self.obs_size, self.obs_size, 3), dtype=jnp.uint8)
 
 
 class AutoEncodeEasy(AutoEncode):
