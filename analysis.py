@@ -27,7 +27,7 @@ config["MODEL_PATH"] = (
 rng = jax.random.PRNGKey(config["SEED"])
 
 # Initialize the model
-network = QNetworkRNN(rng, rnn_type=config["MEMORY_TYPE"], obs_size=config["OBS_SIZE"])
+network = QNetworkRNN(rng, rnn_type=config["MEMORY_TYPE"], obs_size=config["OBS_SIZE"], num_layers=config.get("NUM_LAYERS", 2))
 # Load the model
 model = eqx.tree_deserialise_leaves(config["MODEL_PATH"], network)
 # Compute the saliency maps
@@ -54,7 +54,7 @@ config["MODEL_PATH"] = (
 
 rng = jax.random.PRNGKey(config["SEED"])
 # Initialize the model
-network = QNetworkRNN(rng, rnn_type=config["MEMORY_TYPE"], obs_size=config["OBS_SIZE"])
+network = QNetworkRNN(rng, rnn_type=config["MEMORY_TYPE"], obs_size=config["OBS_SIZE"], num_layers=config.get("NUM_LAYERS", 2))
 # Load the model
 model = eqx.tree_deserialise_leaves(config["MODEL_PATH"], network)
 

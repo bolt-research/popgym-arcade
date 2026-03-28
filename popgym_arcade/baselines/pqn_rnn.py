@@ -155,7 +155,7 @@ def make_train(config):
         lr = lr_scheduler if config.get("LR_LINEAR_DECAY", False) else config["LR"]
         rng, _rng, rng_init = jax.random.split(rng, 3)
 
-        network = QNetworkRNN(rng, config["OBS_SIZE"], config["MEMORY_TYPE"])
+        network = QNetworkRNN(rng, config["OBS_SIZE"], config["MEMORY_TYPE"], config.get("NUM_LAYERS", 2))
 
         hidden_state = network.initialize_carry(key=rng_init)
         hidden_state = add_batch_dim(hidden_state, config["NUM_ENVS"])
@@ -746,7 +746,7 @@ def single_run(config):
         network_squeezed,
     )
     rng, _rng = jax.random.split(rng)
-    network = QNetworkRNN(_rng, config["OBS_SIZE"], config["MEMORY_TYPE"])
+    network = QNetworkRNN(_rng, config["OBS_SIZE"], config["MEMORY_TYPE"], config.get("NUM_LAYERS", 2))
     model = eqx.tree_deserialise_leaves(
         "{}_{}_{}_model_Partial={}_SEED={}.pkl".format(
             config["TRAIN_TYPE"],

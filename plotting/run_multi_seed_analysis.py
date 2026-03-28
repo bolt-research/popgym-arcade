@@ -49,7 +49,7 @@ def run_multiple_seeds_and_save_csv(config, seeds, max_steps=200, output_csv=Non
 
         # Initialize and load the model
         network = QNetworkRNN(
-            rng, rnn_type=config["MEMORY_TYPE"], obs_size=config["OBS_SIZE"]
+            rng, rnn_type=config["MEMORY_TYPE"], obs_size=config["OBS_SIZE"], num_layers=config.get("NUM_LAYERS", 2)
         )
         # try:
         model = eqx.tree_deserialise_leaves(model_path, network)

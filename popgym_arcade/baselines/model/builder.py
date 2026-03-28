@@ -584,7 +584,7 @@ class QNetworkRNN(eqx.Module):
     rnn: eqx.Module
     trunk: nn.Sequential
 
-    def __init__(self, key: PRNGKeyArray, obs_size: int, rnn_type: str = "lru"):
+    def __init__(self, key: PRNGKeyArray, obs_size: int, rnn_type: str = "lru", num_layers: int = 2):
         keys = jax.random.split(key, 8)
         if obs_size == 256:
             self.cnn = nn.Sequential(
@@ -670,7 +670,7 @@ class QNetworkRNN(eqx.Module):
             input=517,
             hidden=256,
             output=256,
-            num_layers=2,
+            num_layers=num_layers,
             rnn_type=rnn_type,
             key=keys[4],
         )

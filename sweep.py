@@ -7,12 +7,12 @@ from typing import Dict, Any
 # Configuration - customize these mappings
 WANDB_PROJECT = "ICLR-Rebuttal-PPO"
 WANDB_ENTITY = "bolt-um"  # Optional, unless you're in a team
-MAX_JOBS = 7 # Maximum number of jobs to run before terminating (useful for HPC/SLURM)
-TRAIN_PATH = "/home/mc45189/lstm/popgym-arcade/popgym_arcade/train.py"
+MAX_JOBS = 500 # Maximum number of jobs to run before terminating (useful for HPC/SLURM)
+TRAIN_PATH = "/home/ubuntu-user/popgym-arcade/popgym_arcade/train.py"
 
 algorithm_families = ['PPO']
 models = ['mlp', 'lru', 'mingru', 'gru', 'fart']
-seeds = [1,2]
+seeds = [0,1,2]
 environments_config = {
     "CartPoleEasy": {
         "PPO": int(1e7),
