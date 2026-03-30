@@ -4,250 +4,308 @@
 import argparse
 import os
 import re
+import sys
+import traceback
+from typing import Any, Dict, Optional, Tuple
 
+import chex
 import equinox as eqx
 import jax
 import jax.numpy as jnp
 import numpy as np
-import pandas as pd
+from jax import lax
 
-from popgym_arcade.baselines.model.builder import ActorCriticRNN
-from recall_density import get_policy_terminal_saliency_map
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if REPO_ROOT not in sys.path:
+    sys.path.insert(0, REPO_ROOT)
 
+import popgym_arcade
+from popgym_arcade.baselines.model import ActorCriticRNN, add_batch_dim
+from popgym_arcade.wrappers import LogWrapper
 
-def _easy_max_steps_for_env(env_name: str) -> int:
-
-    mapping = {
-        # Classic
-        "CartPoleEasy": 200,
-        "NoisyCartPoleEasy": 200,
-        # Memory games
-        "CountRecallEasy": 126,  # 100 + 26
-        "AutoEncodeEasy": 260,   # 26 * 1 * 2 * 5
-        # Gridworlds
-        "NavigatorEasy": 64,     # 8 * 8
-        "BattleShipEasy": 128,   # 8 * 8 * 2
-        "MineSweeperEasy": 32,   # 4 * 4 * 2
-        # Arcade-style
-        "BreakoutEasy": 2000,
-        "SkittlesEasy": 100,
-        "TetrisEasy": 3000,
-    }
-    if env_name in mapping:
-        return mapping[env_name]
-    # Fallback: conservative default
-    return 200
+from plotting.utils import (
+    RecallDensityResult,
+    algorithm_label_from_prefix,
+    collect_pkl_files,
+    ensure_dir,
+    parse_seeds_arg,
+    save_recall_density_csv,
+    save_saliency_bar_data,
+)
 
 
-def run_multiple_seeds_and_save_csv(config, seeds, pkls_dir, max_steps=None, output_csv=None):
-    """
-    Run saliency analysis on multiple seeds and save the results in a CSV file.
-
-    Args:
-        config: Configuration dictionary
-        seeds: List of seeds to run
-        pkls_dir: Directory containing the model pkl files
-        max_steps: Maximum number of steps for each episode
-        output_csv: Path to save the CSV file (default: auto-generated based on config)
-
-    Returns:
-        Path to the saved CSV file
-    """
-    prefix = config.get("PREFIX", "PPO_RNN")
-
-    # Create a default output path if none provided
-    if output_csv is None:
-        output_csv = f'saliency_results_ppo_{config["MEMORY_TYPE"]}_{config["ENV_NAME"]}_Partial={config["PARTIAL"]}.csv'
-
-    # List to store results
-    all_results = []
-
-    # Store saliency distributions for each seed
-    for seed_value in seeds:
-        print(f"Processing seed {seed_value}...")
-
-        # Update config with current seed
-        config["SEED"] = seed_value
-
-        # Create the model path for this seed
-        model_path = os.path.join(
-            pkls_dir,
-            f"{prefix}_{config['MEMORY_TYPE']}_{config['ENV_NAME']}_model_Partial={config['PARTIAL']}_SEED={config['MODEL_SEED']}.pkl",
-        )
-
-        if not os.path.exists(model_path):
-            print(f"[warn] Model file not found: {model_path}")
-            continue
-
-        # Initialize random key for this seed
-        rng = jax.random.PRNGKey(seed_value)
-
-        # Initialize and load the model
-        network = ActorCriticRNN(
-            rng, rnn_type=config["MEMORY_TYPE"], obs_size=config["OBS_SIZE"]
-        )
-
-        try:
-            model = eqx.tree_deserialise_leaves(model_path, network)
-        except Exception as e:
-            print(f"[error] Failed to deserialise {model_path}: {e}")
-            continue
-
-        # Define path for saving the distribution for this seed
-        dist_save_path = f'dist_ppo_{config["MEMORY_TYPE"]}_{config["ENV_NAME"]}_Partial={config["PARTIAL"]}_SEED={seed_value}.npy'
-
-        # Run terminal saliency analysis
-        try:
-            grads_obs = get_policy_terminal_saliency_map(
-                rng,
-                model,
-                config,
-            )
-        except Exception as e:
-            print(f"[error] Failed to compute saliency map for seed {seed_value}: {e}")
-            import traceback
-            traceback.print_exc()
-            continue
-
-        # Collapse to per-timestep importance
-        if grads_obs.size == 0:
-            dist = jnp.array([])
-        else:
-            grads_obs = jnp.abs(grads_obs).sum(axis=(1, 2, 3))
-            denom = grads_obs.sum()
-            dist = jnp.where(denom > 0, grads_obs / denom, jnp.zeros_like(grads_obs))
-        print(f"Distribution sum: {dist.sum()}")
-        # Convert JAX array to numpy for DataFrame
-        dist_np = np.array(dist)
-
-        # Create result dictionary
-        result = {
-            "seed": seed_value,
-            "distribution": dist_np,
-            "length": len(dist_np),
-            "dist_path": dist_save_path,
-        }
-
-        all_results.append(result)
-        print(f"Seed {seed_value} completed. Distribution length: {len(dist_np)}")
-
-    if not all_results:
-        print("No results collected for this model config.")
-        return None
-
-    # Process results for CSV format
-    csv_data = []
-    # Prefer per-env Easy maximum unless user provided an explicit max_steps
-    env_max = (
-        int(max_steps)
-        if max_steps is not None
-        else _easy_max_steps_for_env(config["ENV_NAME"])
+def get_gradient_ppo(
+    seed: jax.random.PRNGKey,
+    model: eqx.Module,
+    config: Dict[str, Any],
+    initial_state_and_obs: Optional[Tuple[Any, Any]] = None,
+    max_episode_steps: int = 10,
+) -> chex.Array:
+    """Compute terminal-state gradients for a PPO recurrent policy."""
+    env, env_params = popgym_arcade.make(
+        config["ENV_NAME"],
+        partial_obs=config["PARTIAL"],
+        obs_size=config["OBS_SIZE"],
     )
-    max_length = env_max if all_results else 0
+    env = LogWrapper(env)
+    reset = lambda rng: env.reset(rng, env_params)
+    step = lambda rng, env_state, action: env.step(rng, env_state, action, env_params)
 
-    for result in all_results:
-        # Pad/trim distribution to env max length
-        padded_dist = np.zeros(max_length)
-        upto = min(result["length"], max_length)
-        padded_dist[:upto] = result["distribution"][:upto]
+    if initial_state_and_obs is None:
+        seed, reset_key = jax.random.split(seed)
+        obs, env_state = reset(reset_key)
+    else:
+        env_state, obs = initial_state_and_obs
+    obs = obs.astype(jnp.float32)
 
-        # Create row data
-        row = {
-            "seed": result["seed"],
-            "length": result["length"],
-            "dist_path": result["dist_path"],
-        }
+    def step_env(actor_state, critic_state, env_state, obs, done, action, seed):
+        seed, step_key = jax.random.split(seed)
+        obs_in = add_batch_dim(add_batch_dim(obs, 1), 1)
+        done_in = add_batch_dim(add_batch_dim(done, 1), 1)
+        action_in = add_batch_dim(add_batch_dim(action, 1), 1)
+        actor_state, critic_state, policy, _ = model(actor_state, critic_state, (obs_in, done_in))
 
-        for i in range(max_length):
-            norm_pos = i / max_length if max_length > 0 else 0
-            row[f"pos_{norm_pos:.3f}"] = padded_dist[i]
+        del action_in  # PPO action history is not replayed for the gradient target.
+        action = lax.stop_gradient(policy).logits[-1].squeeze(axis=0).argmax(axis=-1)
+        obs, env_state, _, done, _ = step(step_key, env_state, action)
+        return actor_state, critic_state, env_state, obs, done, action, seed
 
-        csv_data.append(row)
+    seed, carry_key = jax.random.split(seed)
+    actor_state, critic_state = model.initialize_carry(key=carry_key)
+    actor_state = add_batch_dim(actor_state, 1)
+    critic_state = add_batch_dim(critic_state, 1)
 
-    df = pd.DataFrame(csv_data)
-    df.to_csv(output_csv, index=False)
-    print(f"Results saved to {output_csv}")
+    done = jnp.zeros((), dtype=bool)
+    action = jnp.zeros((), dtype=int)
+    observations = [obs]
+    dones = [done]
 
-    return output_csv
+    for _ in range(max_episode_steps):
+        actor_state, critic_state, env_state, obs, done, action, seed = jax.jit(step_env)(
+            actor_state, critic_state, env_state, obs, done, action, seed
+        )
+        observations.append(obs.astype(jnp.float32))
+        dones.append(done)
+        if jnp.any(done):
+            break
+
+    observations = jnp.stack(observations, axis=0)
+    dones = jnp.stack(dones, axis=0)
+
+    def compute_logits_sum(obs_batch, done_batch):
+        actor_state, critic_state = model.initialize_carry(key=seed)
+        actor_state = add_batch_dim(actor_state, 1)
+        critic_state = add_batch_dim(critic_state, 1)
+        obs_in = add_batch_dim(obs_batch, 1, axis=1)
+        done_in = add_batch_dim(done_batch, 1, axis=1)
+        _, _, policy, _ = model(actor_state, critic_state, (obs_in, done_in))
+        return policy.logits[-1].squeeze(axis=0).sum()
+
+    # Use [:-1] to include the step that caused termination.
+    return jax.grad(compute_logits_sum)(observations[:-1], dones[:-1])
+
+
+def compute_recall_density(
+    rng: jax.random.PRNGKey,
+    model: eqx.Module,
+    config: Dict[str, Any],
+) -> np.ndarray:
+    """Convert terminal gradients into a normalized per-timestep density."""
+    grads_obs = get_gradient_ppo(rng, model, config)
+    if grads_obs.size == 0:
+        return np.array([])
+
+    timestep_grads = jnp.abs(grads_obs).sum(axis=(1, 2, 3))
+    denom = timestep_grads.sum()
+    dist = jnp.where(denom > 0, timestep_grads / denom, jnp.zeros_like(timestep_grads))
+    print(f"Distribution sum: {dist.sum()}")
+    return np.array(dist)
 
 
 def _parse_model_filename(filename: str):
-    """
-    Parse filename like:
-    PPO_RNN_{MEMORY_TYPE}_{ENV_NAME}_model_Partial={True|False}_SEED={MODEL_SEED}.pkl
-
-    Returns a dict with keys: PREFIX, MEMORY_TYPE, ENV_NAME, PARTIAL (bool), MODEL_SEED (int)
-    """
-    pattern = r"^(?P<prefix>PPO_RNN)_(?P<memory>[^_]+)_(?P<env>.+?)_model_Partial=(?P<partial>True|False)_SEED=(?P<seed>\d+)\.pkl$"
-    m = re.match(pattern, filename)
-    if not m:
+    """Parse PPO recurrent checkpoint filenames."""
+    pattern = (
+        r"^(?P<prefix>PPO_RNN)_(?P<memory>[^_]+)_(?P<env>.+?)_model_"
+        r"Partial=(?P<partial>True|False)_SEED=(?P<seed>\d+)\.pkl$"
+    )
+    match = re.match(pattern, filename)
+    if not match:
         return None
     return {
-        "PREFIX": m.group("prefix"),
-        "MEMORY_TYPE": m.group("memory"),
-        "ENV_NAME": m.group("env"),
-        "PARTIAL": True if m.group("partial") == "True" else False,
-        "MODEL_SEED": int(m.group("seed")),
+        "PREFIX": match.group("prefix"),
+        "MEMORY_TYPE": match.group("memory"),
+        "ENV_NAME": match.group("env"),
+        "PARTIAL": match.group("partial") == "True",
+        "MODEL_SEED": int(match.group("seed")),
     }
 
 
-def _ensure_dir(path: str):
-    if path and not os.path.exists(path):
-        os.makedirs(path, exist_ok=True)
+def _build_model_path(config: Dict[str, Any], pkls_dir: str) -> str:
+    return os.path.join(
+        pkls_dir,
+        (
+            f"{config['PREFIX']}_{config['MEMORY_TYPE']}_{config['ENV_NAME']}_model_"
+            f"Partial={config['PARTIAL']}_SEED={config['MODEL_SEED']}.pkl"
+        ),
+    )
 
 
-def _parse_seeds_arg(seeds_arg: str):
-    # Accept formats like: "0,1,2,3,4" or "0..4"
-    if ".." in seeds_arg:
-        start, end = seeds_arg.split("..", 1)
-        return list(range(int(start), int(end) + 1))
-    if "," in seeds_arg:
-        return [int(s.strip()) for s in seeds_arg.split(",") if s.strip()]
-    # Single integer
-    return [int(seeds_arg)]
+def _build_distribution_stub(config: Dict[str, Any], seed_value: int) -> str:
+    algorithm = algorithm_label_from_prefix(config["PREFIX"])
+    return (
+        f"dist_{algorithm}_{config['MEMORY_TYPE']}_{config['ENV_NAME']}_"
+        f"Partial={config['PARTIAL']}_SEED={seed_value}.npy"
+    )
 
 
-def _collect_pkl_files(root: str):
-    """Recursively yield (file_dir, filename) for every .pkl under root."""
-    for dirpath, _, files in os.walk(root):
-        for f in sorted(files):
-            if f.endswith(".pkl"):
-                yield dirpath, f
+def _build_output_csv_path(config: Dict[str, Any], out_dir: str) -> str:
+    algorithm = algorithm_label_from_prefix(config["PREFIX"])
+    return os.path.join(
+        out_dir,
+        (
+            f"saliency_results_{algorithm}_{config['MEMORY_TYPE']}_{config['ENV_NAME']}_"
+            f"Partial={config['PARTIAL']}_MODELSEED={config['MODEL_SEED']}.csv"
+        ),
+    )
+
+
+def _load_model(model_path: str, config: Dict[str, Any], rng: jax.random.PRNGKey) -> eqx.Module:
+    network = ActorCriticRNN(
+        rng,
+        rnn_type=config["MEMORY_TYPE"],
+        obs_size=config["OBS_SIZE"],
+    )
+    return eqx.tree_deserialise_leaves(model_path, network)
+
+
+def _compute_seed_result(
+    config: Dict[str, Any],
+    pkls_dir: str,
+    seed_value: int,
+) -> Optional[RecallDensityResult]:
+    config_for_seed = dict(config)
+    config_for_seed["SEED"] = seed_value
+
+    model_path = _build_model_path(config_for_seed, pkls_dir)
+    if not os.path.exists(model_path):
+        print(f"[warn] Model file not found: {model_path}")
+        return None
+
+    rng = jax.random.PRNGKey(seed_value)
+    try:
+        model = _load_model(model_path, config_for_seed, rng)
+    except Exception as exc:
+        print(f"[error] Failed to deserialise {model_path}: {exc}")
+        return None
+
+    try:
+        distribution = compute_recall_density(rng, model, config_for_seed)
+    except Exception as exc:
+        print(f"[error] Failed to compute saliency map for seed {seed_value}: {exc}")
+        traceback.print_exc()
+        return None
+
+    return RecallDensityResult(
+        seed=seed_value,
+        distribution=distribution,
+        dist_path=_build_distribution_stub(config_for_seed, seed_value),
+    )
+
+
+def run_multiple_seeds_and_save_csv(
+    config: Dict[str, Any],
+    seeds: list[int],
+    pkls_dir: str,
+    max_steps: Optional[int] = None,
+    output_csv: Optional[str] = None,
+) -> Optional[str]:
+    """Run recall-density analysis across seeds and save one padded CSV."""
+    if output_csv is None:
+        output_csv = _build_output_csv_path(config, out_dir=".")
+
+    results = []
+    for seed_value in seeds:
+        print(f"Processing seed {seed_value}...")
+        result = _compute_seed_result(config, pkls_dir, seed_value)
+        if result is None:
+            continue
+        results.append(result)
+        print(f"Seed {seed_value} completed. Distribution length: {result.length}")
+
+    if not results:
+        print("No results collected for this model config.")
+        return None
+
+    return save_recall_density_csv(
+        results=results,
+        env_name=config["ENV_NAME"],
+        output_csv=output_csv,
+        max_steps=max_steps,
+    )
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Generate saliency CSVs for all PPO weights found under a directory tree.",
+        description="Generate recall-density CSVs for PPO recurrent checkpoints.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument("pkls_dir", type=str, help="Root directory to search for model .pkl files (recursive)")
-    parser.add_argument("--seeds", type=str, default="0,1,2,3,4",
-                        help="Random seeds. e.g. '0,1,2,3,4' or '0..4' or '0'")
-    parser.add_argument("--obs_size", type=int, default=128,
-                        help="Observation size for model construction")
-    parser.add_argument("--out_dir", type=str, default="saliency_csv",
-                        help="Directory to save saliency CSVs")
-    parser.add_argument("--max_steps", type=int, default=None,
-                        help="Override max episode steps (default: auto-detected per env name)")
-    parser.add_argument("--skip_existing", action="store_true",
-                        help="Skip if output CSV already exists")
+    parser.add_argument(
+        "pkls_dir",
+        type=str,
+        help="Root directory to search for model .pkl files recursively",
+    )
+    parser.add_argument(
+        "--seeds",
+        type=str,
+        default="0,1,2,3,4",
+        help="Random seeds, e.g. '0,1,2,3,4', '0..4', or '0'",
+    )
+    parser.add_argument(
+        "--obs_size",
+        type=int,
+        default=128,
+        help="Observation size for model construction",
+    )
+    parser.add_argument(
+        "--out_dir",
+        type=str,
+        default="saliency_csv",
+        help="Directory to save recall-density CSVs",
+    )
+    parser.add_argument(
+        "--max_steps",
+        type=int,
+        default=None,
+        help="Override max episode steps; otherwise infer from env name",
+    )
+    parser.add_argument(
+        "--skip_existing",
+        action="store_true",
+        help="Skip model configs whose output CSV already exists",
+    )
+    parser.add_argument(
+        "--summary_csv",
+        type=str,
+        default=None,
+        help="Optional path to save aggregated bar-chart data across generated saliency CSVs",
+    )
     args = parser.parse_args()
 
     if not os.path.isdir(args.pkls_dir):
         raise SystemExit(f"Directory not found: {args.pkls_dir}")
 
-    seeds = _parse_seeds_arg(args.seeds)
-    _ensure_dir(args.out_dir)
+    seeds = parse_seeds_arg(args.seeds)
+    ensure_dir(args.out_dir)
 
-    pkl_files = list(_collect_pkl_files(args.pkls_dir))
+    pkl_files = list(collect_pkl_files(args.pkls_dir))
     if not pkl_files:
         raise SystemExit(f"No .pkl files found under: {args.pkls_dir}")
     print(f"Found {len(pkl_files)} .pkl file(s) under {args.pkls_dir}")
 
-    for file_dir, fname in pkl_files:
-        meta = _parse_model_filename(fname)
+    for file_dir, filename in pkl_files:
+        meta = _parse_model_filename(filename)
         if meta is None:
-            print(f"[warn] Skipping unrecognized file name: {fname}")
+            print(f"[warn] Skipping unrecognized file name: {filename}")
             continue
 
         config = {
@@ -258,29 +316,34 @@ def main():
             "MODEL_SEED": meta["MODEL_SEED"],
             "PREFIX": meta["PREFIX"],
         }
+        out_csv = _build_output_csv_path(config, args.out_dir)
 
-        out_csv = os.path.join(
-            args.out_dir,
-            f"saliency_results_ppo_{config['MEMORY_TYPE']}_{config['ENV_NAME']}_Partial={config['PARTIAL']}_MODELSEED={config['MODEL_SEED']}.csv",
-        )
         if args.skip_existing and os.path.exists(out_csv):
             print(f"[skip] {out_csv} exists")
             continue
 
         print(
             f"Generating: MEMORY={config['MEMORY_TYPE']}, ENV={config['ENV_NAME']}, "
-            f"Partial={config['PARTIAL']}, ModelSeed={config['MODEL_SEED']}  ({file_dir}/{fname})"
+            f"Partial={config['PARTIAL']}, ModelSeed={config['MODEL_SEED']} "
+            f"({file_dir}/{filename})"
         )
         try:
             run_multiple_seeds_and_save_csv(
-                config=config, seeds=seeds, pkls_dir=file_dir,
-                max_steps=args.max_steps, output_csv=out_csv,
+                config=config,
+                seeds=seeds,
+                pkls_dir=file_dir,
+                max_steps=args.max_steps,
+                output_csv=out_csv,
             )
-        except Exception as e:
-            print(f"[error] Failed to process {fname}: {e}")
-            import traceback
+        except Exception as exc:
+            print(f"[error] Failed to process {filename}: {exc}")
             traceback.print_exc()
-            continue
+
+    if args.summary_csv is not None:
+        summary_dir = os.path.dirname(args.summary_csv)
+        if summary_dir:
+            ensure_dir(summary_dir)
+        save_saliency_bar_data(args.out_dir, args.summary_csv)
 
 
 if __name__ == "__main__":

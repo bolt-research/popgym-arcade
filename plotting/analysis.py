@@ -4,13 +4,10 @@ import jax.numpy as jnp
 
 import popgym_arcade
 from popgym_arcade.baselines.model.builder import QNetworkRNN
-from popgym_arcade.baselines.utils import get_saliency_maps, vis_fn
+from recall_density import get_qnetwork_saliency_maps, vis_fn
 from popgym_arcade.wrappers import LogWrapper
 
-##
-## Simpler approach:
-## Compute gradients using random initial state
-##
+
 config = {
     "ENV_NAME": "MineSweeperEasy",
     "PARTIAL": False,
@@ -31,7 +28,7 @@ network = QNetworkRNN(rng, rnn_type=config["MEMORY_TYPE"], obs_size=config["OBS_
 # Load the model
 model = eqx.tree_deserialise_leaves(config["MODEL_PATH"], network)
 # Compute the saliency maps
-grads, obs_seq, grad_accumulator = get_saliency_maps(rng, model, config, max_steps=30)
+grads, obs_seq, grad_accumulator = get_qnetwork_saliency_maps(rng, model, config, max_steps=30)
 # Visualize the saliency maps
 vis_fn(grads, obs_seq, config, use_latex=True)
 
@@ -93,7 +90,7 @@ new_init_obs = jax.vmap(env.get_obs)(new_init_state.env_state)
 
 
 # Compute the saliency maps
-grads, obs_seq, grad_accumulator = get_saliency_maps(
+grads, obs_seq, grad_accumulator = get_qnetwork_saliency_maps(
     rng,
     model,
     config,

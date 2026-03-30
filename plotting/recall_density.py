@@ -8,12 +8,11 @@ import matplotlib.ticker as ticker
 import seaborn as sns
 from jax import lax
 from matplotlib import pyplot as plt
-
 import popgym_arcade
 from popgym_arcade.baselines.model.memorax import add_batch_dim
 from popgym_arcade.wrappers import LogWrapper
 
-def get_saliency_maps(
+def get_qnetwork_saliency_maps(
     seed: jax.random.PRNGKey,
     model: eqx.Module,
     config: Dict,
@@ -106,158 +105,6 @@ def get_saliency_maps(
 
     return grads, obs_seq, grad_accumulator
 
-
-def get_terminal_saliency_maps(
-    seed: jax.random.PRNGKey,
-    model: eqx.Module,
-    config: Dict,
-    initial_state_and_obs: Optional[Tuple[Any, Any]] = None,
-    max_episode_steps: int = 10,
-) -> Tuple[list, chex.Array, list]:
-    env, env_params = popgym_arcade.make(
-        config["ENV_NAME"], partial_obs=config["PARTIAL"], obs_size=config["OBS_SIZE"]
-    )
-    env = LogWrapper(env)
-    reset = lambda rng: env.reset(rng, env_params)
-    step = lambda rng, env_state, action: env.step(rng, env_state, action, env_params)
-    if initial_state_and_obs is None:
-        seed, _rng = jax.random.split(seed)
-        obs, env_state = reset(_rng)
-        obs = obs.astype(jnp.float32)
-    else:
-        env_state, obs = initial_state_and_obs
-        obs = obs.astype(jnp.float32)
-
-    # Step 1: Compute rollout until terminal state
-
-    def step_env(hs, env_state, obs, done, action, seed):
-        seed, step_key = jax.random.split(seed)
-        # Add time and batch dim for model
-        inputs = [add_batch_dim(add_batch_dim(x, 1), 1) for x in [obs, done, action]]
-
-        hs, q_val = model(hs, *inputs)
-        # Remove batch dim
-        q_val = jnp.squeeze(q_val, (0, 1))
-        action = jnp.argmax(q_val, axis=-1)
-        obs, env_state, reward, done, info = step(step_key, env_state, action)
-        return (hs, env_state, obs, done, action, seed)
-
-    seed, rng = jax.random.split(seed)
-    hs = model.initialize_carry(key=rng)
-    hs = add_batch_dim(hs, 1)
-    done = jnp.zeros((), dtype=bool)
-    action = jnp.zeros((), dtype=int)
-    observations, dones, actions = [obs], [done], [action]
-    for _ in range(max_episode_steps):
-        hs, env_state, obs, done, action, seed = jax.jit(step_env)(
-            hs, env_state, obs, done, action, seed
-        )
-        observations.append(obs.astype(jnp.float32))
-        dones.append(done)
-        actions.append(action)
-        if jnp.any(done):
-            break
-
-    observations = jnp.stack(observations, axis=0)
-    dones = jnp.stack(dones, axis=0)
-    actions = jnp.stack(actions, axis=0)
-
-    # Step 2: Compute gradients at terminal state
-    def compute_q(obs_batch, action_batch, done_batch):
-        hs = model.initialize_carry(key=seed)
-        hs = add_batch_dim(hs, 1)
-        inputs = [
-            add_batch_dim(x, 1, axis=1) for x in [obs_batch, done_batch, action_batch]
-        ]
-        _, q_val = model(hs, *inputs)
-        return jnp.abs(q_val[-1].sum())
-
-    # Use -2 because if done == true, obs is next episode
-    return jax.grad(compute_q)(observations[:-2], actions[:-2], dones[:-2])
-
-def get_policy_terminal_saliency_map(
-    seed: jax.random.PRNGKey,
-    model: eqx.Module,
-    config: Dict,
-    initial_state_and_obs: Optional[Tuple[Any, Any]] = None,
-    max_episode_steps: int = 10,
-) -> chex.Array:
-    """
-    Computes saliency maps for PPO policy at the terminal state.
-    """
-    env, env_params = popgym_arcade.make(
-        config["ENV_NAME"], partial_obs=config["PARTIAL"], obs_size=config["OBS_SIZE"]
-    )
-    env = LogWrapper(env)
-    reset = lambda rng: env.reset(rng, env_params)
-    step = lambda rng, env_state, action: env.step(rng, env_state, action, env_params)
-
-    if initial_state_and_obs is None:
-        seed, _rng = jax.random.split(seed)
-        obs, env_state = reset(_rng)
-        obs = obs.astype(jnp.float32)
-    else:
-        env_state, obs = initial_state_and_obs
-        obs = obs.astype(jnp.float32)
-
-    # Step 1: Compute rollout until terminal state
-    def step_env(actor_state, critic_state, env_state, obs, done, action, seed):
-        seed, step_key = jax.random.split(seed)
-        # Add time and batch dim for model
-        # obs: (H, W, C) -> (1, 1, H, W, C)
-        obs = add_batch_dim(add_batch_dim(obs, 1), 1)
-        # done: () -> (1, 1)
-        done = add_batch_dim(add_batch_dim(done, 1), 1)
-        action = add_batch_dim(add_batch_dim(action, 1), 1)
-        actor_state, critic_state, pi, _ = model(
-            actor_state, critic_state, (obs, done)
-        )
-
-        pi_action = lax.stop_gradient(pi)
-        # logits shape: (1, 1, action_dim)
-        action = pi_action.logits[-1].squeeze(axis=0).argmax(axis=-1)
-
-        obs, env_state, reward, done, info = step(step_key, env_state, action)
-        return (actor_state, critic_state, env_state, obs, done, action, seed)
-
-    seed, rng = jax.random.split(seed)
-    actor_state, critic_state = model.initialize_carry(key=rng)
-    actor_state = add_batch_dim(actor_state, 1)
-    critic_state = add_batch_dim(critic_state, 1)
-
-    done = jnp.zeros((), dtype=bool)
-    action = jnp.zeros((), dtype=int)
-
-    observations, dones, actions = [obs], [done], [action]
-
-    for _ in range(max_episode_steps):
-        actor_state, critic_state, env_state, obs, done, action, seed = jax.jit(
-            step_env
-        )(actor_state, critic_state, env_state, obs, done, action, seed)
-        observations.append(obs.astype(jnp.float32))
-        dones.append(done)
-        actions.append(action)
-        if jnp.any(done):
-            break
-    observations = jnp.stack(observations, axis=0)
-    dones = jnp.stack(dones, axis=0)
-    actions = jnp.stack(actions, axis=0)
-    # Step 2: Compute gradients at terminal state
-    def compute_logits_sum(obs_batch, done_batch):
-        actor_state, critic_state = model.initialize_carry(key=seed)
-        actor_state = add_batch_dim(actor_state, 1)
-        critic_state = add_batch_dim(critic_state, 1)
-
-        # Add batch dim (axis 0)
-        obs = add_batch_dim(obs_batch, 1, axis=1)
-        done = add_batch_dim(done_batch, 1, axis=1)
-        # action = add_batch_dim(action_batch, 1, axis=0)
-
-        _, _, pi, _ = model(actor_state, critic_state, (obs, done))
-        return pi.logits[-1].squeeze(axis=0).sum()
-
-    # Using [:-1] to include the step that caused termination
-    return jax.grad(compute_logits_sum)(observations[:-1], dones[:-1])
 
 def get_policy_saliency_map(
     seed: jax.random.PRNGKey,
