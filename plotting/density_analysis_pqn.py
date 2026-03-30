@@ -148,7 +148,7 @@ def _build_model_path(config: Dict[str, Any], pkls_dir: str) -> str:
 def _build_distribution_stub(config: Dict[str, Any], seed_value: int) -> str:
     algorithm = algorithm_label_from_prefix(config["PREFIX"])
     return (
-        f"dist_{algorithm}_{config['MEMORY_TYPE']}_{config['ENV_NAME']}_"
+        f"recall_density_{algorithm}_{config['MEMORY_TYPE']}_{config['ENV_NAME']}_"
         f"Partial={config['PARTIAL']}_SEED={seed_value}.npy"
     )
 
@@ -158,7 +158,7 @@ def _build_output_csv_path(config: Dict[str, Any], out_dir: str) -> str:
     return os.path.join(
         out_dir,
         (
-            f"saliency_results_{algorithm}_{config['MEMORY_TYPE']}_{config['ENV_NAME']}_"
+            f"recall_density_{algorithm}_{config['MEMORY_TYPE']}_{config['ENV_NAME']}_"
             f"Partial={config['PARTIAL']}_MODELSEED={config['MODEL_SEED']}.csv"
         ),
     )
@@ -264,7 +264,7 @@ def main():
     parser.add_argument(
         "--out_dir",
         type=str,
-        default="saliency_csv",
+        default="recall_density_pqn",
         help="Directory to save recall-density CSVs",
     )
     parser.add_argument(

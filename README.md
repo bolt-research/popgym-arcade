@@ -166,8 +166,7 @@ markov_state, env_state, reward, done, info = mdp_step(step_keys, env_state, act
 We implement visualization tools to probe which pixels persist in agent memory, and their
 impact on Q value predictions. Try the code below or our [example script](plotting/plot_grads.ipynb) to understand how your agent uses memory.
 
-We provide examples in `plotting/analysis.py` for pixel visualization.
-
+Our pixel visualization is implemented in `plotting/pixel_vis_pqn.py` and `plotting/pixel_vis_ppo.py`. The PQN script contains `get_qnetwork_saliency_maps`, while the PPO script contains `get_policy_saliency_map` for compute our visual gradient shown below. you can also reuse these function for your own experiments and visualization.
 <img src="imgs/grads_example.png" height="192" />
 
 
@@ -204,9 +203,9 @@ grads, obs_seq, grad_accumulator = get_saliency_maps(rng, model, config)
 vis_fn(grads, obs_seq, config, use_latex=False)
 ```
 ### Recall Desity
-The recall density metrics and visualizations presented in our paper are computed using functions in `plotting/recall_density.py`: `get_saliency_maps` and `get_terminal_saliency_maps` for PQN, and `get_policy_saliency_map` and `get_policy_terminal_saliency_map` for PPO.
+The recall density metrics and visualizations presented in our paper are computed using functions in `plotting/density_analysis_pqn.py` and `plotting/density_analysis_ppo.py`, you can easily reuse the functon `compute_recall_density` in each file to apply this analysis to your own experiments.
 
-By running `density_analysis_pqn.py` and `density_analysis_ppo.py` with your trained model weights, you can get the recall density and save it as a bunch of CSV files. From there, you can visualize the data however you prefer, or simply run `plot_saliency_summary.py` to reproduce the exact plots from our paper, as shown below:
+By running `density_analysis_pqn.py` and `density_analysis_ppo.py` with your trained model weights, it can get the recall density and save it as a bunch of CSV files. From there, you can visualize the data however you prefer, or simply run `plot_saliency_summary.py` to reproduce the exact plots from our paper, as shown below:
 
 <img src="imgs/recall_density.png">
 
@@ -218,7 +217,7 @@ To reproduce the observability gap and memory bias plots
 2. Execute `return_gap_bias.py` using that CSV to generate the paper-style visualizations shown below:
 
 <img src="imgs/obsgap.png">
-
+We also add example command to help, at the top of this file.
 
 ### Recurrent State Contamination
 Use `plotting/noiseva.py` to 1) inject noise into a single frame in each trajectory, and 2) shuffle the first few observations in each trajectory.

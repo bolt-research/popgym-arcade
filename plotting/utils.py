@@ -110,7 +110,7 @@ def save_recall_density_csv(
 def parse_saliency_csv_filename(filename: str):
     """Parse generated saliency CSV names to recover env and partial."""
     pattern = (
-        r"^saliency_results_[^_]+_[^_]+_(?P<env>.+?)_Partial="
+        r"^(?:saliency_results|recall_density)_[^_]+_[^_]+_(?P<env>.+?)_Partial="
         r"(?P<partial>True|False)(?:_.*)?\.csv$"
     )
     match = re.match(pattern, filename)
@@ -154,7 +154,10 @@ def thirds_from_distribution_rows(pos_values: np.ndarray) -> np.ndarray:
 
 def build_saliency_bar_data(saliency_dir: str) -> pd.DataFrame:
     """Aggregate generated saliency CSVs into the stacked-bar values used for plotting."""
-    csv_paths = sorted(glob.glob(os.path.join(saliency_dir, "saliency_results_*.csv")))
+    csv_paths = sorted(
+        glob.glob(os.path.join(saliency_dir, "saliency_results_*.csv"))
+        + glob.glob(os.path.join(saliency_dir, "recall_density_*.csv"))
+    )
     grouped_rows: dict[tuple[str, bool], list[np.ndarray]] = {}
     source_csv_counts: dict[tuple[str, bool], int] = {}
     source_seed_counts: dict[tuple[str, bool], int] = {}

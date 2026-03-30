@@ -2,7 +2,7 @@
 This file is to plot the MDP and POMDP results separately.
 
 Usage example:
-    python plottable.py --entity bolt-um --project Arcade-GDN --raw-csv runs.csv \
+    python plottable.py --entity Your_entity --project Your_project --raw-csv runs.csv \
         --model-group-csv pqn_gdn_model_group.csv --output-csv obs_gap.csv
 """
 
