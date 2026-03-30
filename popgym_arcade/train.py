@@ -209,7 +209,7 @@ def get_args():
     )
     pqn_parser.add_argument("--ENTITY", type=str, default="", help="Entity name")
     pqn_parser.add_argument(
-        "--PROJECT", type=str, default="NavigatorEasy", help="WanDB Project name"
+        "--PROJECT", type=str, default="obsgap3", help="WanDB Project name"
     )
     pqn_parser.add_argument(
         "--WANDB_MODE", type=str, default="online", help="WanDB mode"
@@ -324,7 +324,7 @@ def get_args():
     )
     pqn_rnn_parser.add_argument("--ENTITY", type=str, default="", help="Entity name")
     pqn_rnn_parser.add_argument(
-        "--PROJECT", type=str, default="NavigatorEasy", help="WanDB Project name"
+        "--PROJECT", type=str, default="obsgap3", help="WanDB Project name"
     )
     pqn_rnn_parser.add_argument(
         "--WANDB_MODE", type=str, default="online", help="WanDB mode"
