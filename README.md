@@ -164,44 +164,33 @@ markov_state, env_state, reward, done, info = mdp_step(step_keys, env_state, act
 ### Pixel Visualization
 
 We implement visualization tools to probe which pixels persist in agent memory, and their
-impact on Q value predictions. Try the code below or our [example script](plotting/plot_grads.ipynb) to understand how your agent uses memory.
+impact on Q value predictions. Try the code below to understand how your agent uses memory.
 
-Our pixel visualization is implemented in `plotting/pixel_vis_pqn.py` and `plotting/pixel_vis_ppo.py`. The PQN script contains `get_qnetwork_saliency_maps`, while the PPO script contains `get_policy_saliency_map` for compute our visual gradient shown below. you can also reuse these function for your own experiments and visualization.
+```bash
+python plotting/pixel_vis_pqn.py \
+  --model-path your_model_weight.pkl \
+  --env-name your_vis_env_name \
+  --memory-type your_memory_model_name \
+  --partial \
+  --output your_pixel_vis.pdf
+```
+If you would like to inspect what your policy retains in memory, try the command below:
+
+```bash
+python plotting/pixel_vis_ppo.py \
+  --model-path your_model_weight.pkl \
+  --env-name your_vis_env_name \
+  --memory-type your_memory_model_name \
+  --partial \
+  --output your_pixel_vis.pdf
+```
+
+Our pixel visualization is implemented in `plotting/pixel_vis_pqn.py` and `plotting/pixel_vis_ppo.py`. The PQN script contains `get_qnetwork_saliency_maps`, while the PPO script contains `get_policy_saliency_map` for compute our pixel saliency visualization shown below. you can also reuse these function for your own experiments and visualization.
+
+
 <img src="imgs/grads_example.png" height="192" />
 
 
-```python
-from popgym_arcade.baselines.model.builder import QNetworkRNN
-from popgym_arcade.baselines.utils import get_saliency_maps, vis_fn
-import equinox as eqx
-import jax
-
-config = {
-    # Env string
-    "ENV_NAME": "NavigatorEasy",
-    # Whether to use full or partial observability
-    "PARTIAL": True,
-    # Memory model type (see models directory)
-    "MEMORY_TYPE": "lru",
-    # Evaluation episode seed
-    "SEED": 0,
-    # Observation size in pixels (128 or 256)
-    "OBS_SIZE": 128,
-}
-
-# Initialize the random key
-rng = jax.random.PRNGKey(config["SEED"])
-
-# Initialize the model
-network = QNetworkRNN(rng, rnn_type=config["MEMORY_TYPE"], obs_size=config["OBS_SIZE"])
-# Load the model
-model = eqx.tree_deserialise_leaves("PATH_TO_YOUR_MODEL_WEIGHTS.pkl", network)
-# Compute the saliency maps
-grads, obs_seq, grad_accumulator = get_saliency_maps(rng, model, config)
-# Visualize the saliency maps
-# If you have latex installed, set use_latex=True
-vis_fn(grads, obs_seq, config, use_latex=False)
-```
 ### Recall Desity
 The recall density metrics and visualizations presented in our paper are computed using functions in `plotting/density_analysis_pqn.py` and `plotting/density_analysis_ppo.py`, you can easily reuse the functon `compute_recall_density` in each file to apply this analysis to your own experiments.
 

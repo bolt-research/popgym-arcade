@@ -32,9 +32,9 @@ plt.rcParams['font.family'] = 'sans-serif'
 plt.rcParams['font.sans-serif'] = ['Arial']
 plt.rcParams['text.latex.preamble'] = r'\usepackage{amsmath} \usepackage{amssymb} \usepackage{amsfonts}'
 
-def _find_csvs_for(env_name: str, partial: bool, saliency_dir: str) -> List[str]:
+def _find_csvs_for(env_name: str, partial: bool, recall_density_dir: str) -> List[str]:
     pattern = os.path.join(
-        saliency_dir, f"saliency_results_*_{env_name}_Partial={partial}_*.csv"
+        recall_density_dir, f"saliency_results_*_{env_name}_Partial={partial}_*.csv"
     )
     return sorted(glob.glob(pattern))
 
@@ -80,12 +80,12 @@ def _thirds_from_distribution_rows(pos_values: np.ndarray) -> np.ndarray:
     return norm
 
 
-def compute_env_mode_summary(env_name: str, partial: bool, saliency_dir: str) -> np.ndarray:
+def compute_env_mode_summary(env_name: str, partial: bool, recall_density_dir: str) -> np.ndarray:
     """Aggregate all CSVs for (env, partial) across files and seeds.
 
     Returns a vector of length 3 that sums to 1 (or zeros if nothing found).
     """
-    csv_files = _find_csvs_for(env_name, partial, saliency_dir)
+    csv_files = _find_csvs_for(env_name, partial, recall_density_dir)
     if not csv_files:
         return np.zeros(3, dtype=float)
 
@@ -143,13 +143,13 @@ def _load_data_from_summary_csv(summary_csv: str) -> np.ndarray:
     return data
 
 
-def _load_data_from_saliency_dir(saliency_dir: str) -> np.ndarray:
-    """Aggregate raw saliency CSVs into plot-ready thirds data."""
+def _load_data_from_recall_density_dir(recall_density_dir: str) -> np.ndarray:
+    """Aggregate raw recall-density CSVs into plot-ready thirds data."""
     partial_modes = [False, True]
     data = np.zeros((len(ENV_LIST), len(partial_modes), 3), dtype=float)
     for i, env in enumerate(ENV_LIST):
         for j, part in enumerate(partial_modes):
-            data[i, j] = compute_env_mode_summary(env, part, saliency_dir)
+            data[i, j] = compute_env_mode_summary(env, part, recall_density_dir)
     return data
 
 
@@ -242,15 +242,15 @@ def _plot_bars_on_ax(ax, env_values: np.ndarray, colors: list[str], show_left_ax
 def plot_summary(
     output_path: str,
     dpi: int = 300,
-    saliency_dir: Optional[str] = None,
+    recall_density_dir: Optional[str] = None,
     summary_csv: Optional[str] = None,
 ):
     if summary_csv is not None:
         data = _load_data_from_summary_csv(summary_csv)
-    elif saliency_dir is not None:
-        data = _load_data_from_saliency_dir(saliency_dir)
+    elif recall_density_dir is not None:
+        data = _load_data_from_recall_density_dir(recall_density_dir)
     else:
-        raise ValueError("Provide either saliency_dir or summary_csv.")
+        raise ValueError("Provide either recall_density_dir or summary_csv.")
 
     # Colors
     mdp_colors = ["#C6DBEF", "#6BAED6", "#2171B5"]
@@ -320,10 +320,10 @@ def plot_summary(
 def main():
     parser = argparse.ArgumentParser(description="Plot aggregated saliency thirds per env and mode")
     parser.add_argument(
-        "--saliency_dir",
+        "--recall_density_dir",
         type=str,
         default=None,
-        help="Directory containing per-weight saliency CSVs",
+        help="Directory containing per-weight density CSVs",
     )
     parser.add_argument(
         "--summary_csv",
@@ -341,13 +341,13 @@ def main():
     parser.add_argument("--dpi", type=int, default=300)
     args = parser.parse_args()
 
-    if args.summary_csv is None and args.saliency_dir is None:
-        raise SystemExit("Please provide either --summary_csv or --saliency_dir")
+    if args.summary_csv is None and args.recall_density_dir is None:
+        raise SystemExit("Please provide either --summary_csv or --recall_density_dir")
 
     plot_summary(
         output_path=args.output,
         dpi=args.dpi,
-        saliency_dir=args.saliency_dir,
+        recall_density_dir=args.recall_density_dir,
         summary_csv=args.summary_csv,
     )
     print(f"Saved summary to {args.output}")

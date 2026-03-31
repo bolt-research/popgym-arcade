@@ -1,21 +1,23 @@
+"""
+Evaluate PQN-RNN checkpoints under frame noise.
+
+Usage example:
+    python plotting/noiseva.py --model-dir /path/to/checkpoints --memory-types lru --env-names MineSweeperEasy --partial false --obs-size 128 --sweep-seed 0 --project noiseva --wandb-mode disabled
+"""
+
 # Require pip install moviepy==1.0.3
-from typing import NamedTuple
+import argparse
+import os
+
 import jax
 import jax.numpy as jnp
 from jax import lax
 import numpy as np
-import chex
-
-import optax
 import equinox as eqx
 import popgym_arcade
-from popgym_arcade.wrappers import LogWrapper
 from popgym_arcade.baselines.model import add_batch_dim
 from popgym_arcade.baselines.model import QNetworkRNN
 import wandb
-from popgym_arcade.baselines.pqn_rnn import debug_shape
-
-import os
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -95,7 +97,10 @@ def evaluate(model, config, sweep_seed):
         return frames, _rng, normal_qvals
     # imageio.mimsave('{}_{}_{}_Partial={}_SEED={}.gif'.format(config["TRAIN_TYPE"], config["MEMORY_TYPE"], config["ENV_NAME"], config["PARTIAL"], config["SEED"]), frames)
     # wandb.log({"{}_{}_{}_model_Partial={}_SEED={}".format(config["TRAIN_TYPE"], config["MEMORY_TYPE"], config["ENV_NAME"], config["PARTIAL"], config["SEED"]): wandb.Video(frames, fps=4)})
-    wandb.init(project=f'{config["PROJECT"]}', name=f'{config["TRAIN_TYPE"]}_{config["MEMORY_TYPE"]}_{config["ENV_NAME"]}_Partial={config["PARTIAL"]}_SEED={config["SEED"]}')
+    wandb.init(
+        project=config.get("PROJECT") or "noiseva",
+        name=f'{config["TRAIN_TYPE"]}_{config["MEMORY_TYPE"]}_{config["ENV_NAME"]}_Partial={config["PARTIAL"]}_SEED={config["SEED"]}',
+    )
 
     # Rollout - Split RNG to keep baseline evaluation independent
     _rng, baseline_rng, noise_rng = jax.random.split(_rng, 3)
@@ -640,7 +645,11 @@ def evaluate(model, config, sweep_seed):
             new_ax4_x0 = pos3.x1 + new_spacing
             ax4.set_position([new_ax4_x0, pos4.y0, pos4.width, pos4.height])
 
-        plt.savefig(f"{ENV_NAMES}_{title_prefix}_i{i}_j{j}.png", dpi=300, bbox_inches='tight')
+        plt.savefig(
+            f"{config['ENV_NAME']}_{title_prefix}_i{i}_j{j}.png",
+            dpi=300,
+            bbox_inches='tight',
+        )
         plt.close()
 
     def batch_plot_custom_swap_braced(noiseless_frames, normal_qvals, pair, last_q, swapped_frames, title_prefix: str = "custom_swap_braced", reverse_range: bool = False, shuffle_range: bool = False):
@@ -701,13 +710,9 @@ def evaluate(model, config, sweep_seed):
         # img = plt.imread(os.path.join("./output_images/", 'skittles1.png'))
 
         # img = np.array(img, dtype=np.float32)
-        import cv2
         original_image = np.array(swapped_frames[1], dtype=np.float32)
         print(f"Original image shape: {original_image.shape}")
-        new_width = original_image.shape[1] // 2
-        new_height = original_image.shape[0] // 2
-        new_dimensions = (new_width, new_height)
-        resized_image = cv2.resize(original_image, new_dimensions, interpolation=cv2.INTER_AREA)
+        resized_image = original_image[::2, ::2]
 
         axes[1, 1].imshow(resized_image)
 
@@ -772,7 +777,11 @@ def evaluate(model, config, sweep_seed):
         # # Add horizontal line for y-axis
         # fig.text(0.05, y_axis_bottom - 0.01, r'$\rule{0.8\textwidth}{0.5pt}$', ha='left', va='center', transform=fig.transFigure, fontsize=8)
 
-        plt.savefig(f"new_{ENV_NAMES}_{title_prefix}_i{i}_j{j}.png", dpi=300, bbox_inches='tight')
+        plt.savefig(
+            f"new_{config['ENV_NAME']}_{title_prefix}_i{i}_j{j}.png",
+            dpi=300,
+            bbox_inches='tight',
+        )
         plt.close()
 
     def plot_diagonal_stacked_comparison(noiseless_frames, normal_qvals, pair, swapped_frames, last_q, title_prefix: str = "diagonal_comparison"):
@@ -889,47 +898,112 @@ def evaluate(model, config, sweep_seed):
     # plot_diagonal_stacked_comparison(noiseless_frames, normal_qvals, (x, y), swapped_frames, last_q, title_prefix="diagonal_comparison")
 
 
-os.environ["WANDB_MODE"] = "disabled"
-MEMORY_TYPES = {"lru"}
-# , "mingru", "fart"
-ENV_NAMES = {
-}
-PATH = ""
-for filename in os.listdir(PATH):
-    if filename.startswith("PQN_RNN_"):
-        parts = filename.split('_')
-        train_type = "_".join(parts[:2])  # "PQN_RNN"
-        memory_type = parts[2].lower()
-        env_name = parts[3]
-        partial_part = parts[5]
-        seed_part = parts[6]
-    else:
-        continue
-    
-    # Extract Partial and SEED values
-    partial = partial_part.split('=')[1]
-    seed = seed_part.split('=')[1].replace('.pkl', '')
-    # Check if this file matches our criteria
-    if (train_type == "PQN_RNN" and 
-        partial.lower() == "false" and 
-        memory_type in MEMORY_TYPES and 
-        env_name in ENV_NAMES):
-        
-        # Create config
+def parse_args():
+    parser = argparse.ArgumentParser(description="Evaluate PQN-RNN checkpoints under frame noise.")
+    parser.add_argument("--model-dir", type=str, required=True, help="Directory containing PQN_RNN checkpoint files.")
+    parser.add_argument(
+        "--memory-types",
+        nargs="+",
+        default=["lru"],
+        help="Memory types to evaluate, e.g. lru mingru fart.",
+    )
+    parser.add_argument(
+        "--env-names",
+        nargs="*",
+        default=None,
+        help="Environment names to include. If omitted, all matching environments are evaluated.",
+    )
+    parser.add_argument(
+        "--partial",
+        type=str,
+        default="false",
+        choices=["true", "false"],
+        help="Whether to evaluate partial-observation checkpoints.",
+    )
+    parser.add_argument("--obs-size", type=int, default=128, help="Observation size used by the checkpoint.")
+    parser.add_argument("--sweep-seed", type=int, default=0, help="Seed used for noisy evaluation.")
+    parser.add_argument("--project", type=str, default="noiseva", help="WandB project name.")
+    parser.add_argument(
+        "--wandb-mode",
+        type=str,
+        default="disabled",
+        choices=["disabled", "offline", "online"],
+        help="WandB execution mode.",
+    )
+    return parser.parse_args()
+
+
+def parse_checkpoint_metadata(filename):
+    if not filename.startswith("PQN_RNN_") or not filename.endswith(".pkl"):
+        return None
+
+    parts = filename.split("_")
+    if len(parts) < 7:
+        return None
+
+    try:
+        return {
+            "TRAIN_TYPE": "_".join(parts[:2]),
+            "MEMORY_TYPE": parts[2].lower(),
+            "ENV_NAME": parts[3],
+            "PARTIAL": parts[5].split("=")[1].lower() == "true",
+            "SEED": int(parts[6].split("=")[1].replace(".pkl", "")),
+        }
+    except (IndexError, ValueError):
+        return None
+
+
+def should_evaluate_checkpoint(metadata, args):
+    if metadata is None:
+        return False
+
+    requested_partial = args.partial.lower() == "true"
+    if metadata["TRAIN_TYPE"] != "PQN_RNN":
+        return False
+    if metadata["PARTIAL"] != requested_partial:
+        return False
+    if metadata["MEMORY_TYPE"] not in set(args.memory_types):
+        return False
+    if args.env_names is not None and metadata["ENV_NAME"] not in set(args.env_names):
+        return False
+    return True
+
+
+def main():
+    args = parse_args()
+    os.environ["WANDB_MODE"] = args.wandb_mode
+
+    if not os.path.isdir(args.model_dir):
+        raise SystemExit(f"Model directory does not exist: {args.model_dir}")
+
+    matched_any = False
+    for filename in sorted(os.listdir(args.model_dir)):
+        metadata = parse_checkpoint_metadata(filename)
+        if not should_evaluate_checkpoint(metadata, args):
+            continue
+
+        matched_any = True
         config = {
-            "ENV_NAME": env_name,
-            "OBS_SIZE": 128,
-            "MEMORY_TYPE": memory_type,
-            "PARTIAL": False,
-            "TRAIN_TYPE": train_type,
-            "SEED": int(seed),
-            "PROJECT": ""
+            "ENV_NAME": metadata["ENV_NAME"],
+            "OBS_SIZE": args.obs_size,
+            "MEMORY_TYPE": metadata["MEMORY_TYPE"],
+            "PARTIAL": metadata["PARTIAL"],
+            "TRAIN_TYPE": metadata["TRAIN_TYPE"],
+            "SEED": metadata["SEED"],
+            "PROJECT": args.project,
         }
         print(f"Evaluating {filename} with config: {config}")
 
         rng = jax.random.PRNGKey(config["SEED"])
-        rng, _rng = jax.random.split(rng)
-        network = QNetworkRNN(_rng, config["OBS_SIZE"], config["MEMORY_TYPE"])
-        model = eqx.tree_deserialise_leaves(PATH + filename, network)
-       
-        evaluate(model, config, 0)
+        rng, init_rng = jax.random.split(rng)
+        network = QNetworkRNN(init_rng, config["OBS_SIZE"], config["MEMORY_TYPE"])
+        model_path = os.path.join(args.model_dir, filename)
+        model = eqx.tree_deserialise_leaves(model_path, network)
+        evaluate(model, config, args.sweep_seed)
+
+    if not matched_any:
+        raise SystemExit("No checkpoints matched the provided filters.")
+
+
+if __name__ == "__main__":
+    main()

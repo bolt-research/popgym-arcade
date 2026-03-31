@@ -3,8 +3,8 @@ Plot POMDP return, observability gap, and memory bias.
 
 Usage:
     python plotting/return_gap_bias.py \
-        --input-csv model_group.csv \
-        --output-pdf PQN_gap_bias_plot.pdf
+        --input-csv your_model_group.csv \
+        --output your_gap_bias_plot.pdf
 
 Optional:
     --no-show    Save the figure without opening a window.
@@ -30,7 +30,7 @@ def parse_args():
         help="Input CSV produced by plotting/plottable.py. Default: model_group.csv",
     )
     parser.add_argument(
-        "--output-pdf",
+        "--output",
         type=str,
         default="PQN_gap_bias_plot.pdf",
         help="Output figure path. Default: PQN_gap_bias_plot.pdf",
@@ -216,7 +216,7 @@ def main():
     configure_plot_style(args.usetex)
     plot_data = load_and_prepare_data(args.input_csv)
     build_figure(plot_data)
-    plt.savefig(args.output_pdf)
+    plt.savefig(args.output)
     if args.show:
         plt.show()
     else:

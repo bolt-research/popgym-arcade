@@ -15,9 +15,9 @@ import jax.numpy as jnp
 import numpy as np
 from jax import lax
 
-REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if REPO_ROOT not in sys.path:
-    sys.path.insert(0, REPO_ROOT)
+# REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# if REPO_ROOT not in sys.path:
+#     sys.path.insert(0, REPO_ROOT)
 
 import popgym_arcade
 from popgym_arcade.baselines.model import ActorCriticRNN, add_batch_dim
@@ -140,9 +140,9 @@ def _parse_model_filename(filename: str):
     }
 
 
-def _build_model_path(config: Dict[str, Any], pkls_dir: str) -> str:
+def _build_model_path(config: Dict[str, Any], model_dir: str) -> str:
     return os.path.join(
-        pkls_dir,
+        model_dir,
         (
             f"{config['PREFIX']}_{config['MEMORY_TYPE']}_{config['ENV_NAME']}_model_"
             f"Partial={config['PARTIAL']}_SEED={config['MODEL_SEED']}.pkl"
@@ -180,13 +180,13 @@ def _load_model(model_path: str, config: Dict[str, Any], rng: jax.random.PRNGKey
 
 def _compute_seed_result(
     config: Dict[str, Any],
-    pkls_dir: str,
+    model_dir: str,
     seed_value: int,
 ) -> Optional[RecallDensityResult]:
     config_for_seed = dict(config)
     config_for_seed["SEED"] = seed_value
 
-    model_path = _build_model_path(config_for_seed, pkls_dir)
+    model_path = _build_model_path(config_for_seed, model_dir)
     if not os.path.exists(model_path):
         print(f"[warn] Model file not found: {model_path}")
         return None
@@ -215,7 +215,7 @@ def _compute_seed_result(
 def run_multiple_seeds_and_save_csv(
     config: Dict[str, Any],
     seeds: list[int],
-    pkls_dir: str,
+    model_dir: str,
     max_steps: Optional[int] = None,
     output_csv: Optional[str] = None,
 ) -> Optional[str]:
@@ -226,7 +226,7 @@ def run_multiple_seeds_and_save_csv(
     results = []
     for seed_value in seeds:
         print(f"Processing seed {seed_value}...")
-        result = _compute_seed_result(config, pkls_dir, seed_value)
+        result = _compute_seed_result(config, model_dir, seed_value)
         if result is None:
             continue
         results.append(result)
@@ -250,8 +250,9 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
-        "pkls_dir",
+        "--model-dir",
         type=str,
+        required=True,
         help="Root directory to search for model .pkl files recursively",
     )
     parser.add_argument(
@@ -291,16 +292,16 @@ def main():
     )
     args = parser.parse_args()
 
-    if not os.path.isdir(args.pkls_dir):
-        raise SystemExit(f"Directory not found: {args.pkls_dir}")
+    if not os.path.isdir(args.model_dir):
+        raise SystemExit(f"Directory not found: {args.model_dir}")
 
     seeds = parse_seeds_arg(args.seeds)
     ensure_dir(args.out_dir)
 
-    pkl_files = list(collect_pkl_files(args.pkls_dir))
+    pkl_files = list(collect_pkl_files(args.model_dir))
     if not pkl_files:
-        raise SystemExit(f"No .pkl files found under: {args.pkls_dir}")
-    print(f"Found {len(pkl_files)} .pkl file(s) under {args.pkls_dir}")
+        raise SystemExit(f"No .pkl files found under: {args.model_dir}")
+    print(f"Found {len(pkl_files)} .pkl file(s) under {args.model_dir}")
 
     for file_dir, filename in pkl_files:
         meta = _parse_model_filename(filename)
@@ -331,7 +332,7 @@ def main():
             run_multiple_seeds_and_save_csv(
                 config=config,
                 seeds=seeds,
-                pkls_dir=file_dir,
+                model_dir=file_dir,
                 max_steps=args.max_steps,
                 output_csv=out_csv,
             )

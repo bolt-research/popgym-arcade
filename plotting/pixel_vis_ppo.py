@@ -2,7 +2,7 @@
 This file is to visualize the PPO pixel saliency maps for a trained recurrent policy.
 
 Usage example:
-    python pixel_vis_ppo.py --model-path PATH_TO_YOUR_MODEL_WEIGHTS.pkl --env-name ENV_NAME --memory-type MEMORY_TYPE --seed SEED --obs-size OBS_SIZE --partial PARTIAL --max-steps MAX_STEPS --mode MODE --use-latex USE_LATEX --output OUTPUT_PATH
+    python pixel_vis_ppo.py --model-path PATH_TO_YOUR_MODEL_WEIGHTS.pkl --env-name ENV_NAME --memory-type MEMORY_TYPE --seed SEED --obs-size OBS_SIZE --partial --max-steps MAX_STEPS --alpha 0.5 --gaussian-std 6 --cmap afmhot --output OUTPUT_PATH
 """
 
 import argparse
@@ -15,6 +15,7 @@ import equinox as eqx
 import jax
 import jax.numpy as jnp
 import matplotlib.ticker as ticker
+import numpy as np
 import seaborn as sns
 from jax import lax
 from matplotlib import pyplot as plt
@@ -25,6 +26,7 @@ if REPO_ROOT not in sys.path:
 
 import popgym_arcade
 from popgym_arcade.baselines.model import ActorCriticRNN, add_batch_dim
+from plotting.heatmap import HeatMap
 from popgym_arcade.wrappers import LogWrapper
 
 
@@ -89,85 +91,75 @@ def get_policy_saliency_map(
     return grads, obs_seq, grad_accumulator
 
 
-def vis_fn(
+def plot_policy_pixel_vis(
     maps: list,
     obs_seq: chex.Array,
     config: Dict[str, Any],
-    cmap: str = "hot",
-    mode: str = "line",
+    alpha: float = 0.5,
+    gaussian_std: int = 6,
+    cmap: str = "afmhot",
     use_latex: bool = False,
     output_path: Optional[str] = None,
 ) -> None:
-    """Visualize saliency maps alongside observations."""
+    """Render a single-row PPO saliency overlay figure."""
     sns.set(style="whitegrid", palette="pastel", font_scale=1.2)
     if use_latex:
         plt.rc("text", usetex=True)
     plt.rc("font", family="serif")
 
-    length = len(maps)
     if output_path is None:
         output_path = (
-            f"pixel_vis_ppo_{config['MEMORY_TYPE']}_{config['ENV_NAME']}_"
-            f"PARTIAL={config['PARTIAL']}_SEED={config['SEED']}.pdf"
+            f"ppo_saliency_overlay_{config['MEMORY_TYPE']}_{config['ENV_NAME']}_"
+            f"partial={config['PARTIAL']}_seed={config['SEED']}.pdf"
         )
 
-    if mode == "line":
-        fig, axs = plt.subplots(2, length, figsize=(30, 8))
-        maps_last = jnp.abs(maps[-1])
-        for i in range(length):
-            obs_ax = axs[0][i]
-            obs_ax.imshow(obs_seq[i], cmap="gray")
-            obs_ax.set_title(rf"$o_{{{i}}}$" if use_latex else f"o{i}", fontsize=25, pad=20)
-            obs_ax.axis("off")
+    saliency_maps = np.asarray(jnp.abs(maps[-1]).mean(axis=-1))
+    num_frames = len(saliency_maps)
+    fig, axes = plt.subplots(1, num_frames, figsize=(4 * num_frames, 4))
+    if num_frames == 1:
+        axes = [axes]
 
-            map_ax = axs[1][i]
-            saliency_map = maps_last[i].mean(axis=-1)
-            im = map_ax.imshow(saliency_map, cmap=cmap)
-            if use_latex:
-                title = (
-                    rf"$\sum\limits_{{a \in A}}\left|\frac{{\partial \pi(\hat{{s}}_{{{length - 1}}})}}"
-                    rf"{{\partial o_{{{i}}}}}\right|$"
-                )
-            else:
-                title = f"dpi(s{length - 1}) / do{i}"
-            map_ax.set_title(title, fontsize=25, pad=30)
-            map_ax.axis("off")
+    image_artist = None
+    vmin = float(np.min(saliency_maps))
+    vmax = float(np.max(saliency_maps))
 
-        cbar_ax = fig.add_axes([0.92, 0.15, 0.02, 0.7])
-        cbar = fig.colorbar(im, cax=cbar_ax, orientation="vertical", label="Gradient Magnitude")
-        cbar.ax.yaxis.set_major_formatter(ticker.FormatStrFormatter("%.4f"))
-        plt.subplots_adjust(hspace=0.1, right=0.9)
-    elif mode == "grid":
-        maps = [jnp.abs(m) for m in maps]
-        fig, axs = plt.subplots(length, length + 1, figsize=(120, 150))
-        for i in range(length):
-            obs_ax = axs[i][0]
-            obs_ax.imshow(obs_seq[i], cmap="gray")
-            obs_ax.set_title(rf"$o_{{{i}}}$" if use_latex else f"o{i}", fontsize=100, pad=90)
-            obs_ax.axis("off")
-            for j in range(length):
-                map_ax = axs[i][j + 1]
-                if j < maps[i].shape[0]:
-                    im = map_ax.imshow(maps[i][j].mean(axis=-1), cmap=cmap)
-                    if use_latex:
-                        title = (
-                            rf"$\sum\limits_{{a \in A}}\left|\frac{{\partial \pi(\hat{{s}}_{{{length - 1}}})}}"
-                            rf"{{\partial o_{{{j}}}}}\right|$"
-                        )
-                    else:
-                        title = f"dpi(s{length - 1}) / do{j}"
-                    map_ax.set_title(title, fontsize=100, pad=110)
-                map_ax.axis("off")
+    for index, axis in enumerate(axes):
+        observation = np.asarray(obs_seq[index]).squeeze()
+        if observation.ndim == 3 and observation.shape[-1] == 1:
+            observation = observation[..., 0]
+        elif observation.ndim == 3 and observation.shape[-1] not in (3, 4):
+            observation = observation.mean(axis=-1)
 
-        cbar_ax = fig.add_axes([0.92, 0.15, 0.02, 0.7])
-        cbar = fig.colorbar(im, cax=cbar_ax, orientation="vertical", label="Gradient Magnitude")
-        cbar.ax.yaxis.set_major_formatter(ticker.FormatStrFormatter("%.4f"))
-        cbar.ax.tick_params(axis="y", labelsize=80)
-        cbar.set_label("Gradient Magnitude", fontsize=100)
-        plt.subplots_adjust(hspace=0.1, right=0.9)
-    else:
-        raise ValueError(f"Unsupported mode: {mode}")
+        heat_map = HeatMap(observation, saliency_maps[index], gaussian_std=gaussian_std)
 
+        if np.asarray(heat_map.image).ndim == 2:
+            axis.imshow(heat_map.image, cmap="gray")
+        else:
+            axis.imshow(heat_map.image)
+
+        image_artist = axis.imshow(
+            heat_map.heat_map,
+            alpha=alpha,
+            cmap=cmap,
+            vmin=vmin,
+            vmax=vmax,
+        )
+
+        offset = num_frames - 1 - index
+        if use_latex:
+            title = r"$o_{t}$" if offset == 0 else rf"$o_{{t-{offset}}}$"
+        else:
+            title = "o_t" if offset == 0 else f"o_t-{offset}"
+        axis.set_title(title, fontsize=24, pad=16)
+        axis.axis("off")
+
+    colorbar_axis = fig.add_axes([0.92, 0.18, 0.015, 0.64])
+    colorbar = fig.colorbar(image_artist, cax=colorbar_axis, orientation="vertical")
+    colorbar.ax.tick_params(labelsize=14)
+    colorbar.ax.yaxis.set_major_formatter(ticker.FormatStrFormatter(r"$\mathdefault{%.1e}$"))
+    colorbar.update_ticks()
+
+    plt.subplots_adjust(left=0.03, right=0.9, bottom=0.08, top=0.88, wspace=0.05)
     plt.savefig(output_path, format="pdf", dpi=300, bbox_inches="tight")
     plt.show()
 
@@ -183,7 +175,9 @@ def parse_args():
     parser.add_argument("--obs-size", type=int, default=128, help="Observation size")
     parser.add_argument("--partial", action="store_true", help="Use partial observability")
     parser.add_argument("--max-steps", type=int, default=30, help="Maximum rollout steps")
-    parser.add_argument("--mode", type=str, default="line", choices=["line", "grid"])
+    parser.add_argument("--alpha", type=float, default=0.5, help="Overlay transparency")
+    parser.add_argument("--gaussian-std", type=int, default=6, help="Gaussian smoothing std")
+    parser.add_argument("--cmap", type=str, default="afmhot", help="Heatmap color map")
     parser.add_argument("--use-latex", action="store_true", help="Enable LaTeX rendering")
     parser.add_argument("--output", type=str, default=None, help="Optional output PDF path")
     return parser.parse_args()
@@ -204,7 +198,16 @@ def main():
     network = ActorCriticRNN(rng, rnn_type=config["MEMORY_TYPE"], obs_size=config["OBS_SIZE"])
     model = eqx.tree_deserialise_leaves(config["MODEL_PATH"], network)
     grads, obs_seq, _ = get_policy_saliency_map(rng, model, config, max_steps=args.max_steps)
-    vis_fn(grads, obs_seq, config, mode=args.mode, use_latex=args.use_latex, output_path=args.output)
+    plot_policy_pixel_vis(
+        grads,
+        obs_seq,
+        config,
+        alpha=args.alpha,
+        gaussian_std=args.gaussian_std,
+        cmap=args.cmap,
+        use_latex=args.use_latex,
+        output_path=args.output,
+    )
 
 
 if __name__ == "__main__":

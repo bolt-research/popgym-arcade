@@ -23,10 +23,10 @@ def parse_args():
     )
 
     # --- W&B connection ---
-    parser.add_argument("--entity", type=str, default="bolt-um",
-                        help="W&B entity (username or team). Default: bolt-um")
-    parser.add_argument("--project", type=str, default="Arcade-GDN",
-                        help="W&B project name. Default: Arcade-GDN")
+    parser.add_argument("--entity", type=str, default="Your_wandb_entity",
+                        help="W&B entity (username or team). Default: Your_wandb_entity")
+    parser.add_argument("--project", type=str, default="Your_wandb_project",
+                        help="W&B project name. Default: Your_wandb_project")
 
     # --- Processing hyperparameters ---
     parser.add_argument("--interp-points", type=int, default=1000,
