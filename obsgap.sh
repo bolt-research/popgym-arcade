@@ -4,38 +4,56 @@
 # For memory bias, we need 6 and 8 layers. memory bias = J(f,pi,M) - J(pi,M). Larger layers, bigger bias.
 
 # conda activate jaxenv
-python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "Attention" --ENV_NAME "MineSweeperEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 1
-python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "Attention" --ENV_NAME "MineSweeperEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 2
-python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "Attention" --ENV_NAME "MineSweeperEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 1 --PARTIAL
-python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "Attention" --ENV_NAME "MineSweeperEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 2 --PARTIAL
+# python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "lru" --ENV_NAME "NavigatorEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 1
+# python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "lru" --ENV_NAME "NavigatorEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 2
+# python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "lru" --ENV_NAME "NavigatorEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 1 --PARTIAL
+# python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "lru" --ENV_NAME "NavigatorEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 2 --PARTIAL
+SEED = (0 1 2)
+for s in ${SEED[@]}; do
+    python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "mingru" --ENV_NAME "BattleShipEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 2 --PROJECT "obsgapmingru" --SEED $s
+    python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "mingru" --ENV_NAME "BattleShipEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 8 --PROJECT "obsgapmingru" --SEED $s
+    python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "mingru" --ENV_NAME "BattleShipEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 2 --PARTIAL --PROJECT "obsgapmingru" --SEED $s
+    python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "mingru" --ENV_NAME "BattleShipEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 8 --PARTIAL --PROJECT "obsgapmingru" --SEED $s
+    python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "mingru" --ENV_NAME "BattleShipEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 1 --PROJECT "obsgapmingru" --SEED $s
+    python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "mingru" --ENV_NAME "BattleShipEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 1 --PARTIAL --PROJECT "obsgapmingru" --SEED $s
 
-python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "Attention" --ENV_NAME "MineSweeperEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 6
-python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "Attention" --ENV_NAME "MineSweeperEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 8
-python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "Attention" --ENV_NAME "MineSweeperEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 6 --PARTIAL
-python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "Attention" --ENV_NAME "MineSweeperEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 8 --PARTIAL
-python popgym_arcade/train.py PQN --ENV_NAME "MineSweeperEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 0
-python popgym_arcade/train.py PQN --ENV_NAME "MineSweeperEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 0 --PARTIAL
+    python popgym_arcade/train.py PQN --ENV_NAME "BattleShipEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 0 --SEED $s --PROJECT "obsgapmingru"
+    python popgym_arcade/train.py PQN --ENV_NAME "BattleShipEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 0 --PARTIAL --SEED $s --PROJECT "obsgapmingru"
+done
 
+SEED = (0 1 2)
+for s in ${SEED[@]}; do
+    python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "lru" --ENV_NAME "MineSweeperEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 2 --PROJECT "obsgaplru" --SEED $s
+    python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "lru" --ENV_NAME "MineSweeperEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 8 --PROJECT "obsgaplru" --SEED $s
+    python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "lru" --ENV_NAME "MineSweeperEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 2 --PARTIAL --PROJECT "obsgaplru" --SEED $s
+    python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "lru" --ENV_NAME "MineSweeperEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 8 --PARTIAL --PROJECT "obsgaplru" --SEED $s
+    python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "lru" --ENV_NAME "MineSweeperEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 1 --PROJECT "obsgaplru" --SEED $s
+    python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "lru" --ENV_NAME "MineSweeperEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 1 --PARTIAL --PROJECT "obsgaplru" --SEED $s
 
-# python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "mingru" --ENV_NAME "MineSweeperEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 1
-# python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "mingru" --ENV_NAME "MineSweeperEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 2
-# python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "mingru" --ENV_NAME "MineSweeperEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 1 --PARTIAL
-# python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "mingru" --ENV_NAME "MineSweeperEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 2 --PARTIAL
+    python popgym_arcade/train.py PQN --ENV_NAME "MineSweeperEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 0 --SEED $s --PROJECT "obsgaplru"
+    python popgym_arcade/train.py PQN --ENV_NAME "MineSweeperEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 0 --PARTIAL --SEED $s --PROJECT "obsgaplru"
+done
 
-# python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "mingru" --ENV_NAME "MineSweeperEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 6
-# python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "mingru" --ENV_NAME "MineSweeperEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 8
-# python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "mingru" --ENV_NAME "MineSweeperEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 6 --PARTIAL
-# python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "mingru" --ENV_NAME "MineSweeperEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 8 --PARTIAL
-# python popgym_arcade/train.py PQN --ENV_NAME "MineSweeperEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 0
-# python popgym_arcade/train.py PQN --ENV_NAME "MineSweeperEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 0 --PARTIAL
+# python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "lru" --ENV_NAME "NavigatorEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 1
+# python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "lru" --ENV_NAME "NavigatorEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 2
+# python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "lru" --ENV_NAME "NavigatorEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 1 --PARTIAL
+# python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "lru" --ENV_NAME "NavigatorEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 2 --PARTIAL
+
+# python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "lru" --ENV_NAME "NavigatorEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 6
+# python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "lru" --ENV_NAME "NavigatorEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 8
+# python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "lru" --ENV_NAME "NavigatorEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 6 --PARTIAL
+# python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "lru" --ENV_NAME "NavigatorEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 8 --PARTIAL
+# python popgym_arcade/train.py PQN --ENV_NAME "NavigatorEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 0
+# python popgym_arcade/train.py PQN --ENV_NAME "NavigatorEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 0 --PARTIAL
 
 # python popgym_arcade/train.py PQN --ENV_NAME "CartPoleEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 0
-# python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "mingru" --ENV_NAME "CartPoleEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 1
-# python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "mingru" --ENV_NAME "CartPoleEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 2
-# python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "mingru" --ENV_NAME "CartPoleEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 1 --PARTIAL
-# python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "mingru" --ENV_NAME "CartPoleEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 2 --PARTIAL
+# python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "lru" --ENV_NAME "CartPoleEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 1
+# python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "lru" --ENV_NAME "CartPoleEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 2
+# python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "lru" --ENV_NAME "CartPoleEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 1 --PARTIAL
+# python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "lru" --ENV_NAME "CartPoleEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 2 --PARTIAL
 
-# python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "mingru" --ENV_NAME "CartPoleEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 6
-# python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "mingru" --ENV_NAME "CartPoleEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 8
-# python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "mingru" --ENV_NAME "CartPoleEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 6 --PARTIAL
-# python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "mingru" --ENV_NAME "CartPoleEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 8 --PARTIAL
+# python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "lru" --ENV_NAME "CartPoleEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 6
+# python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "lru" --ENV_NAME "CartPoleEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 8
+# python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "lru" --ENV_NAME "CartPoleEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 6 --PARTIAL
+# python popgym_arcade/train.py PQN_RNN --MEMORY_TYPE "lru" --ENV_NAME "CartPoleEasy" --TOTAL_TIMESTEPS 20000000 --TOTAL_TIMESTEPS_DECAY 2000000 --NUM_LAYERS 8 --PARTIAL
+
