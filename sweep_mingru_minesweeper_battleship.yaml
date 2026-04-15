@@ -36,7 +36,7 @@ command:
   - -lc
   - |
       cmd=(
-        python "${program}" PQN_RNN
+        python popgym_arcade/train.py PQN_RNN
         --MEMORY_TYPE "mingru"
         --TOTAL_TIMESTEPS "20000000"
         --TOTAL_TIMESTEPS_DECAY "2000000"
