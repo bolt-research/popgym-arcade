@@ -698,7 +698,7 @@ def single_run(config):
         network_squeezed,
     )
     rng, _rng = jax.random.split(rng)
-    network = QNetworkRNN(_rng, config["OBS_SIZE"], config["MEMORY_TYPE"], config["NUM_LAYERS"])
+    network = QNetworkRNN(_rng, config["OBS_SIZE"], config["MEMORY_TYPE"], config["NUM_LAYERS"], config["HIDDEN_SIZE"])
     model = eqx.tree_deserialise_leaves(
         "{}_{}_{}_model_Partial={}_SEED={}.pkl".format(
             config["TRAIN_TYPE"],

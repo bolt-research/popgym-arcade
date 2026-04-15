@@ -1,0 +1,43 @@
+program: popgym_arcade/train.py
+name: pqn-rnn-mingru-battleship
+project: obsgapmingru
+method: grid
+metric:
+  name: returned_episode_returns
+  goal: maximize
+
+parameters:
+  ENV_NAME:
+    values:
+      - MineSweeperEasy
+      - BattleShipEasy
+  NUM_LAYERS:
+    values:
+      - 1
+      - 2
+      - 8
+  HIDDEN_SIZE:
+    values:
+      - 128
+      - 256
+      - 512
+  SEED:
+    values:
+      - 0
+      - 1
+      - 2
+
+command:
+  - ${env}
+  - python
+  - ${program}
+  - PQN_RNN
+  - --MEMORY_TYPE
+  - mingru
+  - --TOTAL_TIMESTEPS
+  - "20000000"
+  - --TOTAL_TIMESTEPS_DECAY
+  - "2000000"
+  - --PROJECT
+  - obsgapmingru
+  - ${args}

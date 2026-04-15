@@ -1,0 +1,31 @@
+program: popgym_arcade/train.py
+name: pqn-mlp-minesweeper-battleship
+project: Arcade-NIPS
+method: grid
+metric:
+  name: returned_episode_returns
+  goal: maximize
+
+parameters:
+  ENV_NAME:
+    values:
+      - MineSweeperEasy
+      - BattleShipEasy
+  SEED:
+    values:
+      - 0
+      - 1
+      - 2
+
+command:
+  - ${env}
+  - python
+  - ${program}
+  - PQN
+  - --TOTAL_TIMESTEPS
+  - "20000000"
+  - --TOTAL_TIMESTEPS_DECAY
+  - "2000000"
+  - --PROJECT
+  - Arcade-NIPS
+  - ${args}
