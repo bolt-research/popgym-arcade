@@ -1,6 +1,6 @@
 program: popgym_arcade/train.py
 name: pqn-mlp-minesweeper-battleship
-project: Arcade-NIPS
+project: obsgapmlp
 method: grid
 metric:
   name: returned_episode_returns
@@ -27,5 +27,5 @@ command:
   - --TOTAL_TIMESTEPS_DECAY
   - "2000000"
   - --PROJECT
-  - Arcade-NIPS
+  - obsgapmlp
   - ${args}

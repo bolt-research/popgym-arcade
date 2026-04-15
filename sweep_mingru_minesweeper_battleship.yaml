@@ -9,7 +9,6 @@ metric:
 parameters:
   ENV_NAME:
     values:
-      - MineSweeperEasy
       - BattleShipEasy
   NUM_LAYERS:
     values:
