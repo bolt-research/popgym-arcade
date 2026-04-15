@@ -10,6 +10,10 @@ parameters:
   ENV_NAME:
     values:
       - MineSweeperEasy
+  PARTIAL:
+    values:
+      - false
+      - true
   NUM_LAYERS:
     values:
       - 1
@@ -28,15 +32,23 @@ parameters:
 
 command:
   - ${env}
-  - python
-  - ${program}
-  - PQN_RNN
-  - --MEMORY_TYPE
-  - lru
-  - --TOTAL_TIMESTEPS
-  - "20000000"
-  - --TOTAL_TIMESTEPS_DECAY
-  - "2000000"
-  - --PROJECT
-  - obsgaplru
-  - ${args}
+  - bash
+  - -lc
+  - |
+      cmd=(
+        python "${program}" PQN_RNN
+        --MEMORY_TYPE "lru"
+        --TOTAL_TIMESTEPS "20000000"
+        --TOTAL_TIMESTEPS_DECAY "2000000"
+        --PROJECT "obsgaplru"
+        --ENV_NAME "${ENV_NAME}"
+        --NUM_LAYERS "${NUM_LAYERS}"
+        --HIDDEN_SIZE "${HIDDEN_SIZE}"
+        --SEED "${SEED}"
+      )
+
+      if [ "${PARTIAL}" = "true" ]; then
+        cmd+=(--PARTIAL)
+      fi
+
+      "${cmd[@]}"

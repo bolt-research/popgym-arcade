@@ -11,6 +11,10 @@ parameters:
     values:
       - MineSweeperEasy
       - BattleShipEasy
+  PARTIAL:
+    values:
+      - false
+      - true
   SEED:
     values:
       - 0
@@ -19,13 +23,20 @@ parameters:
 
 command:
   - ${env}
-  - python
-  - ${program}
-  - PQN
-  - --TOTAL_TIMESTEPS
-  - "20000000"
-  - --TOTAL_TIMESTEPS_DECAY
-  - "2000000"
-  - --PROJECT
-  - obsgapmlp
-  - ${args}
+  - bash
+  - -lc
+  - |
+      cmd=(
+        python "${program}" PQN
+        --TOTAL_TIMESTEPS "20000000"
+        --TOTAL_TIMESTEPS_DECAY "2000000"
+        --PROJECT "obsgapmlp"
+        --ENV_NAME "${ENV_NAME}"
+        --SEED "${SEED}"
+      )
+
+      if [ "${PARTIAL}" = "true" ]; then
+        cmd+=(--PARTIAL)
+      fi
+
+      "${cmd[@]}"
