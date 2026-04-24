@@ -1,0 +1,65 @@
+program: popgym_arcade/train.py
+name: pqn-rnn-mingru-battleship
+project: obsgapmingru
+method: grid
+metric:
+  name: returned_episode_returns
+  goal: maximize
+
+parameters:
+  ENV_NAME:
+    values:
+      - BattleShipEasy
+  PARTIAL:
+    values:
+      - false
+      - true
+  MODEL_SPEC:
+    values:
+      - "1|512"
+      - "2|512"
+      - "8|512"
+      - "2|128"
+      - "2|256"
+  SEED:
+    values:
+      - 0
+      - 1
+      - 2
+
+command:
+  - ${env}
+  - bash
+  - -c
+  - |
+      model_spec=""
+      passthrough_args=()
+
+      for arg in "$@"; do
+        case "$arg" in
+          --MODEL_SPEC=*)
+            model_spec="${arg#--MODEL_SPEC=}"
+            ;;
+          *)
+            passthrough_args+=("$arg")
+            ;;
+        esac
+      done
+
+      IFS='|' read -r num_layers hidden_size <<< "${model_spec}"
+
+      cmd=(
+        python popgym_arcade/train.py PQN_RNN
+        --MEMORY_TYPE mingru
+        --TOTAL_TIMESTEPS "20000000"
+        --TOTAL_TIMESTEPS_DECAY "2000000"
+        --PROJECT obsgapmingru
+        --NUM_LAYERS "${num_layers}"
+        --HIDDEN_SIZE "${hidden_size}"
+        "${passthrough_args[@]}"
+      )
+
+      "${cmd[@]}"
+  - sweep
+  - ${MODEL_SPEC}
+  - ${args_no_boolean_flags}
