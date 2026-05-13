@@ -5,14 +5,26 @@ from wandb.apis.public import Api
 from typing import Dict, Any
 
 # Configuration - customize these mappings
-WANDB_PROJECT = "ICLR-Rebuttal-PPO"
+WANDB_PROJECT = "ablation"
 WANDB_ENTITY = "bolt-um"  # Optional, unless you're in a team
-MAX_JOBS = 500 # Maximum number of jobs to run before terminating (useful for HPC/SLURM)
-TRAIN_PATH = "/home/ubuntu-user/popgym-arcade/popgym_arcade/train.py"
+MAX_JOBS = 7 # Maximum number of jobs to run before terminating (useful for HPC/SLURM)
+TRAIN_PATH = "/home/user/mc45189/lstm/popgym-arcade/popgym_arcade/train.py"
 
-algorithm_families = ['PPO']
-models = ['mlp', 'lru', 'mingru', 'gru', 'fart']
+algorithm_families = ['PQN']
+# models = ['mlp', 'lru', 'mingru']
 seeds = [0,1,2]
+
+custom_configs = [
+    (1, 256),
+    (2, 256),
+    (8, 256),
+    (4, 64),
+    (4, 128),
+    (4, 256),
+    (2, 64),
+    (2, 128),
+]
+
 environments_config = {
     "CartPoleEasy": {
         "PPO": int(1e7),
@@ -172,9 +184,12 @@ def is_rnn(model_str):
 
 def generate_experiment_key(experiment: Dict[str, Any]) -> str:
     """Create a unique key for an experiment configuration"""
-    return (f"{experiment['algorithm']}_{experiment['model']}_"
+    key = (f"{experiment['algorithm']}_{experiment['model']}_"
             f"{experiment['seed']}_{experiment['environment']}_"
             f"{experiment['partial']}")
+    if is_rnn(experiment['model']):
+        key += f"_{experiment.get('num_layers', 2)}_{experiment.get('hidden_size', 256)}"
+    return key
 
 
 def get_wandb_runs() -> set:
@@ -185,13 +200,15 @@ def get_wandb_runs() -> set:
     existing = set()
     for run in runs:
         config = {k: v for k, v in run.config.items() if not k.startswith('_')}
-        key = generate_experiment_key({
-            "algorithm": config["TRAIN_TYPE"].replace("_RNN", ""),
-            "model": config.get("MEMORY_TYPE", "mlp").lower(),
-            "seed": config["SEED"],
-            "environment": config["ENV_NAME"],
-            "partial": config["PARTIAL"]
-        })
+        if "TRAIN_TYPE" not in config:
+            continue
+            
+        model = config.get("MEMORY_TYPE", "mlp").lower()
+        key = (f"{config['TRAIN_TYPE'].replace('_RNN', '')}_{model}_"
+               f"{config['SEED']}_{config['ENV_NAME']}_{config['PARTIAL']}")
+        if is_rnn(model):
+            key += f"_{config.get('NUM_LAYERS', 2)}_{config.get('HIDDEN_SIZE', 256)}"
+            
         if run.state in ["finished", "running"]:
             existing.add(key)
     return existing
@@ -221,6 +238,8 @@ def build_base_command(experiment: Dict[str, Any]) -> list:
 
     if is_rnn(experiment['model']):
         base_cmd += ["--MEMORY_TYPE", experiment['model']]
+        base_cmd += ["--NUM_LAYERS", str(experiment["num_layers"])]
+        base_cmd += ["--HIDDEN_SIZE", str(experiment["hidden_size"])]
 
     return base_cmd
 
@@ -228,22 +247,29 @@ def build_base_command(experiment: Dict[str, Any]) -> list:
 def get_all_experiments():
     """Return all possible experiments"""
     all_experiments = []
-    for env, config in environments_config.items():
-        combinations = itertools.product(seeds, algorithm_families, models, partial_flags)
-        for seed, family, model, partial in combinations:
-
-            # Get timesteps specific to algorithm family
-            total_timesteps = config[family]  # PPO or PQN
-
-            all_experiments.append({
-                "algorithm": family,
-                "model": model,
-                "total_timesteps": total_timesteps,
-                "total_timesteps_decay": config["TOTAL_TIMESTEPS_DECAY"],  # Include in config
-                "seed": seed,
-                "environment": env,
-                "partial": partial
-            })
+    
+    configs_to_run = [
+        ("mingru", "BattleShipEasy"),
+        ("lru", "MineSweeperEasy")
+    ]
+    
+    for model, env in configs_to_run:
+        for seed in seeds:
+            for partial in partial_flags:
+                for num_layers, hidden_size in custom_configs:
+                    total_timesteps = environments_config[env]["PQN"]
+                    total_timesteps_decay = environments_config[env]["TOTAL_TIMESTEPS_DECAY"]
+                    all_experiments.append({
+                        "algorithm": "PQN",
+                        "model": model,
+                        "total_timesteps": total_timesteps,
+                        "total_timesteps_decay": total_timesteps_decay,
+                        "seed": seed,
+                        "environment": env,
+                        "partial": partial,
+                        "num_layers": num_layers,
+                        "hidden_size": hidden_size
+                    })
     return all_experiments
 
 def get_pending_experiments(all_experiments):
@@ -285,7 +311,14 @@ def main():
 
         # Run experiment
         print("Command:", " ".join(base_cmd))
-        result = subprocess.run(base_cmd, check=False, env={**os.environ, "XLA_PYTHON_CLIENT_PREALLOCATE": "false"})
+        
+        env = {
+            **os.environ, 
+            # "XLA_PYTHON_CLIENT_PREALLOCATE": "false",
+            "PYTHONPATH": "/home/user/mc45189/lstm/popgym-arcade:" + os.environ.get("PYTHONPATH", "")
+        }
+        
+        result = subprocess.run(base_cmd, check=False, env=env)
 
         if result.returncode != 0:
             print(f"Experiment failed with exit code {result.returncode}")
