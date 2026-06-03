@@ -17,6 +17,9 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
   
+  <!-- Plotly.js -->
+  <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+
   <!-- Vue 3 -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
@@ -46,11 +49,11 @@
       margin-right: 10px;
     }
     .author-block a {
-        text-decoration: none;
-        color: #0d6efd; 
+        text-decoration: underline;
+        color: black; 
     }
     .author-block a:hover {
-        text-decoration: underline;
+        color: #495057;
     }
     
     /* Carousel Styling */
@@ -90,9 +93,9 @@
     }
     
     .btn-action {
-        background-color: #343a40;
-        color: white;
-        border-radius: 50rem;
+        background-color: #cacdcf;
+        color: #495057;
+        border-radius: 8px;
         padding-left: 1.5rem;
         padding-right: 1.5rem;
         transition: all 0.2s;
@@ -101,8 +104,8 @@
         gap: 0.5rem;
     }
     .btn-action:hover {
-        background-color: #000;
-        color: white;
+        background-color: #a9adb0;
+        color: #212529;
         transform: translateY(-2px);
     }
     
@@ -155,14 +158,116 @@
       color: #495057; /* Gray-700 */
       margin-top: 1rem;
       line-height: 1.6;
-      text-align: center; 
+      text-align: left; 
     }
-    .figure-title {
-        font-weight: 700;
-        margin-bottom: 1rem;
-        color: #212529;
-        text-align: center;
-        font-size: 1.25rem;
+    /* Game Comparison Layout */
+    .comparison-section {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .comparison-container {
+      display: flex;
+      gap: 1rem; /* 减小两个框之间的间距 */
+      justify-content: center;
+    }
+    .comparison-box {
+      flex: 1;
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 0.5rem; /* 减小图片与边框之间的内边距 */
+      border: 1px solid #dee2e6;
+      text-align: center;
+    }
+    .comparison-box h3 {
+      font-weight: 800;
+      font-size: 1.2rem;
+      margin-bottom: 1.5rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #343a40;
+    }
+    .image-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr); /* 5 items per row to make them small */
+      gap: 8px;
+    }
+    .image-grid img {
+      width: 100%;
+      aspect-ratio: 1/1;
+      object-fit: cover;
+      border-radius: 4px;
+      transition: transform 0.2s;
+    }
+    .image-grid img:hover {
+      transform: scale(1.1);
+      z-index: 10;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    
+    @media (max-width: 768px) {
+      .comparison-container {
+        flex-direction: column;
+      }
+      .image-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+
+    /* Hero Background Styles */
+    .hero-section {
+      position: relative;
+      overflow: hidden;
+      min-height: 500px;
+      height: 60vh; /* Dynamic relative height */
+      display: flex;
+      align-items: center;
+      padding: 0 !important;
+      background-color: #f8f9fa;
+    }
+
+    .hero-bg-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .hero-bg-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.45;
+      filter: grayscale(5%);
+      transform-origin: center center;
+      animation: heroZoomOut 8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    .hero-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.6) 100%);
+      z-index: 1;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+    }
+
+    @keyframes heroZoomOut {
+      0% {
+        transform: scale(4);
+      }
+      100% {
+        transform: scale(1);
+      }
     }
   </style>
 </head>
@@ -170,20 +275,28 @@
   <div id="app">
     
     <!-- Hero / Header -->
-    <section class="py-5 bg-white">
-      <div class="container text-center">
+    <section class="hero-section">
+      <!-- Video Background -->
+      <div class="hero-bg-container">
+        <video class="hero-bg-video" autoplay muted loop playsinline>
+          <source src="./static/output.mp4" type="video/mp4">
+        </video>
+      </div>
+      <div class="hero-overlay"></div>
+
+      <div class="container text-center hero-content">
         <div class="row justify-content-center">
           <div class="col-lg-10">
             <h1 class="display-5 fw-bold publication-title mb-4">
-              Investigating Memory in RL with POPGym Arcade
+              Investigating Memory in Model-Free RL with POPGym Arcade
             </h1>
             
             <div class="publication-authors fs-5 mb-4">
               <span class="author-block"> 
-                <a href="https://aphlios.github.io/">Zekang Wang</a><sup>1</sup>,
+                <a href="https://aphlios.github.io/">Zekang Wang</a><sup>1*</sup>,
               </span>
               <span class="author-block"> 
-                <a href="https://icyzhe.github.io/">Zhe He</a><sup>1</sup>,
+                <a href="https://icyzhe.github.io/">Zhe He</a><sup>1*</sup>,
               </span>
               <span class="author-block"> 
                 <a href="https://github.com/EmporioZ">Borong Zhang</a><sup>1</sup>,
@@ -192,10 +305,15 @@
                 <a href="https://github.com/EdanToledo">Edan Toledo</a><sup>2</sup>,
               </span>
               <span class="author-block"> 
-                <a href="https://www.dangersteve.com/">Steven Morad</a><sup>1</sup>
+                <a href="https://www.dangersteve.com/">Steven Morad</a><sup>1†</sup>
               </span>
             </div>
             
+            <div class="publication-authors fs-6 text-muted mb-4">
+              <span class="author-block"><sup>*</sup>Equal contribution</span>
+              <span class="author-block"><sup>†</sup>Corresponding author</span>
+            </div>
+
             <div class="publication-authors fs-6 text-muted mb-4">
               <span class="author-block ms-2"><sup>1</sup>University of Macau</span>
               <span class="author-block ms-2"><sup>2</sup>University College London</span>
@@ -218,66 +336,21 @@
       </div>
     </section>
 
-    <!-- Carousel Section -->
-    <section class="py-5">
-      <div class="container-fluid px-0 px-lg-3">
-        <div class="row justify-content-center mx-0">
-            <div class="col-12 col-xl-11 position-relative">
-                
-                <!-- Custom Slider -->
-                <div class="px-5"> <!-- Padding for arrows -->
-                    <div class="overflow-hidden">
-                        <div class="d-flex" 
-                             :style="{ transform: `translateX(-${currentIndex * itemWidth}%)`, transition: 'transform 0.5s ease-in-out' }">
-                            
-                            <!-- Loop over ALL games flat -->
-                            <div v-for="game in games" :key="game.id" 
-                                 :style="{ flex: `0 0 ${itemWidth}%`, maxWidth: `${itemWidth}%` }" 
-                                 class="px-2"> <!-- Horizontal gap via padding -->
-                                 
-                                <div class="game-pair-wrapper">
-                                  <div class="row g-0 align-items-center">
-                                      <!-- Full Obs (MDP) -->
-                                      <div class="col-6 position-relative">
-                                          <img :src="'./static/images/' + game.id + '_f.gif'" class="img-fluid w-100" style="border-top-left-radius: 8px; border-bottom-left-radius: 8px;" :alt="game.name + ' MDP'">
-                                      </div>
-                                      <!-- Partial Obs (POMDP) -->
-                                      <div class="col-6 position-relative">
-                                          <img :src="'./static/images/' + game.id + '_p.gif'" class="img-fluid w-100" style="border-top-right-radius: 8px; border-bottom-right-radius: 8px;" :alt="game.name + ' POMDP'">
-                                      </div>
-                                  </div>
-                                </div>
+    <!-- <hr class="container opacity-25"> -->
 
-                            </div>
-
-                        </div>
-                    </div>
-
-                    <!-- Controls -->
-                    <button class="position-absolute top-50 start-0 translate-middle-y btn border-0 p-0" 
-                            style="width: 50px; z-index: 5; left: 0;" 
-                            @click="prevSlide">
-                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                        <span class="visually-hidden">Previous</span>
-                    </button>
-                    <button class="position-absolute top-50 end-0 translate-middle-y btn border-0 p-0" 
-                            style="width: 50px; z-index: 5; right: 0;" 
-                            @click="nextSlide">
-                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                        <span class="visually-hidden">Next</span>
-                    </button>
-                </div>
-
-                <div class="text-center mt-4 px-3">
-                    <p class="text-muted fst-italic mb-0 fs-5">
-                        <b>The Environment Twin Paradigm:</b> We pair every fully observable MDP with a partially observable counterpart (POMDP) that shares the exact same action and observation space. This unified structure allows us to isolate observability as the <i>sole</i> independent variable, enabling precise counterfactual analysis and essentially asking: <b>How much does memory truly matter?</b>
-                    </p>
-                </div>
-
-            </div>
-        </div>
+    <!-- TL;DR -->
+    <section class="py-4 bg-white">
+      <div class="container">
+        <blockquote class="blockquote text-start border-start ps-4 py-2" style="border-width: 5px !important; border-color: #b3b6ba !important;">
+          <p class="fs-5 mb-0">
+            <strong>TL;DR:</strong> We study the effects of memory and partial observability in deep RL, proposing new tasks and metrics.
+          </p>
+        </blockquote>
       </div>
     </section>
+
+
+    <!-- <hr class="container opacity-25"> -->
 
     <!-- Main Content (Restored to reference style) -->
     <section class="section py-5">
@@ -287,54 +360,408 @@
             
             <!-- Abstract -->
             <div class="figure-block">
-              <div class="text-center">
+              <div class="text-start">
                 <h2 class="h3 fw-bold mb-3">Abstract</h2>
               </div>
               <div class="mb-2" style="text-align: justify; font-size: 1.05rem; line-height: 1.8;">
                 <p class="mb-0">
-                  How should we analyze memory in deep RL? We introduce mathematical tools for fairly analyzing policies under partial observability and revealing how agents use memory to make decisions. To utilize these tools, we present POPGym Arcade, a collection of Atari-inspired, hardware-accelerated, pixel-based environments sharing a single observation and action space. Each environment provides fully and partially observable variants, enabling counterfactual studies on observability. We find that controlled studies are necessary for fair comparisons, and identify a pathology where value functions smear credit over irrelevant history. With this pathology, we demonstrate how out-of-distribution scenarios can contaminate memory, perturbing the policy far into the future, with implications for sim-to-real transfer and offline RL.
+                  How should we analyze memory in deep RL?
+                  We introduce tools for analyzing policies under
+                  partial observability and revealing how agents
+                  use memory to make decisions. To utilize these
+                  tools, we present POPGym Arcade, a collection of Atari-inspired, hardware-accelerated environments sharing a single observation and action space. Each environment provides fully and
+                  partially observable variants, enabling counterfactual studies on observability. We find that
+                  controlled studies are necessary for fair comparisons and identify a pathology where value functions smear credit over irrelevant history. Using this pathology, we demonstrate how out-of-distribution scenarios can contaminate memory,
+                  perturbing the policy far into the future.
                 </p>
               </div>
             </div>
 
-            <!-- FPS Image -->
-            <div class="figure-block">
-              <h3 class="figure-title">Throughput</h3>
-              <img src="./static/images/fps.png" alt="FPS Comparison" class="img-fluid w-100 figure-img">
-              <p class="figure-caption-custom">
-                <b>High-Performance Training:</b> We specifically designed these environments for speed. On a standard consumer GPU (RTX 4090), POPGym Arcade achieves throughputs exceeding 10 million frames per second, allowing most experiments to converge in under an hour. This efficiency democratizes memory research, enabling rapid iteration without massive compute resources.
-              </p>
-            </div>
-
-            <!-- Quad Image -->
-            <div class="figure-block">
-              <h3 class="figure-title">Value Function Smearing</h3>
-              <img src="./static/images/quad.png" alt="Value Smearing" class="img-fluid w-100 figure-img">
-              <p class="figure-caption-custom" style="text-align: justify;">
-                <b>The "Smearing" Pathology:</b> Here we visualize an unexpected failure mode in memory-based agents. We compute pixel-wise gradients to trace which parts of the history contribute to the agent's value estimate $V(s_t)$. In these tailored tasks, the optimal value should depend only on the immediate present, rendering the past irrelevant. Yet, as the visualization shows, both LRU and GRU models incorrectly "smear" credit across the entire history (highlighted regions). This indicates that the agents are memorizing noise rather than extracting state, a fragility that makes them highly susceptible to distributional shifts.
-              </p>
-            </div>
+    <hr class="container opacity-25">
 
             <!-- Gap Bias Plot -->
             <div class="figure-block">
-              <h3 class="figure-title">Return Disentanglement</h3>
-              <img src="./static/images/gap_bias_plot.png" alt="Gap Bias Plot" class="img-fluid w-100 figure-img">
+                <div class="text-start">
+                <h2 class="h3 fw-bold mb-3">Memory Evaluation Tools</h2>
+              </div>
               <p class="figure-caption-custom">
-                <b>Decomposing Performance:</b> Using our proposed toolkit, we can dissect an agent's performance into distinct components: the raw POMDP return, the <i>Observability Gap</i> (how much performance is lost due to missing information), and <i>Memory Bias</i>. The plot above aggregates these metrics across all difficulty levels and environments, providing a holistic view of where current memory architectures fall short relative to the theoretical optimum.
+                <b>The relationship between the Memory Bias and Observability Gap | </b> 
+                  Memory Bias detects hidden confounders introduced
+                  by memory model f , such as increased parameter count or optimization difficulty. Observability Gap quantifies how well memory mitigates partial observability. Combining said metrics with equivalent MDP/POMDPs $(\mathcal{M}, \mathcal{P})$, enables counterfactual studies of memory.
+              </p>
+              
+              <img src="./static/images/biasandgap.svg" alt="gapandbias" class="img-fluid d-block mx-auto figure-img" style="width: 70%;">
+              
+              <p class="figure-caption-custom">
+                <b>Disentangling the return with our memory analysis tools | </b> We plot the POMDP returns ∈ [0, 1], the Observability Gap, and
+                    Memory Bias. We aggregate scores over all environments and difficulty configurations. Whiskers represent the 95% confidence interval
+                    over five seeds. Differences in Memory Bias between models suggests the return is a confounded metric for benchmarking memory.
+              </p>
+              <div class="row g-4">
+                <div class="col-md-4">
+                  <div id="gap-bias-pomdp" style="width:100%; height:350px;"></div>
+                </div>
+                <div class="col-md-4">
+                  <div id="gap-bias-gap" style="width:100%; height:350px;"></div>
+                </div>
+                <div class="col-md-4">
+                  <div id="gap-bias-bias" style="width:100%; height:350px;"></div>
+                </div>
+              </div>
+
+            </div>
+          
+
+            <!-- Pixel Visualization -->
+            <div class="figure-block">
+              <p class="figure-caption-custom">
+                <b>Pixel Visualization | </b> 
+                We implement visualization tools to probe which pixels persist in memory via their impact on the policy.
+                More formally, given a trajectory $x_n$, we compute latent Markov states $\hat{s}_0$, $\hat{s}_1$, ..., $\hat{s}_n$. 
+                Then, we backpropagate through memory and policy, taking the norm of the gradient of Q values with respect to an observation
+                $o_t$ where $t \le n$. We provide variants for bothQ learning and policy gradient methods <br>
+
+                $$ 
+                \sum_{a_n \in A} \| \nabla_{o_t} Q(\hat{s}_n, a_n) \|_2^2 = \sum_{a_n \in A} \left\| \frac{\partial Q(\hat{s}_n, a_n)}{\partial \hat{s}_n} \frac{\partial \hat{s}_n}{\partial o_t} \right\|_2^2
+                $$
+                $$
+                \int_A \left\| \nabla_{o_t} \pi(a_n | \hat{s}_n) \right\|_2^2 da_n = \int_A \left\| \frac{\partial \pi(a_n | \hat{s}_n)}{\partial \hat{s}_n} \frac{\partial \hat{s}_n}{\partial o_t} \right\|_2^2 da_n.
+                $$
+                This measures how much each pixel from a prior observation $o_t$ propagates through memory and contributes to the Q values or action distribution at time $n$.
+                We experimented with other norms, but we find the $L_2$ norm provides the clearest pixel visualizations.
+              </p>
+              <img src="./static/images/battleship_lru.svg" alt="Pixel Visualization" class="img-fluid d-block mx-auto figure-img" style="width: 70%;">
+              <p class="figure-caption-custom"> LRU saliency on the BattleShip task, using the L2 norm. 
+              The top row represents the MDP and the bottom row represents the equivalent POMDP.
               </p>
             </div>
+
+
+            <!-- Recall Density -->
+            <div class="figure-block">
+              <p class="figure-caption-custom">
+                <b>Recall Density | </b> 
+                <!-- For a single trajectory $x_n$,
+                we compute the $L_1$ norm of the observation gradients at
+                each timestep. We then divide each norm by the sum of
+                all gradient norms across the trajectory. This normalization yields the empirical density functions $\delta_Q(x_n, t)$ and $\delta_{\pi}(x_n, t)$. These functions isolate the relative contribution
+                of the observation at time $t$ to the value estimate or action
+                distribution at time $n$.
+                $$
+                \delta_Q(x_n, t) = \frac{\sum_{a_n \in A} \| \nabla_{o_t} Q(\hat{s}_n, a_n) \|_1}{\sum_{i=0}^n \sum_{a_n \in A} \| \nabla_{o_i} Q(\hat{s}_n, a_n) \|_1}
+                $$
+                
+                $$
+                \delta_{\pi}(x_n, t) = \frac{\int_A \| \nabla_{o_t} \pi(a_n | \hat{s}_n) \|_1 da_n}{\sum_{i=0}^n \int_A \| \nabla_{o_i} \pi(a_n | \hat{s}_n) \|_1 da_n}
+                $$ -->
+                We bin trajectories into thirds $\tau \in [0, 0.33), [0.33, 0.66), [0.66, 1.0)$, 
+                and plot the contribution of each bin on the $Q$ value via the recall density $\mathbb{E}_{\pi,f} [\delta_Q(x, \tau )]$. 
+                We aggregate across all memory models and random seeds. 
+                All density for MDPs should be in 0.66 $\leq$ $\tau$ $<$ 1.0, given the Markov property. I
+                nstead, we see credit diffusely distributed across trajectories for all models and tasks, demonstrating the value smearing pathology.
+              </p>
+              <img src="./static/images/saliency_summary.svg" alt="Recall Density" class="img-fluid d-block mx-auto figure-img"
+                    style="clip-path: inset(20% 0 0 0); width: 70%">
+            </div>
+
+    <hr class="container opacity-25">
+    
+    <!-- Environment Showcases -->
+    <section class="py-1 bg-white">
+      <div class="container">
+        <div class="mb-1">
+            <h2 class="h3 fw-bold">POPGym Arcade</h2>
+            
+        </div>
+            <div class="mb-2" style="text-align: justify; font-size: 1.05rem; line-height: 1.8;">
+             <p class="figure-caption-custom">
+          We require a benchmark that both provides MDP/POMDP twins with identical pixel-space states
+          and observation spaces. To this end, we propose POPGym
+          Arcade. Unlike Atari, our tasks utilize (1) stochastic initial states and transition functions
+          (2) hardware acceleration (3) formal POMDP/MDP distinctions (4) known RML and (5) standardized returns to
+          simplify comparisons.
+
+
+            </p>
+        </div>
+                <!-- </div> -->
+
+      <!-- </div> -->
+        <div class="comparison-section">
+          <div class="comparison-container">
+
+            <!-- Left Box: MDP -->
+            <div class="comparison-box">
+              <div class="image-grid">
+                <img v-for="game in games" :key="game.id" 
+                     :src="'./static/images/' + game.id + '_f.gif'" 
+                     :title="game.name">
+              </div>
+            </div>
+
+            <!-- Right Box: POMDP -->
+            <div class="comparison-box">
+              <div class="image-grid">
+                <img v-for="game in games" :key="game.id" 
+                     :src="'./static/images/' + game.id + '_p.gif'" 
+                     :title="game.name">
+              </div>
+            </div>
+          </div>
+            <p class="text-muted fs-5 mt-1">
+            A few of our MDP(Left)/POMDP(Right) twins, enabling counterfactual studies of memory.
+
+            </p>
+
+    </section>
+
+            <hr class="my-5 opacity-25">
+              <div class="text-start">
+                <h2 class="h3 fw-bold mb-3">POPGym Arcade is Fast</h2>
+              </div>
+              <p class="figure-caption-custom mt-4">
+              We implement POPGym Arcade purely in JAX, enabling parallelism for sample efficient RL. We achieve linear
+              scaling up to $2^7$ parallel environments before saturating
+              the compute units. Even with high dimensional pixel observations, POPGym Arcade achieves throughput approximately 10,000 times faster than the CPU-based Atari environments, and achieves similar throughput to hardware-accelerated <a href="#gymnax-ref" class="text-decoration-underline text-dark">Gymnax</a> while generating observations four orders of magnitude larger.
+            </p>
+            <!-- FPS Plots Row -->
+            <div class="figure-block">
+              
+                <div class="row g-4 justify-content-center">
+                <div class="col-md-4">
+                  <!-- <h3 class="figure-title">Across Library Comparison</h3> -->
+                  <div id="fps-plotly-all" style="width:100%; height:320px; background: #fff; border-radius: 8px;"></div>
+                </div>
+                <div class="col-md-4">
+                  <!-- <h3 class="figure-title">POPGym Arcade</h3> -->
+                  <div id="fps-plotly-arcade" style="width:100%; height:320px; background: #fff; border-radius: 8px;"></div>
+                </div>
+              </div>
+              <p class="figure-caption-custom mt-4">
+                <b>Environment throughput | </b> We compare the throughput of our environments to other well-known environments, using a GPU and CPU. We parallelize CPU environments using
+                  synchronous VectorEnvs, and shade the 95% bootstrapped confidence interval.
+              </p>
+            </div>
+
+            <hr class="my-5 opacity-25">
+
+            <!-- Quad Image -->
+            <!-- <div class="figure-block">
+
+              <div class="text-start">
+                <h2 class="h3 fw-bold mb-3">How do trained agents use memory?</h2> 
+              </div>
+              <img src="./static/images/quad.png" alt="Value Smearing" class="img-fluid w-100 figure-img">
+              <p class="figure-caption-custom" style="text-align: justify;">
+                <b></b> 
+                  We plot pixelwise memory gradients Eq. (4Q) for the LRU (top rows) and GRU (bottom
+                  rows), denoting how much each pixel contributes to value estimate $V(s_t)$ through memory. In these MDPs, $V_∗(s_t)$ is independent of $s_{t−k} . . . s_{t−1}$, yet memory incorrectly smears value credit over uninformative past states, even with a residual connection bypassing the
+                  memory model. Smeared value attribution suggests value estimators may not generalize to new trajectories.
+
+              </p>
+            </div> -->
+
+            <!-- <hr class="my-5 opacity-25"> -->
+
+    <section class="py-1 bg-white">
+      <div class="container">
+        <div class="mb-1">
+            <h2 class="h3 fw-bold">Memory Contamination</h2>
+            
+        </div>
+            <div class="mb-2" style="text-align: justify; font-size: 1.05rem; line-height: 1.8;">
+             <p class="figure-caption-custom">
+              
+              Naturally, we wonder what practical consequences arise from value smearing. 
+              Perhaps it induces robustness to Out of Distribution (OOD) scenarios. 
+              By distributing credit diffusely, a single OOD observation may impart little impact on the policy. 
+              To test this hypothesis, we first collect trajectories following learned policies. 
+              Then, we perturb these collected trajectories and analyze how the 
+              relative (mean-centered) Q values $A(s, a) = Q(s, a) - |A|^{-1} \sum_{a' \in A} Q(s, a')$ and policy change. 
+              We measure the impact of 
+              (1) adding noise to a single frame in each trajectory, 
+              and (2) shuffling the first few observations in each trajectory. 
+              Observation noise is a common problem in POMDPs, 
+              but it is unclear whether the memory module or CNN is responsible for any robustness or sensitivity. 
+              By shuffling the beginning of the trajectory, any observed effects will be caused purely by memory.
+
+              We find that memory-endowed agents are not robust and they do not smooth over OOD observations. 
+              Even a single OOD observation can be disastrous for the policy. 
+              This is especially worrisome for recurrent models, where the OOD observation can persist in the recurrent state, 
+              contaminating it and perturbing the policy far into the future. We see similar effects even when we permute the trajectory, removing possible CNN confounders. Our results demonstrate large sensitivity to both OOD observations and trajectories. This is especially concerning for applications where OOD scenarios are expected, such as when applying RL to the real world or using offline RL.
+              <div style="max-width: 800px; margin: 0 auto;">
+                  <div style="display: flex; gap: 20px;">
+                      <div style="flex: 1;">
+                          <img src="./static/images/experiments/cartpole10timesteps-1.png" 
+                              alt="cartpole" 
+                              style="width: 100%; clip-path: inset(0 0 0px 0);">
+                      </div>
+                      
+                      <div style="flex: 1;">
+                          <img src="./static/images/experiments/navigator10timesteps-1.png" 
+                              alt="navigator" 
+                              style="width: 100%; clip-path: inset(0 0 0px 0);">
+                      </div>
+
+                  </div>
+                  <p class="figure-caption-custom mt-4">
+                  <b> Recurrent state contamination | </b> We inject varying
+                      amounts of noise into one past observation, demonstrating perturbations in relative $Q$ values ($A$) and the greedy action for the
+                      LRU-based policy.
+                  </p>
+              </div>
+              
+              <!-- Shuffled -->
+                <div style="max-width: 800px; margin: 0 auto;">
+                  <div style="display: flex; gap: 20px;">
+                      <div style="flex: 1;">
+                          <img src="./static/images/experiments/BattleShipEasy_shuffled-1.png" 
+                              alt="cartpole" 
+                              style="width: 100%; clip-path: inset(0 0 0px 0);">
+                      </div>
+                      
+                      <div style="flex: 1;">
+                          <img src="./static/images/experiments/MineSweeperEasy_shuffled-1.png" 
+                              alt="navigator" 
+                              style="width: 100%; clip-path: inset(0 0 0px 0);">
+                      </div>
+
+                  </div>
+                  <p class="figure-caption-custom mt-4">
+                  <b> Confounder-free recurrent state contamination | </b> We shuffle the beginning of each trajectory to remove any CNN
+                        confounders. Even in-distribution observations can contaminate
+                        the recurrent state when the trajectory is OOD. The BattleShip
+                        and MineSweeper examples demonstrating this effect even for nonrecurrent memory models.
+                  </p>
+              </div>
+
+                  <!-- Policy Gradient Method -->
+                <div style="max-width: 800px; margin: 0 auto;">
+                  <div style="display: flex; gap: 20px;">
+                      <div style="flex: 1;">
+                          <img src="./static/images/experiments/ppo_BreakoutEasy-1.png" 
+                              alt="cartpole" 
+                              style="width: 100%; clip-path: inset(0 0 0px 0);">
+                      </div>
+                      
+                      <div style="flex: 1;">
+                          <img src="./static/images/experiments/ppo_CartPoleEasy-1.png" 
+                              alt="navigator" 
+                              style="width: 100%; clip-path: inset(0 0 0px 0);">
+                      </div>
+
+                  </div>
+                  <p class="figure-caption-custom mt-4">
+                  <b> Recurrent state contamination | </b> We demonstrate that injecting a noise frame early in an episode causes a
+                   change in the policy distribution $\pi(a|s)$ in PPO with GRU(left) and PPO with LRU(right). 
+                   The same phenomenon persists across different memory-based baselines and algorithms.
+                  </p>
+                  <div class="alert alert-light border shadow-sm" style="background-color: #f8f9fa;">
+                  <p class="mb-0 small">
+                    <i class="fas fa-info-circle me-2 text-primary"></i>
+                    <strong></strong> See our paper for further experiments.
+                  </p>
+                  </div>
+              </div>
+            </p>
+            
+        </div>
+                <!-- </div> -->
+
+    </section>
+
+    <hr class="my-5 opacity-25">
+    <section class="py-5 bg-white">
+        <div class="container">
+          <div class="mb-4">
+              <h2 class="h3 fw-bold">Create a POPGym Arcade Twin Yourself</h2>
+          </div>
+          <div class="mb-4" style="text-align: justify; font-size: 1.05rem; line-height: 1.8;">
+              <p class="figure-caption-custom">
+              Implement a JAX environment and a render function to toggle observability. We supply drawing utilities for GPU pixel rendering.
+            </p>
+          </div>
+
+
+          <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+          <div class="card shadow-sm border-0 mb-4 bg-dark">
+  <div class="card-body p-0">
+    <pre class="mb-0 p-4" style="background-color: #ebebeb; color: #2d2d2d; border-radius: 8px; overflow-x: auto; font-size: 0.9rem; line-height: 1.5;"><code class="language-python">import jax
+import jax.numpy as jnp
+from gymnax.environments import environment
+from popgym_arcade.environments.draw_utils import draw_rectangle, draw_hexagon
+
+class MyTwinEnv(environment.Environment):
+    def __init__(self, partial_obs=False, obs_size=128):
+        super().__init__()
+        self.partial_obs = partial_obs
+        self.obs_size = obs_size
+
+    def reset_env(self, key, params):
+        state = EnvState(pos=..., timestep=0)
+        return self.render(state), state
+
+    def step_env(self, key, state, action, params):
+        # Transition dynamics
+        new_state = state.replace(pos=..., timestep=state.timestep + 1)
+        return self.render(new_state), new_state, reward, done, info
+
+    def render(self, state):
+        # Initialize canvas with your favorite color
+        canvas = jnp.full((self.obs_size, self.obs_size, 3), bg_clr)
+        
+        def draw_full(canvas):
+             # MDP
+             return draw_rectangle(canvas, ...)
+             
+        def draw_partial(canvas):
+             # POMDP
+             return draw_hexagon(canvas, ...)
+
+        # First timestep (t=0) is always the MDP observation
+        return jax.lax.cond(
+            jnp.logical_or(state.timestep == 0, not self.partial_obs),
+            draw_full, draw_partial
+        )</code></pre>
+            </div>
+          </div>
+
+          <!-- <div class="alert alert-light border shadow-sm" style="background-color: #f8f9fa;">
+            <p class="mb-0 small">
+              <i class="fas fa-info-circle me-2 text-primary"></i>
+              <strong></strong> By ensuring the first observation (<code>timestep=0</code>) is always the full state, memory-based agents can initialize their internal representation before the environment becomes partially observable.
+            </p>
+          </div> -->
+        </div>
+      </section>
+        </div>
+      </section>
+
+
 
           </div>
         </div>
       </div>
     </section>
 
+    <section class="section py-5 bg-white">
+      <div class="container text-start">
+        <h2 class="h3 fw-bold mb-3">References</h2>
+        <p id="gymnax-ref" style="font-size: 0.95rem; line-height: 1.6;">
+          Lange, R. T. gymnax: A JAX-based Reinforcement Learning Environment Library, 2022. URL <a href="http://github.com/RobertTLange/gymnax" target="_blank" style="color: black; text-decoration: underline;">http://github.com/RobertTLange/gymnax</a>.
+        </p>
+      </div>
+    </section>
+
+
     <footer class="footer py-5">
-      <div class="container">
-        <div class="row justify-content-center">
-          <div class="col-lg-8 text-center">
+      <div class="container text-end">
+        <div class="row">
+          <div class="col-lg-12">
             <p>
-              This website template is borrowed from <a href="https://github.com/nerfies/nerfies.github.io" class="text-decoration-none">Nerfies</a>
+              This website template is borrowed from <a href="https://github.com/nerfies/nerfies.github.io" style="color: black; text-decoration: underline;">Nerfies</a>
             </p>
           </div>
         </div>
@@ -345,6 +772,225 @@
 
   <!-- Bootstrap Bundle with Popper -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    // Data extracted from all.csv
+    const ALL_DATA = [{"Environment": "Atari", "Num Envs": 2, "mean": 425.6, "std": 68.12517889884766}, {"Environment": "Atari", "Num Envs": 4, "mean": 463.9, "std": 1.1357816691600546}, {"Environment": "Atari", "Num Envs": 8, "mean": 463.9, "std": 0.8306623862918076}, {"Environment": "Atari", "Num Envs": 16, "mean": 465.1, "std": 0.5385164807134504}, {"Environment": "Atari", "Num Envs": 32, "mean": 462.3, "std": 5.967411499134277}, {"Environment": "Atari", "Num Envs": 64, "mean": 458.6, "std": 8.06473806146238}, {"Environment": "Atari", "Num Envs": 128, "mean": 461.0, "std": 3.8987177379235853}, {"Environment": "Atari", "Num Envs": 256, "mean": 462.1, "std": 4.182104733265296}, {"Environment": "Atari", "Num Envs": 512, "mean": 458.8, "std": 2.9597297173897483}, {"Environment": "Gymnax", "Num Envs": 2, "mean": 90999.6, "std": 11620.681453339988}, {"Environment": "Gymnax", "Num Envs": 4, "mean": 182803.1, "std": 11635.880529207921}, {"Environment": "Gymnax", "Num Envs": 8, "mean": 351220.3, "std": 48066.51037271168}, {"Environment": "Gymnax", "Num Envs": 16, "mean": 672242.9, "std": 51047.883702363215}, {"Environment": "Gymnax", "Num Envs": 32, "mean": 690556.0, "std": 28762.85160758578}, {"Environment": "Gymnax", "Num Envs": 64, "mean": 2764395.3, "std": 137609.9832774134}, {"Environment": "Gymnax", "Num Envs": 128, "mean": 5603129.1, "std": 601318.5667584945}, {"Environment": "Gymnax", "Num Envs": 256, "mean": 11507358.9, "std": 1612821.063068402}, {"Environment": "Gymnax", "Num Envs": 512, "mean": 20918249.8, "std": 1937764.9014281274}, {"Environment": "MinAtar", "Num Envs": 2, "mean": 61575.1, "std": 1373.0011981058137}, {"Environment": "MinAtar", "Num Envs": 4, "mean": 95325.0, "std": 4015.0216437772788}, {"Environment": "MinAtar", "Num Envs": 8, "mean": 134431.2, "std": 3424.384844026734}, {"Environment": "MinAtar", "Num Envs": 16, "mean": 171718.7, "std": 1054.2066258566201}, {"Environment": "MinAtar", "Num Envs": 32, "mean": 199181.5, "std": 902.406366333926}, {"Environment": "MinAtar", "Num Envs": 64, "mean": 217236.1, "std": 6760.471025749611}, {"Environment": "MinAtar", "Num Envs": 128, "mean": 227305.3, "std": 6235.77897379309}, {"Environment": "MinAtar", "Num Envs": 256, "mean": 232604.2, "std": 8134.294976210293}, {"Environment": "MinAtar", "Num Envs": 512, "mean": 233910.4, "std": 8651.066144701472}, {"Environment": "POPGym", "Num Envs": 2, "mean": 35830.1, "std": 1072.7829650027074}, {"Environment": "POPGym", "Num Envs": 4, "mean": 62941.0, "std": 1020.5702327620573}, {"Environment": "POPGym", "Num Envs": 8, "mean": 99031.4, "std": 3302.033016188663}, {"Environment": "POPGym", "Num Envs": 16, "mean": 139822.2, "std": 3374.1544955736686}, {"Environment": "POPGym", "Num Envs": 32, "mean": 163609.2, "std": 38814.34814034624}, {"Environment": "POPGym", "Num Envs": 64, "mean": 197873.6, "std": 6160.530516116287}, {"Environment": "POPGym", "Num Envs": 128, "mean": 219621.7, "std": 9325.279781861776}, {"Environment": "POPGym", "Num Envs": 256, "mean": 229648.5, "std": 14095.027295113692}, {"Environment": "POPGym", "Num Envs": 512, "mean": 236417.7, "std": 7851.555948345525}, {"Environment": "POPGym Arcade", "Num Envs": 2, "mean": 116356.1, "std": 20528.19993301897}, {"Environment": "POPGym Arcade", "Num Envs": 4, "mean": 199120.6, "std": 24283.837807068307}, {"Environment": "POPGym Arcade", "Num Envs": 8, "mean": 390834.3, "std": 57667.270925629906}, {"Environment": "POPGym Arcade", "Num Envs": 16, "mean": 735700.6, "std": 61170.373273669014}, {"Environment": "POPGym Arcade", "Num Envs": 32, "mean": 1503203.6, "std": 182020.82578716095}, {"Environment": "POPGym Arcade", "Num Envs": 64, "mean": 2448570.6, "std": 234580.9755880472}, {"Environment": "POPGym Arcade", "Num Envs": 128, "mean": 4441294.3, "std": 339592.6185870506}, {"Environment": "POPGym Arcade", "Num Envs": 256, "mean": 6585094.7, "std": 439720.5896223305}, {"Environment": "POPGym Arcade", "Num Envs": 512, "mean": 7502863.9, "std": 614096.7774843718}];
+
+    const ARCADE_TOP5 = [{"Environment": "CartPole", "Num Envs": 2, "mean": 111514.7, "std": 25411.224232807046}, {"Environment": "CartPole", "Num Envs": 4, "mean": 186637.3, "std": 26795.054342359526}, {"Environment": "CartPole", "Num Envs": 8, "mean": 403586.6, "std": 59996.098283471736}, {"Environment": "CartPole", "Num Envs": 16, "mean": 740516.7, "std": 45516.99699683625}, {"Environment": "CartPole", "Num Envs": 32, "mean": 1388419.6, "std": 149235.5520539258}, {"Environment": "CartPole", "Num Envs": 64, "mean": 2490555.3, "std": 274600.37017529673}, {"Environment": "CartPole", "Num Envs": 128, "mean": 4658633.3, "std": 541703.8654519736}, {"Environment": "CartPole", "Num Envs": 256, "mean": 6785753.5, "std": 617136.7646271368}, {"Environment": "CartPole", "Num Envs": 512, "mean": 7774842.6, "std": 231350.72031277535}, {"Environment": "AutoEncode", "Num Envs": 2, "mean": 116356.1, "std": 20528.19993301897}, {"Environment": "AutoEncode", "Num Envs": 4, "mean": 199120.6, "std": 24283.837807068307}, {"Environment": "AutoEncode", "Num Envs": 8, "mean": 390834.3, "std": 57667.270925629906}, {"Environment": "AutoEncode", "Num Envs": 16, "mean": 735700.6, "std": 61170.373273669014}, {"Environment": "AutoEncode", "Num Envs": 32, "mean": 1503203.6, "std": 182020.82578716095}, {"Environment": "AutoEncode", "Num Envs": 64, "mean": 2448570.6, "std": 234580.9755880472}, {"Environment": "AutoEncode", "Num Envs": 128, "mean": 4441294.3, "std": 339592.6185870506}, {"Environment": "AutoEncode", "Num Envs": 256, "mean": 6585094.7, "std": 439720.5896223305}, {"Environment": "AutoEncode", "Num Envs": 512, "mean": 7502863.9, "std": 614096.7774843718}, {"Environment": "NoisyPole", "Num Envs": 2, "mean": 94795.9, "std": 15122.942262998957}, {"Environment": "NoisyPole", "Num Envs": 4, "mean": 198643.5, "std": 43321.43248612631}, {"Environment": "NoisyPole", "Num Envs": 8, "mean": 389670.9, "std": 44428.972428923}, {"Environment": "NoisyPole", "Num Envs": 16, "mean": 800474.0, "std": 101691.74602100211}, {"Environment": "NoisyPole", "Num Envs": 32, "mean": 1294851.6, "std": 113943.64968018181}, {"Environment": "NoisyPole", "Num Envs": 64, "mean": 2607269.4, "std": 304181.96243045054}, {"Environment": "NoisyPole", "Num Envs": 128, "mean": 4510691.2, "std": 681727.2053159974}, {"Environment": "NoisyPole", "Num Envs": 256, "mean": 6727770.3, "std": 511579.48681100376}, {"Environment": "NoisyPole", "Num Envs": 512, "mean": 8174848.5, "s td": 699197.7167428753}, {"Environment": "CountRecall", "Num Envs": 2, "mean": 60543.7, "std": 3496.303563765595}, {"Environment": "CountRecall", "Num Envs": 4, "mean": 116911.2, "std": 10764.820423955061}, {"Environment": "CountRecall", "Num Envs": 8, "mean": 231922.2, "std": 11026.699186973407}, {"Environment": "CountRecall", "Num Envs": 16, "mean": 462778.9, "std": 36841.6827668064}, {"Environment": "CountRecall", "Num Envs": 32, "mean": 884844.1, "std": 51215.443915776035 }, {"Environment": "CountRecall", "Num Envs": 64, "mean": 1578540.0, "std": 105121.8008883029}, {"Environment": "CountRecall", "Num Envs": 128, "mean": 2952018.8, "std": 165095.2642547932}, {"Environment": "CountRecall", "Num Envs": 256, "mean": 4360733.3, "std": 246110.17399979627}, {"Environment": "CountRecall", "Num Envs": 512, "mean": 5195110.7, "std": 208231.90239780743}, {"Environment": "Breakout", "Num Envs": 2, "mean": 50810.4, "std": 3924.693139597031}, {"Environment": "Breakout", "Num Envs": 4, "mean": 107910.5, "std": 10792.543910033444}, {"Environment": "Breakout", "Num Envs": 8, "mean": 201970.1, "std": 16305.845396360166}, {"Environment": "Breakout", "Num Envs": 16, "mean": 416317.4, "std": 33728.280084226055}, {"Environment": "Breakout", "Num Envs": 32, "mean": 837982.8, "st d": 71256.73984936443}, {"Environment": "Breakout", "Num Envs": 64, "mean": 1502574.0, "std": 100223.88184958712}, {"Environment": "Breakout", "Num Envs": 128, "mean": 2865609.9, "std": 205031.78394846493}, {"Environment": "Breakout", "Num Envs": 256, "mean": 4903696.5, "std": 394153.70650730917}, {"Environment": "Breakout", "Num Envs": 512, "mean": 4301149.5, "std": 147499.04375639185}];
+
+    function createPlot(id, data, isArcadeOnly) {
+      const container = document.getElementById(id);
+      let environments = [...new Set(data.map(d => d.Environment))];
+      
+      // Explicit ordering for drawing layers and legend
+      if (!isArcadeOnly) {
+        // Gymnax (light blue) first (bottom), Arcade (yellow) last (top)
+        const order = ['Gymnax', 'Atari', 'MinAtar', 'POPGym', 'POPGym Arcade'];
+        environments.sort((a, b) => {
+          let idxA = order.indexOf(a);
+          let idxB = order.indexOf(b);
+          if (idxA === -1) idxA = 99;
+          if (idxB === -1) idxB = 99;
+          return idxA - idxB;
+        });
+      }
+
+      const traces = environments.map((env, i) => {
+        const envData = data.filter(d => d.Environment === env);
+        // Restore colors: Yellow for Arcade on left, Light Blue for others. 
+        // Automatic colors for the right side (Arcade Top 5).
+        const color = isArcadeOnly ? null : (env === 'POPGym Arcade' ? '#ffbe00' : '#7fa0f7');
+        
+        // Marker shapes for Left Chart to distinguish libraries
+        const shapes = {
+          'Atari': 'circle',
+          'MinAtar': 'square',
+          'POPGym': 'diamond',
+          'Gymnax': 'triangle-up',
+          'POPGym Arcade': 'star'
+        };
+        const symbol = isArcadeOnly ? 'circle' : (shapes[env] || 'circle');
+
+        return {
+          x: envData.map(d => d['Num Envs']),
+          y: envData.map(d => d.mean),
+          name: env,
+          type: 'scatter',
+          mode: 'lines+markers',
+          line: { width: 3, color: color }, 
+          marker: { size: 10, symbol: symbol, line: { width: 1, color: 'black' } },
+          error_y: {
+            type: 'data',
+            array: envData.map(d => d.std),
+            visible: true,
+            thickness: 1,
+            width: 0,
+            opacity: 0.3
+          }
+        };
+      });
+
+      const layout = {
+        height: 320,
+        xaxis: {
+          type: 'log',
+          dtick: Math.log10(2),
+          tickvals: [2, 4, 8, 16, 32, 64, 128, 256, 512],
+          title: { text: 'Number of Environments', font: { size: 16, color: 'black', weight: 'bold' } },
+          gridcolor: '#f0f0f0',
+          tickfont: { size: 18, color: 'black' },
+          showline: true,
+          linewidth: 2,
+          linecolor: 'black',
+          mirror: false,
+          automargin: true
+        },
+        yaxis: {
+          type: 'log',
+          range: [2, 7.5], // Log10 of 100 to ~30M
+          title: { text: 'FPS', font: { size: 16, color: 'black', weight: 'bold' } },
+          gridcolor: '#f0f0f0',
+          tickfont: { size: 18, color: 'black' },
+          showline: true,
+          linewidth: 2,
+          linecolor: 'black',
+          mirror: false,
+          exponentformat: 'SI',
+          automargin: true,
+          showticklabels: true,
+          tickmode: 'linear',
+          dtick: 1
+        },
+        margin: { t: 90, b: 60, l: 80, r: 30 },
+        legend: { 
+          x: 0.5, 
+          y: 1.4,
+          xanchor: 'center',
+          yanchor: 'top',
+          orientation: 'h',
+          bgcolor: 'rgba(255,255,255,0)',
+          font: { size: 13 },
+          traceorder: 'normal',
+          entrywidth: 0.33,
+          entrywidthmode: 'fraction',
+          // itemsizing: 'constant',
+          valign: 'middle'
+        },
+        font: { family: 'Arial, sans-serif' },
+        hovermode: 'closest',
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)'
+      };
+
+      // Initial plot with Y values at minimum to prepare for animation
+      const initialTraces = traces.map(t => ({
+        ...t,
+        y: t.y.map(() => 100) // Start from bottom of log scale
+      }));
+
+      Plotly.newPlot(container, initialTraces, layout, { responsive: true, displayModeBar: false });
+
+      const observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) {
+          if (!isArcadeOnly) {
+            // SEQUENTIAL ANIMATION for Left Chart
+            // 1. Animate non-Arcade traces first
+            const othersIdx = traces.map((t, i) => t.name !== 'POPGym Arcade' ? i : -1).filter(i => i !== -1);
+            const arcadeIdx = traces.findIndex(t => t.name === 'POPGym Arcade');
+
+            // Step 1: Others
+            Plotly.animate(container, {
+              data: othersIdx.map(i => ({ y: traces[i].y })),
+              traces: othersIdx
+            }, {
+              transition: { duration: 800, easing: 'cubic-in-out' },
+              frame: { duration: 800 }
+            }).then(() => {
+              // Step 2: POPGym Arcade (The highlight)
+              Plotly.animate(container, {
+                data: [{ y: traces[arcadeIdx].y }],
+                traces: [arcadeIdx]
+              }, {
+                transition: { duration: 1000, easing: 'exp-in-out' },
+                frame: { duration: 1000 }
+              });
+            });
+          } else {
+            // SIMULTANEOUS ANIMATION for Right Chart
+            Plotly.animate(container, {
+              data: traces.map(t => ({ y: t.y })),
+              traces: traces.map((_, i) => i)
+            }, {
+              transition: { duration: 1000, easing: 'cubic-in-out' },
+              frame: { duration: 1000 }
+            });
+          }
+          observer.disconnect();
+        }
+      }, { threshold: 0.1 });
+
+      observer.observe(container);
+    }
+
+    // Data for Return Disentanglement (calculated from finalpqn20250912model_group.csv)
+    const GAP_BIAS_DATA = [{"Algorithm": "MLP", "mean_True": 0.38181876081916666, "sem_True": 0.0013054987345298085, "gap": 0.2849983196988889, "gap_sem": 0.0016561749055176646, "bias": 0, "bias_sem": 0}, {"Algorithm": "Human", "mean_True": 0.3346666666666667, "sem_True": 0.010750538315548393, "gap": 0.23566666666666664, "gap_sem": 0.01762140953709646, "bias": 0, "bias_sem": 0}, {"Algorithm": "Attn", "mean_True": 0.3431422084726667, "sem_True": 0.0019407853065212316, "gap": 0.12304430880399997, "gap_sem": 0.003446689197974783, "bias": -0.2006305632413889, "bias_sem": 0.003025162341633066}, {"Algorithm": "TTTL", "mean_True": 0.3503794181233651, "sem_True": 0.0038484922005243716, "gap": 0.0015620841081904757, "gap_sem": 0.0046307835437144704, "bias": -0.3148755782865, "bias_sem": 0.002769810893011893}, {"Algorithm": "LAttn", "mean_True": 0.3648498858383333, "sem_True": 0.0020459095092195934, "gap": 0.05707508370066672, "gap_sem": 0.0030626915653455137, "bias": -0.24489211097905556, "bias_sem": 0.0024965821188839173}, {"Algorithm": "GDN", "mean_True": 0.41774454274416667, "sem_True": 0.003402138365236147, "gap": 0.059839222712611106, "gap_sem": 0.004853640405093663, "bias": -0.18923331506127777, "bias_sem": 0.0036085825607229225}, {"Algorithm": "MinGRU", "mean_True": 0.4315662867496667, "sem_True": 0.0019033668271033137, "gap": 0.1613536666308888, "gap_sem": 0.0031537396918135214, "bias": -0.07389712713750007, "bias_sem": 0.0027132742465534555}, {"Algorithm": "GRU", "mean_True": 0.5336815659708333, "sem_True": 0.002017696824539349, "gap": 0.11098990732083336, "gap_sem": 0.002753380624281126, "bias": -0.02214560722638892, "bias_sem": 0.0021327430126993887}, {"Algorithm": "LRU", "mean_True": 0.5628937682958333, "sem_True": 0.0016631321978862205, "gap": 0.09244057763750002, "gap_sem": 0.0019665438476704623, "bias": -0.011482734584722265, "bias_sem": 0.0014628309434012562}];
+
+    function createBarPlot(id, data, yField, yErrorField, title) {
+      const colors = ['#4d7bf5', '#648df6', '#7fa0f7', '#99b3f8', '#b3c6fa', '#ccd9fb', '#e6ecfd', '#f6f8ff', '#ffffff'];
+      
+      const trace = {
+        x: data.map(d => d.Algorithm),
+        y: data.map(d => d[yField]),
+        type: 'bar',
+        marker: { 
+          color: colors,
+          opacity: 0.8,
+          line: { width: 1, color: 'black' }
+        },
+        error_y: {
+          type: 'data',
+          array: data.map(d => d[yErrorField]),
+          visible: true,
+          thickness: 1.5,
+          width: 8,
+          color: 'black'
+        }
+      };
+
+      const layout = {
+        height: 350,
+        title: { text: title, font: { size: 18, color: 'black' } },
+        xaxis: { 
+          tickangle: -45,
+          automargin: true,
+          tickfont: { size: 14, color: 'black' }
+        },
+        yaxis: { 
+          gridcolor: '#dbdbdb',
+          zeroline: true,
+          zerolinecolor: 'black',
+          zerolinewidth: 1,
+          tickfont: { size: 14, color: 'black' }
+        },
+        margin: { t: 50, b: 80, l: 60, r: 20 },
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        showlegend: false
+      };
+
+      Plotly.newPlot(id, [trace], layout, { responsive: true, displayModeBar: false });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      createPlot('fps-plotly-all', ALL_DATA, false);
+      createPlot('fps-plotly-arcade', ARCADE_TOP5, true);
+      
+      createBarPlot('gap-bias-pomdp', GAP_BIAS_DATA, 'mean_True', 'sem_True', 'POMDP Return');
+      createBarPlot('gap-bias-gap', GAP_BIAS_DATA, 'gap', 'gap_sem', 'Observability Gap');
+      createBarPlot('gap-bias-bias', GAP_BIAS_DATA, 'bias', 'bias_sem', 'Memory Bias');
+    });
+  </script>
 
   <!-- Vue Application Logic -->
   <script>
@@ -363,7 +1009,7 @@
             { id: 'countrecall', name: 'Count Recall' },
             { id: 'minesweeper', name: 'Minesweeper' },
             { id: 'navigator', name: 'Navigator' },
-            { id: 'ncartpole', name: 'Noisy Cartpole' },
+            { id: 'ncartpole', name: 'NoisyPole' },
             { id: 'skittles', name: 'Skittles' },
             { id: 'tetris', name: 'Tetris' }
           ]
@@ -381,21 +1027,6 @@
         }
       },
       methods: {
-        nextSlide() {
-          // Loop behavior
-          if (this.currentIndex < this.games.length - this.chunkSize) {
-            this.currentIndex++;
-          } else {
-            this.currentIndex = 0;
-          }
-        },
-        prevSlide() {
-          if (this.currentIndex > 0) {
-            this.currentIndex--;
-          } else {
-            this.currentIndex = this.games.length - this.chunkSize;
-          }
-        }
       },
       mounted() {
         window.addEventListener('resize', () => {
