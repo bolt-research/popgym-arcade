@@ -6,8 +6,8 @@ plt.rcParams['text.usetex'] = True
 plt.rcParams['font.family'] = 'sans-serif'
 plt.rcParams['font.sans-serif'] = ['Arial']
 
-alldata = pd.read_csv('./all.csv')
-popgymarcadedata = pd.read_csv('./128fpsdata.csv')
+alldata = pd.read_csv('')
+popgymarcadedata = pd.read_csv('')
 
 fig, axes = plt.subplots(1, 2, figsize=(15, 6), sharex=True, sharey=True)
 
