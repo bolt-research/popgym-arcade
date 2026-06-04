@@ -2,7 +2,6 @@ import multiprocessing
 import time
 
 # Test FPS for MinAtar environment
-# Source: https://github.com/kenjyoung/MinAtar/tree/master
 import gymnasium as gym
 import popgym
 from popgym.envs.battleship import Battleship
@@ -12,7 +11,6 @@ TestEnv = gym.make("MinAtar/Asterix-v1")
 NUM_STEPS = 512
 
 # Test FPS for popgym environment
-# Source: https://github.com/proroklab/popgym
 # TestEnv = Battleship()
 
 
